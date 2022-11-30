@@ -4,6 +4,6 @@ xmodmap - < ~/.config/moonwm/modmap
 
 xclock &
 xterm &
-sleep 2
+sleep 1
 
 exec ./target/debug/marswm

@@ -63,7 +63,7 @@ impl X11Backend {
             // select events
             let mut attributes: xlib::XSetWindowAttributes = mem::MaybeUninit::uninit().assume_init();
             attributes.cursor = xlib::XCreateFontCursor(display, CURSOR_NORMAL);
-            attributes.event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask;
+            attributes.event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::KeyPressMask;
             xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, &mut attributes);
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
@@ -127,7 +127,6 @@ impl X11Backend {
     }
 
     fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, mut event: xlib::XKeyEvent) {
-        println!("on_key_press");
         let keysym = unsafe {
             xlib::XLookupKeysym(&mut event, 1)
         };
@@ -164,7 +163,6 @@ impl X11Backend {
     }
 
     fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
-        println!("on_map_request");
         self.manage(wm, event.window);
     }
 

@@ -258,7 +258,6 @@ impl Client for X11Client {
         if self.visible {
             return;
         }
-        println!("Calling show for {}/{}", self.frame, self.window);
 
         unsafe {
             xlib::XMapWindow(self.display, self.window);

@@ -17,7 +17,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
 }
 
-pub trait Client: PartialEq {
+pub trait Client: PartialEq + Dimensioned{
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
     fn close(&self);
