@@ -197,7 +197,7 @@ impl X11Backend {
     }
 
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
-        let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| xatom(self.display, *a)).collect();
+        let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| a.to_xlib_atom(self.display)).collect();
         let data = atom_vec.as_slice();
         self.root.x11_replace_property_long(self.display, X11Atom::NetSupported, xlib::XA_ATOM, data)
     }

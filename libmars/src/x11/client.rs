@@ -97,7 +97,7 @@ impl X11Client {
 
     fn set_state(&self, state: i32) {
         let data = state;
-        let state_atom = atoms::xatom(self.display, X11Atom::WMState);
+        let state_atom = X11Atom::WMState.to_xlib_atom(self.display);
 
         unsafe {
             xlib::XChangeProperty(self.display, self.window, state_atom, state_atom,
@@ -106,7 +106,7 @@ impl X11Client {
     }
 
     fn supports_protocol(&self, atom: atoms::X11Atom) -> bool {
-        let xatom = atoms::xatom(self.display, atom);
+        let xatom = atom.to_xlib_atom(self.display);
         return self.window.x11_wm_protocols(self.display).contains(&xatom);
     }
 
@@ -137,7 +137,7 @@ impl Client for X11Client {
         if self.supports_protocol(X11Atom::WMDeleteWindow) {
             let msg_type = X11Atom::WMProtocols;
             let mut msg_data = xlib::ClientMessageData::new();
-            msg_data.set_long(0, atoms::xatom(self.display, X11Atom::WMDeleteWindow) as i64);
+            msg_data.set_long(0, X11Atom::WMDeleteWindow.to_xlib_atom(self.display) as i64);
             self.x11_message(self.display, msg_type, 32, msg_data);
         } else {
             unsafe {
@@ -359,7 +359,7 @@ impl X11Window for xlib::Window {
         unsafe {
             xlib::XChangeProperty(display,
                                   *self,
-                                  xatom(display, property),
+                                  property.to_xlib_atom(display),
                                   prop_type,
                                   32,
                                   xlib::PropModeReplace,
@@ -403,7 +403,7 @@ impl X11Window for xlib::Window {
 
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
         unsafe {
-            let msg_type_x11 = atoms::xatom(display, msg_type);
+            let msg_type_x11 = msg_type.to_xlib_atom(display);
             let msg_event = xlib::XClientMessageEvent {
                 type_: xlib::ClientMessage,
                 serial: 0,
