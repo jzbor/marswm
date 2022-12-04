@@ -12,7 +12,9 @@ use crate::x11::client::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 1] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 3] = & [
+    NetActiveWindow,
+    NetClientList,
     NetSupported,
 ];
 
@@ -35,21 +37,6 @@ impl X11Backend {
         };
 
         return Self::init_with_connection(display);
-    }
-
-    fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
-        unsafe {  // unsafe because of access to union field
-            match event.get_type() {
-                xlib::ButtonPress => self.on_button_press(wm, event.button),
-                xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
-                xlib::KeyPress => self.on_key_press(wm, event.key),
-                xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
-                xlib::MapRequest => self.on_map_request(wm, event.map_request),
-                xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
-                _ => (),
-                // _ => { print!("."); stdout().flush().unwrap(); },
-            }
-        }
     }
 
     /// Register window manager and create backend from existing connection.
@@ -77,6 +64,37 @@ impl X11Backend {
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
 
             return Ok(x11b);
+        }
+    }
+
+    fn export_active_window(&self, client_option: Option<Rc<RefCell<X11Client>>>) {
+        let window = match client_option {
+            Some(client_rc) => client_rc.borrow().window(),
+            None => XLIB_NONE,
+        };
+        let data = &[window];
+        self.root.x11_replace_property_long(self.display, X11Atom::NetActiveWindow, xlib::XA_WINDOW, data);
+    }
+
+    fn export_client_list(&self, wm: &mut WM) {
+        // TODO ensure correct sorting as defined by EWMH
+        let data_vec: Vec<u64> = wm.clients().map(|c| c.borrow().window()).collect();
+        let data = data_vec.as_slice();
+        self.root.x11_replace_property_long(self.display, X11Atom::NetClientList, xlib::XA_WINDOW, data);
+    }
+
+    fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
+        unsafe {  // unsafe because of access to union field
+            match event.get_type() {
+                xlib::ButtonPress => self.on_button_press(wm, event.button),
+                xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
+                xlib::KeyPress => self.on_key_press(wm, event.key),
+                xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
+                xlib::MapRequest => self.on_map_request(wm, event.map_request),
+                xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
+                _ => (),
+                // _ => { print!("."); stdout().flush().unwrap(); },
+            }
         }
     }
 
@@ -120,6 +138,7 @@ impl X11Backend {
         let boxed_client = Rc::new(RefCell::new(client));
 
         wm.manage(self, boxed_client);
+        self.export_client_list(wm);
     }
 
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XButtonEvent) {
@@ -131,6 +150,7 @@ impl X11Backend {
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             wm.handle_focus(self, Some(client_rc.clone()));
+            self.export_active_window(Some(client_rc.clone()));
             self.set_input_focus(client_rc);
         }
     }
@@ -166,6 +186,7 @@ impl X11Backend {
 
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());
+        self.export_client_list(wm);
 
         // remove client frame
         client_rc.borrow().destroy_frame();
@@ -176,11 +197,9 @@ impl X11Backend {
     }
 
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
-        let nelements = supported_atoms.len().try_into().unwrap();
-        let atoms: Box<[xlib::Atom]> = (*supported_atoms).iter().map(|a| xatom(self.display, *a))
-                                                .collect::<Vec<xlib::Atom>>().into_boxed_slice();
-        let data = Box::into_raw(atoms) as *const [xlib::Atom] as *const c_uchar;
-        self.root.x11_change_property(self.display, X11Atom::NetSupported, xlib::XA_ATOM, 32, xlib::PropModeReplace, data, nelements)
+        let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| xatom(self.display, *a)).collect();
+        let data = atom_vec.as_slice();
+        self.root.x11_replace_property_long(self.display, X11Atom::NetSupported, xlib::XA_ATOM, data)
     }
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {

@@ -7,3 +7,4 @@ xterm &
 sleep 1
 
 exec ./target/debug/marswm
+# exec moonwm

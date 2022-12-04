@@ -12,8 +12,7 @@ use crate::x11::atoms::*;
 
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
-    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
-                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int);
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window>;
@@ -275,9 +274,8 @@ impl X11Window for X11Client {
         return self.window.x11_attributes(display);
     }
 
-    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
-                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int) {
-        self.frame.x11_change_property(display, property, prop_type, format, mode, data, nelements);
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
+        self.frame.x11_replace_property_long(display, property, prop_type, data);
     }
 
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
@@ -357,11 +355,16 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
-                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int) {
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
         unsafe {
-            let atom = xatom(display, property);
-            xlib::XChangeProperty(display, *self, atom, prop_type, format, mode, data, nelements);
+            xlib::XChangeProperty(display,
+                                  *self,
+                                  xatom(display, property),
+                                  prop_type,
+                                  32,
+                                  xlib::PropModeReplace,
+                                  data.as_ptr().cast::<u8>(),
+                                  data.len() as i32);
         }
     }
 
