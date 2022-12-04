@@ -6,9 +6,15 @@ use std::mem;
 
 use crate::*;
 use crate::x11::*;
+use crate::x11::atoms::*;
+use crate::x11::atoms::X11Atom::*;
 use crate::x11::client::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
+
+const SUPPORTED_ATOMS: &'static [X11Atom; 1] = & [
+    NetSupported,
+];
 
 pub struct X11Backend {
     display: *mut xlib::Display,
@@ -52,7 +58,7 @@ impl X11Backend {
             let screen = xlib::XDefaultScreen(display);
             let root = xlib::XRootWindow(display, screen);
 
-            let x11b = X11Backend {
+            let mut x11b = X11Backend {
                 display,
                 screen,
                 root,
@@ -67,6 +73,9 @@ impl X11Backend {
             xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, &mut attributes);
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
+
+            x11b.set_supported_atoms(SUPPORTED_ATOMS);
+
             return Ok(x11b);
         }
     }
@@ -164,6 +173,14 @@ impl X11Backend {
 
     fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
         self.manage(wm, event.window);
+    }
+
+    fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
+        let nelements = supported_atoms.len().try_into().unwrap();
+        let atoms: Box<[xlib::Atom]> = (*supported_atoms).iter().map(|a| xatom(self.display, *a))
+                                                .collect::<Vec<xlib::Atom>>().into_boxed_slice();
+        let data = Box::into_raw(atoms) as *const [xlib::Atom] as *const c_uchar;
+        self.root.x11_change_property(self.display, X11Atom::NetSupported, xlib::XA_ATOM, 32, xlib::PropModeReplace, data, nelements)
     }
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {

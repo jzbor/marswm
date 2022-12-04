@@ -3,8 +3,6 @@ extern crate x11;
 use x11::xlib;
 use std::mem;
 
-use std::os::raw::c_int;
-use std::os::raw::c_long;
 use std::slice;
 
 use crate::*;
@@ -14,10 +12,12 @@ use crate::x11::atoms::*;
 
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
+    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
+                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window>;
-    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::XAtom, msg_format: c_int, msg_data: xlib::ClientMessageData);
+    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData);
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom>;
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String>;
 }
@@ -98,7 +98,7 @@ impl X11Client {
 
     fn set_state(&self, state: i32) {
         let data = state;
-        let state_atom = atoms::xatom(self.display, XAtom::WMState);
+        let state_atom = atoms::xatom(self.display, X11Atom::WMState);
 
         unsafe {
             xlib::XChangeProperty(self.display, self.window, state_atom, state_atom,
@@ -106,7 +106,7 @@ impl X11Client {
         }
     }
 
-    fn supports_protocol(&self, atom: atoms::XAtom) -> bool {
+    fn supports_protocol(&self, atom: atoms::X11Atom) -> bool {
         let xatom = atoms::xatom(self.display, atom);
         return self.window.x11_wm_protocols(self.display).contains(&xatom);
     }
@@ -135,10 +135,10 @@ impl Client for X11Client {
     }
 
     fn close(&self) {
-        if self.supports_protocol(XAtom::WMDeleteWindow) {
-            let msg_type = XAtom::WMProtocols;
+        if self.supports_protocol(X11Atom::WMDeleteWindow) {
+            let msg_type = X11Atom::WMProtocols;
             let mut msg_data = xlib::ClientMessageData::new();
-            msg_data.set_long(0, atoms::xatom(self.display, XAtom::WMDeleteWindow) as i64);
+            msg_data.set_long(0, atoms::xatom(self.display, X11Atom::WMDeleteWindow) as i64);
             self.x11_message(self.display, msg_type, 32, msg_data);
         } else {
             unsafe {
@@ -275,6 +275,11 @@ impl X11Window for X11Client {
         return self.window.x11_attributes(display);
     }
 
+    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
+                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int) {
+        self.frame.x11_change_property(display, property, prop_type, format, mode, data, nelements);
+    }
+
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
         return self.frame.x11_dimensions(display);
     }
@@ -287,7 +292,7 @@ impl X11Window for X11Client {
         return self.window.x11_is_transient_for(display);
     }
 
-    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::XAtom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
+    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
         return self.window.x11_message(display, msg_type, msg_format, msg_data);
     }
 
@@ -352,6 +357,14 @@ impl X11Window for xlib::Window {
         }
     }
 
+    fn x11_change_property(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong,
+                           format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int) {
+        unsafe {
+            let atom = xatom(display, property);
+            xlib::XChangeProperty(display, *self, atom, prop_type, format, mode, data, nelements);
+        }
+    }
+
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
         return match self.x11_geometry(display) {
             Ok((_root, x, y, w, h, _bw, _depth)) => Ok(Dimensions { x, y, w, h }),
@@ -385,7 +398,7 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::XAtom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
+    fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
         unsafe {
             let msg_type_x11 = atoms::xatom(display, msg_type);
             let msg_event = xlib::XClientMessageEvent {
