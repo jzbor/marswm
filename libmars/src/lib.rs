@@ -7,6 +7,7 @@ pub mod x11;
 
 
 pub trait WindowManager<B: Backend<C>, C: Client> {
+    fn active_client(&self) -> Option<Rc<RefCell<C>>>;
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn clients_mut(&mut self) -> Box<dyn Iterator<Item = &mut Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);

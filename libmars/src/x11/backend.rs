@@ -67,8 +67,8 @@ impl X11Backend {
         }
     }
 
-    fn export_active_window(&self, client_option: Option<Rc<RefCell<X11Client>>>) {
-        let window = match client_option {
+    fn export_active_window(&self, wm: &mut WM) {
+        let window = match wm.active_client() {
             Some(client_rc) => client_rc.borrow().window(),
             None => XLIB_NONE,
         };
@@ -150,7 +150,7 @@ impl X11Backend {
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             wm.handle_focus(self, Some(client_rc.clone()));
-            self.export_active_window(Some(client_rc.clone()));
+            self.export_active_window(wm);
             self.set_input_focus(client_rc);
         }
     }

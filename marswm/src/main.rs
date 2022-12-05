@@ -37,6 +37,10 @@ impl<C: Client> MarsWM<C> {
         };
     }
 
+    fn active_client(&self) -> Option<Rc<RefCell<C>>> {
+        return self.focused_client;
+    }
+
     fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
         println!("Moving client at {:?} to workspace {}", client_rc.borrow().pos(), workspace_idx);
         for ws in &mut self.workspaces {
