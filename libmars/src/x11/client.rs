@@ -21,7 +21,7 @@ pub trait X11Window {
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String>;
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq,Eq)]
 pub struct X11Client {
     display: *mut xlib::Display,
     root: u64,

@@ -11,10 +11,14 @@ use libmars::x11::backend::*;
 
 const MODKEY: u32 = Mod1Mask;
 
-struct MarsWM<C: Client> {
-    focused_client: Option<Rc<RefCell<C>>>,
-    focused_workspace: usize,
-    workspaces: [Workspace<C>; 4],
+trait ClientList<C: Client> {
+    fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
+    fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>);
+
+    fn contains(&self, client_rc: &Rc<RefCell<C>>) -> bool {
+        return self.clients().find(|&c| c == client_rc).is_some();
+    }
 }
 
 struct Workspace<C: Client> {
@@ -23,46 +27,17 @@ struct Workspace<C: Client> {
     clients: Vec<Rc<RefCell<C>>>,
 }
 
-impl<C: Client> MarsWM<C> {
-    fn new() -> MarsWM<C> {
-        return MarsWM {
-            focused_client: None,
-            focused_workspace: 0,
-            workspaces: [
-                Workspace::new(0, "I"),
-                Workspace::new(1, "II"),
-                Workspace::new(2, "III"),
-                Workspace::new(3, "IV"),
-            ],
-        };
-    }
+struct Monitor<C: Client> {
+    config: MonitorConfig,
+    workspaces: [Workspace<C>; 4],
+    cur_workspace: usize,
+}
 
-    fn active_client(&self) -> Option<Rc<RefCell<C>>> {
-        return self.focused_client;
-    }
-
-    fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
-        println!("Moving client at {:?} to workspace {}", client_rc.borrow().pos(), workspace_idx);
-        for ws in &mut self.workspaces {
-            ws.detach_client(client_rc.clone());
-        }
-
-        if workspace_idx != self.focused_workspace {
-            client_rc.borrow_mut().hide();
-        }
-
-        self.workspaces[workspace_idx].attach_client(client_rc);
-    }
-
-    fn switch_workspace(&mut self, workspace_idx: usize) {
-        if workspace_idx == self.focused_workspace {
-            return;
-        }
-
-        self.workspaces[self.focused_workspace].clients_mut().for_each(|c| c.borrow_mut().hide());
-        self.workspaces[workspace_idx].clients_mut().for_each(|c| c.borrow_mut().show());
-        self.focused_workspace = workspace_idx;
-    }
+struct MarsWM<C: Client> {
+    focused_client: Option<Rc<RefCell<C>>>,
+    monitors: Vec<Rc<RefCell<Monitor<C>>>>,
+    clients: Vec<Rc<RefCell<C>>>,
+    cur_monitor: Rc<RefCell<Monitor<C>>>,
 }
 
 impl<C: Client> Workspace<C> {
@@ -72,37 +47,78 @@ impl<C: Client> Workspace<C> {
             clients: Vec::new(),
         };
     }
+}
 
-    fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        self.clients.push(client_rc);
+impl<C: Client> Monitor<C> {
+    fn new(config: MonitorConfig) -> Monitor<C> {
+        let workspaces = [
+            Workspace::new(0, "I"),
+            Workspace::new(1, "II"),
+            Workspace::new(2, "III"),
+            Workspace::new(3, "IV"),
+        ];
+
+        return Monitor {
+            config,
+            workspaces,
+            cur_workspace: 0,
+        };
     }
 
-    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.clients.iter());
-    }
-
-    fn clients_mut(&mut self) -> Box<dyn Iterator<Item = &mut Rc<RefCell<C>>> + '_> {
-        return Box::new(self.clients.iter_mut());
-    }
-
-    fn detach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        let mut index_option = None;
-        if let Some(index) = self.clients().position(|c| c == &client_rc) {
-            index_option = Some(index);
+    fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
+        println!("Moving client at {:?} to workspace {}", client_rc.borrow().pos(), workspace_idx);
+        for ws in &mut self.workspaces {
+            ws.detach_client(&client_rc);
         }
-        if let Some(index) = index_option {
-            self.clients.remove(index);
+
+        if workspace_idx != self.cur_workspace {
+            client_rc.borrow_mut().hide();
         }
+
+        self.workspaces[workspace_idx].attach_client(client_rc);
+    }
+
+    fn switch_workspace(&mut self, workspace_idx: usize) {
+        if workspace_idx == self.cur_workspace {
+            return;
+        }
+
+        self.workspaces[self.cur_workspace].clients().for_each(|c| c.borrow_mut().hide());
+        self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
+        self.cur_workspace = workspace_idx;
+    }
+}
+
+impl<C: Client> MarsWM<C> {
+    fn new<B: Backend<C>>(backend: &mut B) -> MarsWM<C> {
+        let monitors: Vec<Rc<RefCell<Monitor<C>>>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc))
+            .map(|mon| Rc::new(RefCell::new(mon))).collect();
+        let cur_monitor = monitors.get(0).unwrap().clone();
+        return MarsWM {
+            focused_client: None,
+            clients: Vec::new(),
+            monitors,
+            cur_monitor,
+        };
+    }
+
+    fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
+        let mon = self.monitors.iter().find(|m| m.borrow().contains(&client_rc)).unwrap();
+        mon.borrow_mut().move_to_workspace(client_rc, workspace_idx);
+    }
+
+    fn switch_workspace(&mut self, workspace_idx: usize) {
+        self.cur_monitor.borrow_mut().switch_workspace(workspace_idx);
     }
 }
 
 impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
-    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.workspaces.iter().map(|ws| ws.clients()).flatten());
+    fn active_client(&self) -> Option<Rc<RefCell<C>>> {
+        return self.focused_client.clone();
     }
 
-    fn clients_mut(&mut self) -> Box<dyn Iterator<Item = &mut Rc<RefCell<C>>> + '_> {
-        return Box::new(self.workspaces.iter_mut().map(|ws| ws.clients_mut()).flatten());
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        return Box::new(self.clients.iter());
     }
 
     fn handle_button(&mut self, backend: &mut B, _modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
@@ -173,7 +189,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn manage(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        self.workspaces[self.focused_workspace].attach_client(client_rc.clone());
+        self.clients.push(client_rc.clone());
+        self.cur_monitor.borrow_mut().attach_client(client_rc.clone());
+
         let mut client = (*client_rc).borrow_mut();
         client.show();
         client.raise();
@@ -204,9 +222,18 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn unmanage(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        // remove client from data structure
-        for ws in &mut self.workspaces {
-            ws.detach_client(client_rc.clone())
+        // remove from clients list
+        let mut index_option = None;
+        if let Some(index) = self.clients.iter().position(|c| c == &client_rc) {
+            index_option = Some(index);
+        }
+        if let Some(index) = index_option {
+            self.clients.remove(index);
+        }
+
+        // remove from monitor data structure
+        for mon in &mut self.monitors {
+            mon.borrow_mut().detach_client(&client_rc)
         }
 
         // unset client as currently focused
@@ -216,9 +243,45 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 }
 
+impl<C: Client> ClientList<C> for Workspace<C> {
+    fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
+        self.clients.push(client_rc);
+    }
+
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        return Box::new(self.clients.iter());
+    }
+
+    fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
+        let mut index_option = None;
+        if let Some(index) = self.clients().position(|c| c == client_rc) {
+            index_option = Some(index);
+        }
+        if let Some(index) = index_option {
+            self.clients.remove(index);
+        }
+    }
+}
+
+impl<C: Client> ClientList<C> for Monitor<C> {
+    fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
+        self.workspaces[self.cur_workspace].attach_client(client_rc);
+    }
+
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        return Box::new(self.workspaces.iter().map(|ws| ws.clients()).flatten());
+    }
+
+    fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
+        for ws in &mut self.workspaces {
+            ws.detach_client(client_rc);
+        }
+    }
+}
+
 fn main() {
-    let mut wm = MarsWM::new();
     let mut backend = X11Backend::init().unwrap();
+    let mut wm = MarsWM::new(&mut backend);
     backend.handle_existing_windows(&mut wm);
     backend.run(&mut wm);
 }

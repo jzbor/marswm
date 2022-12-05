@@ -20,7 +20,7 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 3] = & [
 
 pub struct X11Backend {
     display: *mut xlib::Display,
-    screen: i32,
+    screen: *mut xlib::Screen,
     root: u64,
 }
 
@@ -42,8 +42,8 @@ impl X11Backend {
     /// Register window manager and create backend from existing connection.
     pub fn init_with_connection(display: *mut xlib::Display) -> Result<X11Backend, String> {
         unsafe {
-            let screen = xlib::XDefaultScreen(display);
-            let root = xlib::XRootWindow(display, screen);
+            let screen = xlib::XDefaultScreenOfDisplay(display);
+            let root = xlib::XDefaultRootWindow(display);
 
             let mut x11b = X11Backend {
                 display,
@@ -173,7 +173,7 @@ impl X11Backend {
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
         let root = self.root;
-        let client_rc = match wm.clients_mut().find(|c| c.borrow().window() == event.window) {
+        let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
             Some(client_rc) => client_rc.clone(),
             None => return,
         };
@@ -208,6 +208,16 @@ impl X11Backend {
 }
 
 impl Backend<X11Client> for X11Backend {
+    fn get_monitor_config(&self) -> Vec<MonitorConfig> {
+        let w = unsafe { xlib::XWidthOfScreen(self.screen).try_into().unwrap() };
+        let h = unsafe { xlib::XHeightOfScreen(self.screen).try_into().unwrap() };
+        let dims = Dimensions { x: 0, y: 0, w, h };
+
+        return vec!(
+            MonitorConfig { num: 0, dims, win_area: dims }
+        );
+    }
+
     fn handle_existing_windows(&mut self, wm: &mut WM) {
         unsafe {
             xlib::XGrabServer(self.display);

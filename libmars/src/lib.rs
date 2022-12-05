@@ -9,7 +9,6 @@ pub mod x11;
 pub trait WindowManager<B: Backend<C>, C: Client> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>>;
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
-    fn clients_mut(&mut self) -> Box<dyn Iterator<Item = &mut Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
     fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
@@ -18,7 +17,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
 }
 
-pub trait Client: PartialEq + Dimensioned{
+pub trait Client: Eq + Dimensioned{
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
     fn close(&self);
@@ -36,8 +35,8 @@ pub trait Client: PartialEq + Dimensioned{
 }
 
 pub trait Backend<C: Client> {
-    /// Run window manager event loop
-    fn run(self, wm: &mut (dyn WindowManager<Self, C>));
+    /// Get monitor configuration
+    fn get_monitor_config(&self) -> Vec<MonitorConfig>;
 
     /// Handle windows existing before initialization
     fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, C>);
@@ -50,6 +49,9 @@ pub trait Backend<C: Client> {
 
     /// Get position of pointer on screen
     fn pointer_pos(&self) -> (i32, i32);
+
+    /// Run window manager event loop
+    fn run(self, wm: &mut (dyn WindowManager<Self, C>));
 
     /// Set client that receives mouse and keyboard inputs
     fn set_input_focus(&self, client_rc: Rc<RefCell<C>>);
@@ -102,6 +104,13 @@ pub struct Dimensions {
     y: i32,
     w: u32,
     h: u32,
+}
+
+#[derive(Copy,Clone)]
+pub struct MonitorConfig {
+    num: u32,
+    dims: Dimensions,
+    win_area: Dimensions,
 }
 
 impl Dimensions {
