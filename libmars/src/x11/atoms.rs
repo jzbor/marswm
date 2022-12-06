@@ -17,6 +17,16 @@ pub enum X11Atom {
     NetSupported,
 }
 
+const ATOMS: &'static [X11Atom; 6] = & [
+    X11Atom::WMDeleteWindow,
+    X11Atom::WMProtocols,
+    X11Atom::WMState,
+
+    X11Atom::NetActiveWindow,
+    X11Atom::NetClientList,
+    X11Atom::NetSupported,
+];
+
 impl Display for X11Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
@@ -33,11 +43,28 @@ impl Display for X11Atom {
 }
 
 impl X11Atom {
+    pub fn from_xlib_atom(display: *mut xlib::Display, atom: xlib::Atom) -> Option<X11Atom> {
+        let name = unsafe {
+            let raw_string = xlib::XGetAtomName(display, atom);
+            CString::from_raw(raw_string).into_string().unwrap()
+        };
+        for atom in ATOMS {
+            if atom.to_string() == name {
+                return Some(*atom);
+            }
+        }
+        return None;
+    }
+
     pub fn to_xlib_atom(&self, display: *mut xlib::Display) -> xlib::Atom {
         let atom_name = CString::new(self.to_string()).unwrap().into_raw();
         unsafe {
             return xlib::XInternAtom(display, atom_name, xlib::False);
         }
+    }
+
+    pub fn matches_xlib_atom(&self, display: *mut xlib::Display, atom: xlib::Atom) -> bool {
+        return self.to_xlib_atom(display) == atom;
     }
 }
 

@@ -129,6 +129,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         return self.focused_client.clone();
     }
 
+    fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        let monitor = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
+        let workspace_idx = monitor.workspaces.iter().enumerate()
+            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
+        monitor.switch_workspace(workspace_idx);
+        self.handle_focus(backend, Some(client_rc));
+    }
+
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return Box::new(self.clients.iter());
     }

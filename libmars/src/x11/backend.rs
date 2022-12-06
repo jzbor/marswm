@@ -87,6 +87,7 @@ impl X11Backend {
         unsafe {  // unsafe because of access to union field
             match event.get_type() {
                 xlib::ButtonPress => self.on_button_press(wm, event.button),
+                xlib::ClientMessage => self.on_client_message(wm, event.client_message),
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
@@ -147,6 +148,20 @@ impl X11Backend {
         wm.handle_button(self, modifiers, event.button, client);
     }
 
+    fn on_client_message(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XClientMessageEvent) {
+        if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
+            match atom {
+                NetActiveWindow => {
+                    let client_option = Self::client_by_window(wm, event.window);
+                    if let Some(client_rc) = client_option {
+                        wm.activate_client(self, client_rc);
+                    }
+                },
+                _ => println!("Other client message"),
+            }
+        }
+    }
+
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             wm.handle_focus(self, Some(client_rc.clone()));
@@ -204,6 +219,10 @@ impl X11Backend {
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
+    }
+
+    fn client_by_window<'a>(wm: &'a WM, window: u64) -> Option<Rc<RefCell<X11Client>>> {
+        return wm.clients().find(|c| c.borrow().window() == window).cloned();
     }
 }
 
