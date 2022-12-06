@@ -71,23 +71,6 @@ impl X11Backend {
         }
     }
 
-    fn export_active_window(&self, wm: &mut WM) {
-        let window = match wm.active_client() {
-            Some(client_rc) => client_rc.borrow().window(),
-            None => XLIB_NONE,
-        };
-        let data = &[window];
-        self.root.x11_replace_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW, data);
-    }
-
-    fn export_client_list(&self, wm: &mut WM) {
-        // TODO ensure correct sorting as defined by EWMH
-        let data_vec: Vec<u64> = wm.clients().map(|c| c.borrow().window()).collect();
-        let data = data_vec.as_slice();
-        self.root.x11_replace_property_long(self.display, X11Atom::NetClientList, xlib::XA_WINDOW, data);
-        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking, xlib::XA_WINDOW, data);
-    }
-
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             match event.get_type() {
@@ -96,6 +79,8 @@ impl X11Backend {
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
+                xlib::FocusIn => self.on_focus_in(wm, event.focus_change),
+                xlib::FocusOut => self.on_focus_out(wm, event.focus_change),
                 xlib::MapRequest => self.on_map_request(wm, event.map_request),
                 xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
                 _ => (),
@@ -144,7 +129,6 @@ impl X11Backend {
         let boxed_client = Rc::new(RefCell::new(client));
 
         wm.manage(self, boxed_client);
-        self.export_client_list(wm);
     }
 
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XButtonEvent) {
@@ -172,10 +156,39 @@ impl X11Backend {
     }
 
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     println!("EnterNotify on frame for client {}", client_rc.borrow().window());
+        // }
+        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+        //     println!("EnterNotify on window for client {}", client_rc.borrow().window());
+        // }
+        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            // wm.handle_focus(self, Some(client_rc.clone()));
+            self.set_input_focus(client_rc);
+        }
+    }
+
+    fn on_focus_in(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XFocusChangeEvent) {
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     println!("FocusIn on frame for client {}", client_rc.borrow().window());
+        // }
+        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+        //     println!("FocusIn on window for client {}", client_rc.borrow().window());
+        // }
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             wm.handle_focus(self, Some(client_rc.clone()));
-            self.export_active_window(wm);
-            self.set_input_focus(client_rc);
+        }
+    }
+
+    fn on_focus_out(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XFocusChangeEvent) {
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     println!("FocusOut on frame for client {}", client_rc.borrow().window());
+        // }
+        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+        //     println!("FocusOut on window for client {}", client_rc.borrow().window());
+        // }
+        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            wm.handle_unfocus(self, client_rc.clone());
         }
     }
 
@@ -193,6 +206,15 @@ impl X11Backend {
     fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
         // let client_option = Self::client_by_frame(wm, event.window);
         // println!("LeaveNotify for client {}", event.window);
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
+        // }
+        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+        //     println!("LeaveNotify on window for client {}", client_rc.borrow().window());
+        // }
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     wm.handle_unfocus(self, client_rc.clone());
+        // }
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
@@ -210,7 +232,6 @@ impl X11Backend {
 
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());
-        self.export_client_list(wm);
 
         // remove client frame
         client_rc.borrow().destroy_frame();
@@ -236,6 +257,23 @@ impl X11Backend {
 }
 
 impl Backend<X11Client> for X11Backend {
+    fn export_active_window(&self, client_option: &Option<Rc<RefCell<X11Client>>>) {
+        let window = match client_option {
+            Some(client_rc) => client_rc.borrow().window(),
+            None => XLIB_NONE,
+        };
+        let data = &[window];
+        self.root.x11_replace_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW, data);
+    }
+
+    fn export_client_list(&self, clients: &Vec<Rc<RefCell<X11Client>>>) {
+        // TODO ensure correct sorting as defined by EWMH
+        let data_vec: Vec<u64> = clients.iter().map(|c| c.borrow().window()).collect();
+        let data = data_vec.as_slice();
+        self.root.x11_replace_property_long(self.display, X11Atom::NetClientList, xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking, xlib::XA_WINDOW, data);
+    }
+
     fn export_current_workspace(&self, workspace_idx: usize) {
         let idx: u64 = workspace_idx.try_into().unwrap();
         let data = &[idx];

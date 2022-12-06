@@ -12,9 +12,11 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
     fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
+    fn handle_unfocus(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize);
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
 }
@@ -37,6 +39,12 @@ pub trait Client: Eq + Dimensioned{
 }
 
 pub trait Backend<C: Client> {
+    /// Make active window information available to clients
+    fn export_active_window(&self, client_option: &Option<Rc<RefCell<C>>>);
+
+    /// Make client list information available to clients
+    fn export_client_list(&self, clients: &Vec<Rc<RefCell<C>>>);
+
     /// Make currently active workspace available to clients
     fn export_current_workspace(&self, workspace_idx: usize);
 
@@ -106,7 +114,7 @@ pub trait Dimensioned {
     fn dimensions(&self) -> Dimensions;
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,PartialEq,Eq)]
 pub struct Dimensions {
     x: i32,
     y: i32,
@@ -114,7 +122,7 @@ pub struct Dimensions {
     h: u32,
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,PartialEq)]
 pub struct MonitorConfig {
     num: u32,
     dims: Dimensions,
