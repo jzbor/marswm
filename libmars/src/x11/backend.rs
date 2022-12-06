@@ -12,9 +12,10 @@ use crate::x11::client::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 6] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 7] = & [
     NetActiveWindow,
     NetClientList,
+    NetClientListStacking,
     NetCurrentDesktop,
     NetDesktopNames,
     NetNumberOfDesktops,
@@ -84,6 +85,7 @@ impl X11Backend {
         let data_vec: Vec<u64> = wm.clients().map(|c| c.borrow().window()).collect();
         let data = data_vec.as_slice();
         self.root.x11_replace_property_long(self.display, X11Atom::NetClientList, xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking, xlib::XA_WINDOW, data);
     }
 
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
