@@ -35,9 +35,8 @@ struct Monitor<C: Client> {
 
 struct MarsWM<C: Client> {
     focused_client: Option<Rc<RefCell<C>>>,
-    monitors: Vec<Rc<RefCell<Monitor<C>>>>,
+    monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
-    cur_monitor: Rc<RefCell<Monitor<C>>>,
 }
 
 impl<C: Client> Workspace<C> {
@@ -91,24 +90,37 @@ impl<C: Client> Monitor<C> {
 
 impl<C: Client> MarsWM<C> {
     fn new<B: Backend<C>>(backend: &mut B) -> MarsWM<C> {
-        let monitors: Vec<Rc<RefCell<Monitor<C>>>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc))
-            .map(|mon| Rc::new(RefCell::new(mon))).collect();
+        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc)).collect();
         let cur_monitor = monitors.get(0).unwrap().clone();
         return MarsWM {
             focused_client: None,
             clients: Vec::new(),
             monitors,
-            cur_monitor,
         };
     }
 
+    fn current_monitor(&self) -> &Monitor<C> {
+        return match &self.focused_client {
+            Some(c) => self.monitors.iter().find(|mon| mon.contains(&c)),
+            None => self.monitors.get(0),
+        }.unwrap();
+    }
+
+    fn current_monitor_mut(&mut self) -> &mut Monitor<C> {
+        return match &self.focused_client {
+            Some(c) => self.monitors.iter_mut().find(|mon| mon.contains(&c)),
+            None => self.monitors.get_mut(0),
+        }.unwrap();
+    }
+
+
     fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
-        let mon = self.monitors.iter().find(|m| m.borrow().contains(&client_rc)).unwrap();
-        mon.borrow_mut().move_to_workspace(client_rc, workspace_idx);
+        let mon = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
+        mon.move_to_workspace(client_rc, workspace_idx);
     }
 
     fn switch_workspace(&mut self, workspace_idx: usize) {
-        self.cur_monitor.borrow_mut().switch_workspace(workspace_idx);
+        self.current_monitor_mut().switch_workspace(workspace_idx);
     }
 }
 
@@ -190,7 +202,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn manage(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
         self.clients.push(client_rc.clone());
-        self.cur_monitor.borrow_mut().attach_client(client_rc.clone());
+        self.current_monitor_mut().attach_client(client_rc.clone());
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
@@ -233,7 +245,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         // remove from monitor data structure
         for mon in &mut self.monitors {
-            mon.borrow_mut().detach_client(&client_rc)
+            mon.detach_client(&client_rc)
         }
 
         // unset client as currently focused
