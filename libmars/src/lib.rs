@@ -15,6 +15,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
 }
 
@@ -36,6 +37,12 @@ pub trait Client: Eq + Dimensioned{
 }
 
 pub trait Backend<C: Client> {
+    /// Make currently active workspace available to clients
+    fn export_current_workspace(&self, workspace_idx: usize);
+
+    /// Make information about workspaces available to clients
+    fn export_workspaces(&self, workspaces: Vec<String>);
+
     /// Get monitor configuration
     fn get_monitor_config(&self) -> Vec<MonitorConfig>;
 

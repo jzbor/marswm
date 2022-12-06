@@ -12,9 +12,12 @@ use crate::x11::client::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 3] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 6] = & [
     NetActiveWindow,
     NetClientList,
+    NetCurrentDesktop,
+    NetDesktopNames,
+    NetNumberOfDesktops,
     NetSupported,
 ];
 
@@ -73,7 +76,7 @@ impl X11Backend {
             None => XLIB_NONE,
         };
         let data = &[window];
-        self.root.x11_replace_property_long(self.display, X11Atom::NetActiveWindow, xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW, data);
     }
 
     fn export_client_list(&self, wm: &mut WM) {
@@ -157,6 +160,10 @@ impl X11Backend {
                         wm.activate_client(self, client_rc);
                     }
                 },
+                NetCurrentDesktop => {
+                    let workspace = event.data.get_long(0).try_into().unwrap();
+                    wm.switch_workspace(self, workspace);
+                }
                 _ => println!("Other client message"),
             }
         }
@@ -227,6 +234,24 @@ impl X11Backend {
 }
 
 impl Backend<X11Client> for X11Backend {
+    fn export_current_workspace(&self, workspace_idx: usize) {
+        let idx: u64 = workspace_idx.try_into().unwrap();
+        let data = &[idx];
+        self.root.x11_replace_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL, data);
+    }
+
+    fn export_workspaces(&self, workspaces: Vec<String>) {
+        // export number of workspaces
+        let nworkspaces: u64 = workspaces.len().try_into().unwrap();
+        let data = &[nworkspaces];
+        self.root.x11_replace_property_long(self.display, NetNumberOfDesktops, xlib::XA_CARDINAL, data);
+
+        // export workspace names
+        let cstrings: Vec<CString> = workspaces.iter().map(|s| CString::new(s.as_str()).unwrap()).collect();
+        self.root.x11_set_text_list_property(self.display, NetDesktopNames, cstrings);
+
+    }
+
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
         let w = unsafe { xlib::XWidthOfScreen(self.screen).try_into().unwrap() };
         let h = unsafe { xlib::XHeightOfScreen(self.screen).try_into().unwrap() };

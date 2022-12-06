@@ -13,6 +13,7 @@ use crate::x11::atoms::*;
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window>;
@@ -275,7 +276,11 @@ impl X11Window for X11Client {
     }
 
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
-        self.frame.x11_replace_property_long(display, property, prop_type, data);
+        self.window.x11_replace_property_long(display, property, prop_type, data);
+    }
+
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>) {
+        self.window.x11_set_text_list_property(display, property, list);
     }
 
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
@@ -368,6 +373,17 @@ impl X11Window for xlib::Window {
         }
     }
 
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>) {
+        let mut pointers: Vec<*mut i8> = list.iter().map(|cstr| cstr.clone().into_raw()).collect();
+        let slice = &mut pointers;
+        unsafe {
+            let mut text: xlib::XTextProperty = mem::MaybeUninit::uninit().assume_init();
+            let size = slice.len().try_into().unwrap();
+            xlib::Xutf8TextListToTextProperty(display, slice.as_mut_ptr(), size, xlib::XUTF8StringStyle, &mut text);
+            xlib::XSetTextProperty(display, *self, &mut text, property.to_xlib_atom(display));
+        }
+    }
+
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
         return match self.x11_geometry(display) {
             Ok((_root, x, y, w, h, _bw, _depth)) => Ok(Dimensions { x, y, w, h }),
@@ -408,7 +424,7 @@ impl X11Window for xlib::Window {
                 type_: xlib::ClientMessage,
                 serial: 0,
                 send_event: xlib::False,
-                display: display,
+                display,
                 window: *self,
                 message_type: msg_type_x11,
                 format: msg_format,

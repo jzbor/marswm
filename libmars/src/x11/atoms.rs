@@ -14,16 +14,22 @@ pub enum X11Atom {
 
     NetActiveWindow,
     NetClientList,
+    NetCurrentDesktop,
+    NetDesktopNames,
+    NetNumberOfDesktops,
     NetSupported,
 }
 
-const ATOMS: &'static [X11Atom; 6] = & [
+const ATOMS: &'static [X11Atom; 9] = & [
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
     X11Atom::WMState,
 
     X11Atom::NetActiveWindow,
     X11Atom::NetClientList,
+    X11Atom::NetCurrentDesktop,
+    X11Atom::NetDesktopNames,
+    X11Atom::NetNumberOfDesktops,
     X11Atom::NetSupported,
 ];
 
@@ -36,6 +42,9 @@ impl Display for X11Atom {
 
             X11Atom::NetActiveWindow => "_NET_ACTIVE_WINDOW",
             X11Atom::NetClientList => "_NET_CLIENT_LIST",
+            X11Atom::NetCurrentDesktop => "_NET_CURRENT_DESKTOP",
+            X11Atom::NetDesktopNames => "_NET_DESKTOP_NAMES",
+            X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
             X11Atom::NetSupported => "_NET_SUPPORTED",
         };
         return write!(f, "{}", string);

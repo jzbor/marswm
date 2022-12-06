@@ -77,7 +77,7 @@ impl<C: Client> Monitor<C> {
         self.workspaces[workspace_idx].attach_client(client_rc);
     }
 
-    fn switch_workspace(&mut self, workspace_idx: usize) {
+    fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
         }
@@ -118,10 +118,6 @@ impl<C: Client> MarsWM<C> {
         let mon = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
         mon.move_to_workspace(client_rc, workspace_idx);
     }
-
-    fn switch_workspace(&mut self, workspace_idx: usize) {
-        self.current_monitor_mut().switch_workspace(workspace_idx);
-    }
 }
 
 impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
@@ -133,7 +129,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         let monitor = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
         let workspace_idx = monitor.workspaces.iter().enumerate()
             .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
-        monitor.switch_workspace(workspace_idx);
+        monitor.switch_workspace(backend, workspace_idx);
         self.handle_focus(backend, Some(client_rc));
     }
 
@@ -175,7 +171,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn handle_key(&mut self, _backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
+    fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client_rc) = client_option {
             if modifiers == MODKEY {
                 match key {
@@ -195,16 +191,20 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         if modifiers == MODKEY {
             match key {
-                XK_F1 => self.switch_workspace(0),
-                XK_F2 => self.switch_workspace(1),
-                XK_F3 => self.switch_workspace(2),
-                XK_F4 => self.switch_workspace(3),
+                XK_F1 => self.switch_workspace(backend, 0),
+                XK_F2 => self.switch_workspace(backend, 1),
+                XK_F3 => self.switch_workspace(backend, 2),
+                XK_F4 => self.switch_workspace(backend, 3),
                 _ => println!("unknown key action"),
             }
         }
     }
 
     fn init(&mut self, backend: &mut B) {
+        let ws_names = self.current_monitor().workspaces.iter().map(|ws| ws.name.to_owned()).collect();
+        backend.export_workspaces(ws_names);
+        backend.export_current_workspace(0);
+
         backend.handle_existing_windows(self);
     }
 
@@ -239,6 +239,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.bind_key(MODKEY | ShiftMask, XK_F4);
         client.bind_key(MODKEY | ShiftMask, XK_F4);
         client.bind_key(MODKEY, XK_Delete);
+    }
+
+    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
+        self.current_monitor_mut().switch_workspace(backend, workspace_idx);
+        backend.export_current_workspace(workspace_idx);
     }
 
     fn unmanage(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -302,6 +307,6 @@ impl<C: Client> ClientList<C> for Monitor<C> {
 fn main() {
     let mut backend = X11Backend::init().unwrap();
     let mut wm = MarsWM::new(&mut backend);
-    backend.handle_existing_windows(&mut wm);
+    wm.init(&mut backend);
     backend.run(&mut wm);
 }
