@@ -4,6 +4,7 @@ use x11::xlib;
 use std::mem;
 use std::slice;
 use std::ptr;
+use std::cmp;
 
 use crate::*;
 use crate::x11::*;
@@ -49,6 +50,7 @@ impl X11Client {
         let w: u32 = attributes.width.try_into().unwrap();
         let h: u32 = attributes.height.try_into().unwrap();
 
+
         // create frame window and reparent the original window
         let frame = unsafe {
             let frame = xlib:: XCreateSimpleWindow(display, root, x, y, w, h, 0, 0, 0);
@@ -73,6 +75,90 @@ impl X11Client {
             actively_reparenting: false,
             visible: false,
         };
+    }
+
+    pub fn apply_size_hints(&mut self) {
+        // the handling of normal hints is *very* heavily inspired by dwm
+        if let Ok((hints, _supplied)) = self.window.x11_wm_normal_hints(self.display) {
+            let mut basew: u32 = 0;
+            let mut baseh: u32 = 0;
+            let mut incw: u32 = 0;
+            let mut inch: u32 = 0;
+            let mut minw: u32 = 0;
+            let mut minh: u32 = 0;
+            let mut maxw: u32 = 0;
+            let mut maxh: u32 = 0;
+            let mut mina = 0.0;
+            let mut maxa = 0.0;
+
+            // read hints
+            if hints.flags & xlib::PSize != 0 {
+                self.w = hints.width.try_into().unwrap();
+                self.h = hints.width.try_into().unwrap();
+            }
+            if hints.flags & xlib::PBaseSize != 0 {
+                basew = hints.base_width.try_into().unwrap();
+                baseh = hints.base_height.try_into().unwrap();
+            } else if hints.flags & xlib::PMinSize != 0 {
+                basew = hints.min_width.try_into().unwrap();
+                baseh = hints.min_height.try_into().unwrap();
+            }
+
+            if hints.flags & xlib::PResizeInc != 0 {
+                incw = hints.width_inc.try_into().unwrap();
+                inch = hints.height_inc.try_into().unwrap();
+            }
+
+            if hints.flags & xlib::PMaxSize != 0 {
+                maxw = hints.max_width.try_into().unwrap();
+                maxh = hints.max_height.try_into().unwrap();
+            }
+
+            if hints.flags & xlib::PMinSize != 0 {
+                minw = hints.min_width.try_into().unwrap();
+                minh = hints.min_height.try_into().unwrap();
+            }
+
+            if hints.flags & xlib::PAspect != 0 {
+                mina = hints.min_aspect.y as f32 / hints.min_aspect.x as f32;
+                maxa = hints.max_aspect.x as f32 / hints.max_aspect.y as f32;
+            }
+
+            // apply hints
+            if basew >= minw && baseh > minh {
+                self.w = basew;
+                self.h = baseh;
+            }
+
+            // adjust for aspect limits
+            if mina > 0.0 && maxa > 0.0 {
+                if maxa < self.w as f32 / self.h as f32 {
+                    self.w = (self.h as f32 * maxa + 0.5) as u32;
+                } else if mina < self.h as f32 / self.w as f32 {
+                    self.h = (self.w as f32 * mina + 0.5) as u32;
+                }
+            }
+            if basew >= minw && baseh > minh { // required for increment calculation
+                self.w -= basew;
+                self.h -= baseh;
+            }
+            // adjust for increment value
+            if incw != 0 {
+                self.w -= self.w % incw;
+            }
+            if inch != 0 {
+                self.h -= self.h % inch;
+            }
+            // restore base dimensions
+            self.w = cmp::max(self.w + basew, minw);
+            self.h = cmp::max(self.h + baseh, minh);
+            if maxw != 0 {
+                self.w = cmp::min(self.w, maxw);
+            }
+            if maxh != 0 {
+                self.h = cmp::min(self.h, maxh);
+            }
+        }
     }
 
     pub fn destroy_frame(&self) {

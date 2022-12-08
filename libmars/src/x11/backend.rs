@@ -114,21 +114,6 @@ impl X11Backend {
             return;
         }
 
-        // set preferred dimensions to initial geometry dimensions
-        let mut preferred_dims = match window.x11_dimensions(self.display) {
-            Ok(dims) => dims,
-            Err(_) => return,
-        };
-
-        // primitive way of accepting normal hints for preferred dimensions
-        if let Ok((hints, _supplied)) = window.x11_wm_normal_hints(self.display) {
-            // @TODO check supplied field first
-            preferred_dims.x = hints.x;
-            preferred_dims.y = hints.y;
-            preferred_dims.w = hints.width as u32;
-            preferred_dims.h = hints.height as u32;
-        }
-
         // TODO
         // let transient_for = match window.is_transient_for(self.display) {
         //     Some(other_window) => match self.client(other_window) {
@@ -138,9 +123,10 @@ impl X11Backend {
         //     None => None,
         // };
 
-        let client = X11Client::new(self.display, self.root, window);
-        let boxed_client = Rc::new(RefCell::new(client));
+        let mut client = X11Client::new(self.display, self.root, window);
+        client.apply_size_hints();
 
+        let boxed_client = Rc::new(RefCell::new(client));
         wm.manage(self, boxed_client);
     }
 
