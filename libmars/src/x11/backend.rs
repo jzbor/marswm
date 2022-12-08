@@ -130,6 +130,67 @@ impl X11Backend {
         wm.manage(self, boxed_client);
     }
 
+    fn mouse_action(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>,
+                    client_rc: Rc<RefCell<X11Client>>, cursor_type: u32,
+                    action: fn(&mut Self, &Rc<RefCell<X11Client>>, (i32, i32), (u32, u32), (i32, i32))) {
+        unsafe {
+            // grab pointer
+            let cursor = xlib::XCreateFontCursor(self.display, cursor_type);
+            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK.try_into().unwrap(),
+                    xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
+            if success != xlib::GrabSuccess {
+                xlib::XFreeCursor(self.display, cursor);
+                return;
+            }
+
+            let orig_client_pos = client_rc.borrow().pos();
+            let orig_client_size = client_rc.borrow().size();
+            let orig_pointer_pos = self.pointer_pos();
+            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
+
+            loop {
+                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
+
+                if event.get_type() == xlib::MotionNotify {
+                    // @TODO add max framerate (see moonwm)
+                    // cast event to XMotionEvent
+                    let event = event.motion;
+                    let delta = (event.x_root - orig_pointer_pos.0,
+                                 event.y_root - orig_pointer_pos.1);
+
+                    action(self, &client_rc, orig_client_pos, orig_client_size, delta);
+                } else if event.get_type() == xlib::ButtonRelease {
+                    break;
+                } else {
+                    self.handle_xevent(wm, event);
+                }
+            }
+
+            // Ungrab pointer and clean up
+            xlib::XUngrabPointer(self.display, xlib::CurrentTime);
+            xlib::XFreeCursor(self.display, cursor);
+        }
+    }
+
+    fn mouse_action_move(&mut self, client_rc: &Rc<RefCell<X11Client>>, orig_client_pos: (i32, i32),
+                         _orig_client_size: (u32, u32), delta: (i32, i32)) {
+        let dest_x = orig_client_pos.0 + delta.0;
+        let dest_y = orig_client_pos.1 + delta.1;
+        let size = client_rc.borrow().size();
+        client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
+    }
+
+    fn mouse_action_resize(&mut self, client_rc: &Rc<RefCell<X11Client>>, _orig_client_pos: (i32, i32),
+                         orig_client_size: (u32, u32), delta: (i32, i32)) {
+        let dest_w = orig_client_size.0 as i32 + delta.0;
+        let dest_h = orig_client_size.1 as i32 + delta.1;
+        let pos = client_rc.borrow().pos();
+        let dest_w: u32 = if dest_w < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_w.try_into().unwrap() };
+        let dest_h: u32 = if dest_h < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_h.try_into().unwrap() };
+        client_rc.borrow_mut().move_resize(pos.0, pos.1, dest_w, dest_h);
+    }
+
+
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XButtonEvent) {
         let modifiers = sanitize_modifiers(event.state);
         let client = Self::client_by_frame(wm, event.window);
@@ -325,87 +386,12 @@ impl Backend<X11Client> for X11Backend {
         }
     }
 
-    fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, button: u32) {
-        unsafe {
-            // grab pointer
-            let cursor = xlib::XCreateFontCursor(self.display, CURSOR_MOVE);
-            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK.try_into().unwrap(),
-                    xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
-            if success != xlib::GrabSuccess {
-                xlib::XFreeCursor(self.display, cursor);
-                return;
-            }
-
-            let orig_client_pos = client_rc.borrow().pos();
-            let orig_pointer_pos = self.pointer_pos();
-            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
-
-            loop {
-                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
-
-                if event.get_type() == xlib::MotionNotify {
-                    // cast event to XMotionEvent
-                    let event = event.motion;
-
-                    // @TODO add max framerate (see moonwm)
-                    let dest_x = orig_client_pos.0 + (event.x_root - orig_pointer_pos.0);
-                    let dest_y = orig_client_pos.1 + (event.y_root - orig_pointer_pos.1);
-                    let size = client_rc.borrow().size();
-                    client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
-                } else if event.get_type() == xlib::ButtonRelease {
-                    break;
-                } else {
-                    self.handle_xevent(wm, event);
-                }
-            }
-
-            // Ungrab pointer and clean up
-            xlib::XUngrabPointer(self.display, xlib::CurrentTime);
-            xlib::XFreeCursor(self.display, cursor);
-        }
+    fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+        self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_move);
     }
 
-    fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, button: u32) {
-        unsafe {
-            // grab pointer
-            let cursor = xlib::XCreateFontCursor(self.display, CURSOR_RESIZE);
-            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK.try_into().unwrap(),
-                    xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
-            if success != xlib::GrabSuccess {
-                xlib::XFreeCursor(self.display, cursor);
-                return;
-            }
-
-            let orig_client_size = client_rc.borrow().size();
-            let orig_pointer_pos = self.pointer_pos();
-            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
-
-            loop {
-                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
-
-                if event.get_type() == xlib::MotionNotify {
-                    // cast event to XMotionEvent
-                    let event = event.motion;
-
-                    // @TODO add max framerate (see moonwm)
-                    let dest_w = orig_client_size.0 as i32 + (event.x_root - orig_pointer_pos.0);
-                    let dest_h = orig_client_size.1 as i32 + (event.y_root - orig_pointer_pos.1);
-
-                    let pos = client_rc.borrow().pos();
-                    let dest_w: u32 = if dest_w < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_w.try_into().unwrap() };
-                    let dest_h: u32 = if dest_h < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_h.try_into().unwrap() };
-                    client_rc.borrow_mut().move_resize(pos.0, pos.1, dest_w, dest_h);
-                } else if event.get_type() == xlib::ButtonRelease {
-                    break;
-                } else {
-                    self.handle_xevent(wm, event);
-                }
-            }
-
-            // Ungrab pointer and clean up
-            xlib::XUngrabPointer(self.display, xlib::CurrentTime);
-            xlib::XFreeCursor(self.display, cursor);
-        }
+    fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+        self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_resize);
     }
 
     fn pointer_pos(&self) -> (i32, i32) {
