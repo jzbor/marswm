@@ -2,7 +2,7 @@ extern crate x11;
 
 use x11::xlib;
 use std::ptr;
-use std::mem;
+use std::mem::MaybeUninit;
 
 use crate::*;
 use crate::x11::*;
@@ -61,10 +61,10 @@ impl X11Backend {
             // register as window manager
             xlib::XSetErrorHandler(Some(on_wm_detected));
             // select events
-            let mut attributes: xlib::XSetWindowAttributes = mem::MaybeUninit::uninit().assume_init();
-            attributes.cursor = xlib::XCreateFontCursor(display, CURSOR_NORMAL);
-            attributes.event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::KeyPressMask;
-            xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, &mut attributes);
+            let mut attributes: MaybeUninit<xlib::XSetWindowAttributes> = MaybeUninit::uninit();
+            (*attributes.as_mut_ptr()).cursor = xlib::XCreateFontCursor(display, CURSOR_NORMAL);
+            (*attributes.as_mut_ptr()).event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::KeyPressMask;
+            xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, attributes.as_mut_ptr());
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
 
@@ -202,7 +202,7 @@ impl X11Backend {
         wm.handle_key(self, modifiers, key, client_opt)
     }
 
-    fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<X11Backend,X11Client>, _event: xlib::XCrossingEvent) {
         // let client_option = Self::client_by_frame(wm, event.window);
         // println!("LeaveNotify for client {}", event.window);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
@@ -304,10 +304,10 @@ impl Backend<X11Client> for X11Backend {
     fn handle_existing_windows(&mut self, wm: &mut WM) {
         unsafe {
             xlib::XGrabServer(self.display);
-            let mut returned_root: xlib::Window = mem::MaybeUninit::uninit().assume_init();
-            let mut returned_parent: xlib::Window = mem::MaybeUninit::uninit().assume_init();
-            let mut top_level_windows: *mut xlib::Window = mem::MaybeUninit::uninit().assume_init();
-            let mut num_top_level_windows: u32 = mem::MaybeUninit::uninit().assume_init();
+            let mut returned_root: xlib::Window = 0;
+            let mut returned_parent: xlib::Window = 0;
+            let mut top_level_windows: *mut xlib::Window = ptr::null_mut();
+            let mut num_top_level_windows: u32 = 0;
 
             match xlib::XQueryTree(self.display, self.root,
                                    &mut returned_root, &mut returned_parent,
@@ -325,7 +325,7 @@ impl Backend<X11Client> for X11Backend {
         }
     }
 
-    fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
+    fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, button: u32) {
         unsafe {
             // grab pointer
             let cursor = xlib::XCreateFontCursor(self.display, CURSOR_MOVE);
@@ -338,7 +338,7 @@ impl Backend<X11Client> for X11Backend {
 
             let orig_client_pos = client_rc.borrow().pos();
             let orig_pointer_pos = self.pointer_pos();
-            let mut event: xlib::XEvent = mem::MaybeUninit::uninit().assume_init();
+            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
 
             loop {
                 xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
@@ -365,7 +365,7 @@ impl Backend<X11Client> for X11Backend {
         }
     }
 
-    fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
+    fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, button: u32) {
         unsafe {
             // grab pointer
             let cursor = xlib::XCreateFontCursor(self.display, CURSOR_RESIZE);
@@ -378,7 +378,7 @@ impl Backend<X11Client> for X11Backend {
 
             let orig_client_size = client_rc.borrow().size();
             let orig_pointer_pos = self.pointer_pos();
-            let mut event: xlib::XEvent = mem::MaybeUninit::uninit().assume_init();
+            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
 
             loop {
                 xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
@@ -435,7 +435,7 @@ impl Backend<X11Client> for X11Backend {
     fn run(mut self, wm: &mut WM) {
         loop {
             unsafe {
-                let mut event: xlib::XEvent = mem::MaybeUninit::uninit().assume_init();
+                let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
                 xlib::XNextEvent(self.display, &mut event);
                 self.handle_xevent(wm, event);
             };

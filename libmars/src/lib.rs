@@ -58,10 +58,10 @@ pub trait Backend<C: Client> {
     fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, C>);
 
     /// Move client with mouse
-    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>);
+    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>, button: u32);
 
     /// Resize client with mouse
-    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>);
+    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>, button: u32);
 
     /// Get position of pointer on screen
     fn pointer_pos(&self) -> (i32, i32);

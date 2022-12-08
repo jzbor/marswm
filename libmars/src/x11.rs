@@ -15,8 +15,8 @@ const XLIB_NONE: u64 = 0;
 const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
 const WINDOW_MIN_SIZE: u32 = 40;
-const NormalState: i32 = 1;
-const IconicState: i32 = 3;
+const NORMAL_STATE: i32 = 1;
+const ICONIC_STATE: i32 = 3;
 
 
 

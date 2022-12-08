@@ -83,9 +83,5 @@ impl X11Atom {
             return xlib::XInternAtom(display, atom_name, xlib::False);
         }
     }
-
-    pub fn matches_xlib_atom(&self, display: *mut xlib::Display, atom: xlib::Atom) -> bool {
-        return self.to_xlib_atom(display) == atom;
-    }
 }
 

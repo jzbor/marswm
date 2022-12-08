@@ -2,6 +2,7 @@ extern crate x11;
 
 use x11::xlib;
 use std::mem;
+use std::mem::MaybeUninit;
 use std::slice;
 use std::ptr;
 use std::cmp;
@@ -257,7 +258,7 @@ impl Client for X11Client {
             xlib::XUnmapWindow(self.display, self.frame);
             xlib::XUnmapWindow(self.display, self.window);
             // @TODO set IconicState (see moonwm - window_set_state(dpy, win, IconicState))
-            self.set_state(IconicState);
+            self.set_state(ICONIC_STATE);
             xlib::XSelectInput(self.display, self.root, ra.your_event_mask);
             xlib::XSelectInput(self.display, self.frame, fa.your_event_mask);
             xlib::XUngrabServer(self.display);
@@ -350,7 +351,7 @@ impl Client for X11Client {
         unsafe {
             xlib::XMapWindow(self.display, self.window);
             xlib::XMapWindow(self.display, self.frame);
-            self.set_state(NormalState);
+            self.set_state(NORMAL_STATE);
             xlib::XSetInputFocus(self.display, self.frame, xlib::RevertToPointerRoot, xlib::CurrentTime);
         }
 
@@ -444,10 +445,10 @@ impl Dimensioned for X11Client {
 impl X11Window for xlib::Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         unsafe {
-            let mut attributes: xlib::XWindowAttributes = mem::MaybeUninit::uninit().assume_init();
-            match xlib::XGetWindowAttributes(display, *self, &mut attributes) {
+            let mut attributes: MaybeUninit<xlib::XWindowAttributes> = MaybeUninit::uninit();
+            match xlib::XGetWindowAttributes(display, *self, attributes.as_mut_ptr()) {
                 0 => return Err(String::from("Unable to retrieve attributes")),
-                _ => return Ok(attributes),
+                _ => return Ok(attributes.assume_init()),
             }
         }
     }
@@ -469,10 +470,10 @@ impl X11Window for xlib::Window {
         let mut pointers: Vec<*mut i8> = list.iter().map(|cstr| cstr.clone().into_raw()).collect();
         let slice = &mut pointers;
         unsafe {
-            let mut text: xlib::XTextProperty = mem::MaybeUninit::uninit().assume_init();
+            let mut text: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
             let size = slice.len().try_into().unwrap();
-            xlib::Xutf8TextListToTextProperty(display, slice.as_mut_ptr(), size, xlib::XUTF8StringStyle, &mut text);
-            xlib::XSetTextProperty(display, *self, &mut text, property.to_xlib_atom(display));
+            xlib::Xutf8TextListToTextProperty(display, slice.as_mut_ptr(), size, xlib::XUTF8StringStyle, text.as_mut_ptr());
+            xlib::XSetTextProperty(display, *self, &mut text.assume_init(), property.to_xlib_atom(display));
         }
     }
 
@@ -521,7 +522,7 @@ impl X11Window for xlib::Window {
 
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {
         unsafe {
-            let mut window: xlib::Window = 0;
+            let mut window: xlib::Window = XLIB_NONE;
             match xlib::XGetTransientForHint(display, *self, &mut window) {
                 0 => return None,
                 _ => return Some(window),
@@ -552,7 +553,7 @@ impl X11Window for xlib::Window {
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
         let mut supported_atoms = Vec::new();
         unsafe {
-            let mut atoms: *mut xlib::Atom = mem::MaybeUninit::uninit().assume_init();
+            let mut atoms: *mut xlib::Atom = ptr::null_mut();
             let mut natoms: c_int = 0;
             xlib::XGetWMProtocols(display, *self, &mut atoms, &mut natoms);
             for n in slice::from_raw_parts(atoms, natoms as usize) {
@@ -564,11 +565,11 @@ impl X11Window for xlib::Window {
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String> {
         unsafe {
-            let mut size_hints: xlib::XSizeHints = mem::MaybeUninit::uninit().assume_init();
+            let mut size_hints: MaybeUninit<xlib::XSizeHints> = MaybeUninit::uninit();
             let mut supplied_hints: c_long = 0;
-            match xlib::XGetWMNormalHints(display, *self, &mut size_hints, &mut supplied_hints) {
+            match xlib::XGetWMNormalHints(display, *self, size_hints.as_mut_ptr(), &mut supplied_hints) {
                 0 => return Err(String::from("Unable to retrieve WMNormalHints")),
-                _ => return Ok((size_hints, supplied_hints)),
+                _ => return Ok((size_hints.assume_init(), supplied_hints)),
             }
         }
     }

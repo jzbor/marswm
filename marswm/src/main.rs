@@ -1,7 +1,7 @@
 extern crate x11;
 
 use x11::keysym::*;
-use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask, ControlMask};
+use x11::xlib::{Mod1Mask, ShiftMask};
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -22,7 +22,7 @@ trait ClientList<C: Client> {
 }
 
 struct Workspace<C: Client> {
-    num: u32,
+    _num: u32,
     name: &'static str,
     clients: Vec<Rc<RefCell<C>>>,
 }
@@ -40,9 +40,9 @@ struct MarsWM<C: Client> {
 }
 
 impl<C: Client> Workspace<C> {
-    fn new(num: u32, name: &'static str) -> Workspace<C> {
+    fn new(_num: u32, name: &'static str) -> Workspace<C> {
         return Workspace {
-            num, name,
+            _num, name,
             clients: Vec::new(),
         };
     }
@@ -85,7 +85,7 @@ impl<C: Client> Monitor<C> {
         self.workspaces[workspace_idx].attach_client(client_rc);
     }
 
-    fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: usize) {
+    fn switch_workspace(&mut self, _backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
         }
@@ -156,9 +156,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         if let Some(client) = client_option {
             client.borrow().raise();
             match button {
-                1 => backend.mouse_move(self, client),
+                1 => backend.mouse_move(self, client, button),
                 2 => client.borrow().close(),
-                3 => backend.mouse_resize(self, client),
+                3 => backend.mouse_resize(self, client, button),
                 _ => println!("unknown action"),
             }
         }
@@ -185,6 +185,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.active_client = None;
     }
 
+    #[allow(non_upper_case_globals)]
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client_rc) = client_option {
             if modifiers == MODKEY {
