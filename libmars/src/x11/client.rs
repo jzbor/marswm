@@ -2,12 +2,13 @@ extern crate x11;
 
 use x11::xlib;
 use std::mem;
-
 use std::slice;
+use std::ptr;
 
 use crate::*;
 use crate::x11::*;
 use crate::x11::atoms::*;
+use crate::x11::atoms::X11Atom::*;
 
 
 pub trait X11Window {
@@ -16,6 +17,7 @@ pub trait X11Window {
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
+    fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<xlib::Atom>;
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window>;
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData);
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom>;
@@ -291,6 +293,10 @@ impl X11Window for X11Client {
         return self.frame.x11_geometry(display);
     }
 
+    fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
+        return self.window.x11_get_window_types(display);
+    }
+
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {
         return self.window.x11_is_transient_for(display);
     }
@@ -405,6 +411,26 @@ impl X11Window for xlib::Window {
                 _ => return Ok((root, x, y, w, h, bw, depth)),
             }
         }
+    }
+
+    fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
+        let mut types = Vec::new();
+
+        let mut da = XLIB_NONE;
+        let mut di = 0;
+        let mut nitems = 0;
+        let mut dl = 0;
+        unsafe {
+            let mut win_types_ptr: *mut u8 = ptr::null_mut();
+            let result = xlib::XGetWindowProperty(display, *self, NetWMWindowType.to_xlib_atom(display),
+                0, 8, xlib::False, xlib::XA_ATOM,
+                &mut da, &mut di, &mut nitems, &mut dl, &mut win_types_ptr);
+            if result == xlib::Success.into() {
+                let temp = slice::from_raw_parts(win_types_ptr as *mut xlib::Atom, nitems.try_into().unwrap());
+                types = temp.to_vec();
+            }
+        }
+        return types;
     }
 
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {

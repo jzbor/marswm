@@ -12,7 +12,7 @@ use crate::x11::client::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 7] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 10] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -20,6 +20,9 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 7] = & [
     NetDesktopNames,
     NetNumberOfDesktops,
     NetSupported,
+    NetWMWindowType,
+    NetWMWindowTypeDock,
+    NetWMWindowTypeDesktop,
 ];
 
 pub struct X11Backend {
@@ -98,6 +101,16 @@ impl X11Backend {
 
         // don't manage windows with the override_redirect flag set
         if attributes.override_redirect != 0 {
+            return;
+        }
+
+        let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display).iter()
+            .map(|a| X11Atom::from_xlib_atom(self.display, *a)).flatten().collect();
+        println!("Window types for window {:x}: {:?}", window, window_types);
+        if window_types.contains(&NetWMWindowTypeDock) {
+            unsafe {
+                xlib::XMapRaised(self.display, window);
+            }
             return;
         }
 
