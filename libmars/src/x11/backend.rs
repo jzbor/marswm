@@ -7,8 +7,8 @@ use std::mem::MaybeUninit;
 use crate::*;
 use crate::x11::*;
 use crate::x11::atoms::*;
-use crate::x11::atoms::X11Atom::*;
 use crate::x11::client::*;
+use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 

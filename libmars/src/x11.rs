@@ -1,9 +1,12 @@
 extern crate x11;
 
-use x11::xlib;
 use std::ffi::*;
+use x11::xlib;
+
+use crate::x11::atoms::X11Atom::*;
 
 pub mod backend;
+mod window;
 mod client;
 mod atoms;
 
