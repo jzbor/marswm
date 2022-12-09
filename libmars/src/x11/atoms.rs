@@ -19,12 +19,13 @@ pub enum X11Atom {
     NetDesktopNames,
     NetNumberOfDesktops,
     NetSupported,
+    NetWMDesktop,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
 }
 
-const ATOMS: &'static [X11Atom; 13] = & [
+const ATOMS: &'static [X11Atom; 14] = & [
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
     X11Atom::WMState,
@@ -36,6 +37,7 @@ const ATOMS: &'static [X11Atom; 13] = & [
     X11Atom::NetDesktopNames,
     X11Atom::NetNumberOfDesktops,
     X11Atom::NetSupported,
+    X11Atom::NetWMDesktop,
     X11Atom::NetWMWindowType,
     X11Atom::NetWMWindowTypeDock,
     X11Atom::NetWMWindowTypeDesktop,
@@ -55,6 +57,7 @@ impl Display for X11Atom {
             X11Atom::NetDesktopNames => "_NET_DESKTOP_NAMES",
             X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
             X11Atom::NetSupported => "_NET_SUPPORTED",
+            X11Atom::NetWMDesktop => "_NET_WM_DESKTOP",
             X11Atom::NetWMWindowType => "_NET_WM_WINDOW_TYPE",
             X11Atom::NetWMWindowTypeDock => "_NET_WM_WINDOW_TYPE_DOCK",
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",

@@ -308,11 +308,13 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
         let mon = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
         mon.move_to_workspace(client_rc.clone(), workspace_idx);
-        self.decorate_inactive(client_rc);
+        self.decorate_inactive(client_rc.clone());
         // TODO focus other client or drop focus
         // hacky workaround:
         self.active_client = None;
+
         backend.export_active_window(&self.active_client);
+        client_rc.borrow().export_workspace(workspace_idx);
         self.apply_layout(self.current_monitor());
     }
 

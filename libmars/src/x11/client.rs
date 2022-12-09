@@ -236,6 +236,12 @@ impl Client for X11Client {
         }
     }
 
+    fn export_workspace(&self, workspace_idx: usize) {
+        let idx: u64 = workspace_idx.try_into().unwrap();
+        let data = &[idx];
+        self.window.x11_replace_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL, data);
+    }
+
     fn hide(&mut self) {
         if !self.visible {
             return;

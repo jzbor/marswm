@@ -12,7 +12,7 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 10] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 11] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -20,6 +20,7 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 10] = & [
     NetDesktopNames,
     NetNumberOfDesktops,
     NetSupported,
+    NetWMDesktop,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
@@ -202,15 +203,19 @@ impl X11Backend {
         if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
             match atom {
                 NetActiveWindow => {
-                    let client_option = Self::client_by_window(wm, event.window);
-                    if let Some(client_rc) = client_option {
+                    if let Some(client_rc) = Self::client_by_window(wm, event.window){
                         wm.activate_client(self, client_rc);
                     }
                 },
                 NetCurrentDesktop => {
                     let workspace = event.data.get_long(0).try_into().unwrap();
                     wm.switch_workspace(self, workspace);
-                }
+                },
+                NetWMDesktop => {
+                    if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+                        wm.move_to_workspace(self, client_rc, event.data.get_long(0).try_into().unwrap());
+                    }
+                },
                 _ => println!("Other client message"),
             }
         }
