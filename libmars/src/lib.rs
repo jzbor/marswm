@@ -27,6 +27,7 @@ pub trait Client: Eq + Dimensioned{
     fn close(&self);
     fn hide(&mut self);
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);
+    fn name(&self) -> &str;
     fn raise(&self);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: u32);

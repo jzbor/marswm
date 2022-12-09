@@ -106,7 +106,6 @@ impl X11Backend {
 
         let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display).iter()
             .map(|a| X11Atom::from_xlib_atom(self.display, *a)).flatten().collect();
-        println!("Window types for window {:x}: {:?}", window, window_types);
         if window_types.contains(&NetWMWindowTypeDock) {
             unsafe {
                 xlib::XMapRaised(self.display, window);
@@ -125,6 +124,8 @@ impl X11Backend {
 
         let mut client = X11Client::new(self.display, self.root, window);
         client.apply_size_hints();
+
+        println!("New client: {} with type {:?}", client.name(), window_types);
 
         let boxed_client = Rc::new(RefCell::new(client));
         wm.manage(self, boxed_client);
@@ -292,6 +293,8 @@ impl X11Backend {
 
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());
+
+        println!("Closed client: {}", client_rc.borrow().name());
 
         // remove client frame
         client_rc.borrow().destroy_frame();

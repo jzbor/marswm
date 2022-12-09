@@ -13,6 +13,7 @@ use crate::x11::atoms::*;
 
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
+    fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
@@ -31,6 +32,30 @@ impl X11Window for xlib::Window {
             match xlib::XGetWindowAttributes(display, *self, attributes.as_mut_ptr()) {
                 0 => return Err(String::from("Unable to retrieve attributes")),
                 _ => return Ok(attributes.assume_init()),
+            }
+        }
+    }
+
+    fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String> {
+        unsafe {
+            let mut class_hints: MaybeUninit<xlib::XClassHint> = MaybeUninit::zeroed();
+            let status = xlib::XGetClassHint(display, *self, class_hints.as_mut_ptr());
+            if status != 0 {
+                let class_hints = class_hints.assume_init();
+                if !class_hints.res_name.is_null() && !class_hints.res_class.is_null() {
+                    let res_name = CStr::from_ptr(class_hints.res_name)
+                        .to_str().unwrap().to_owned();
+                    let res_class = CStr::from_ptr(class_hints.res_class)
+                        .to_str().unwrap().to_owned();
+                    let ret_val = Ok((res_name, res_class));
+                    xlib::XFree(class_hints.res_name as *mut c_void);
+                    xlib::XFree(class_hints.res_class as *mut c_void);
+                    return ret_val;
+                } else {
+                    return Err("Class hint returned null ptr".to_owned());
+                }
+            } else {
+                return Err("Error getting class hint from window".to_owned());
             }
         }
     }

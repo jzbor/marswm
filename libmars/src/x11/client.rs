@@ -12,6 +12,7 @@ use crate::x11::window::*;
 
 #[derive(PartialEq,Eq)]
 pub struct X11Client {
+    name: String,
     display: *mut xlib::Display,
     root: u64,
     window: u64,
@@ -50,7 +51,16 @@ impl X11Client {
             frame
         };
 
+        let name = match window.x11_class_hint(display) {
+            Ok((name, class)) => format!("{}::{} [0x{:x}]", name, class, window),
+            Err(msg) => {
+                println!("Unable to get class hint: {}", msg);
+                format!("0x{:x}", window)
+            },
+        };
+
         return X11Client {
+            name,
             display, root, window, frame,
             x, y, w, h,
             ibw: 0,
@@ -276,6 +286,10 @@ impl Client for X11Client {
         }
     }
 
+    fn name(&self) -> &str {
+        return &self.name;
+    }
+
     fn raise(&self) {
         unsafe {
             xlib::XRaiseWindow(self.display, self.frame);
@@ -387,6 +401,10 @@ impl Dimensioned for X11Client {
 impl X11Window for X11Client {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         return self.window.x11_attributes(display);
+    }
+
+    fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String> {
+        return self.window.x11_class_hint(display);
     }
 
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
