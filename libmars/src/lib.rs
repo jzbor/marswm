@@ -135,6 +135,20 @@ impl Dimensions {
     }
 }
 
+impl MonitorConfig {
+    pub fn num(&self) -> u32 {
+        return self.num;
+    }
+
+    pub fn dimensions(&self) -> Dimensions {
+        return self.dims;
+    }
+
+    pub fn window_area(&self) -> Dimensions {
+        return self.win_area;
+    }
+}
+
 impl Dimensioned for Dimensions {
     fn x(&self) -> i32 { self.x }
     fn y(&self) -> i32 { self.y }

@@ -4,9 +4,14 @@ use x11::keysym::*;
 use x11::xlib::{Mod1Mask, ShiftMask};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use libmars::*;
 use libmars::x11::backend::*;
+
+use crate::layouts::*;
+
+mod layouts;
 
 
 const MODKEY: u32 = Mod1Mask;
@@ -25,6 +30,7 @@ struct Workspace<C: Client> {
     _num: u32,
     name: &'static str,
     clients: Vec<Rc<RefCell<C>>>,
+    cur_layout: LayoutType,
 }
 
 struct Monitor<C: Client> {
@@ -37,6 +43,7 @@ struct MarsWM<C: Client> {
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
+    layouts: HashMap<LayoutType, Layout<C>>,
 }
 
 impl<C: Client> Workspace<C> {
@@ -44,6 +51,7 @@ impl<C: Client> Workspace<C> {
         return Workspace {
             _num, name,
             clients: Vec::new(),
+            cur_layout: LayoutType::Floating,
         };
     }
 }
@@ -103,7 +111,13 @@ impl<C: Client> MarsWM<C> {
             active_client: None,
             clients: Vec::new(),
             monitors,
+            layouts: LAYOUT_TYPES.iter().map(|lt| (*lt, Layout::new(*lt))).collect(),
         };
+    }
+
+    fn apply_layout(&self, monitor: &Monitor<C>) {
+        self.layouts.get(&monitor.current_workspace().cur_layout).unwrap()
+            .apply_layout(monitor.config, self.visible_clients().cloned().collect())
     }
 
     fn current_monitor(&self) -> &Monitor<C> {
@@ -120,6 +134,20 @@ impl<C: Client> MarsWM<C> {
         }.unwrap();
     }
 
+    fn current_workspace(&self) -> &Workspace<C> {
+        return self.current_monitor().current_workspace();
+    }
+
+    fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
+        return self.current_monitor_mut().current_workspace_mut();
+    }
+
+
+    fn cycle_layout(&mut self) {
+        let cur_idx = LAYOUT_TYPES.iter().position(|l| *l == self.current_workspace().cur_layout).unwrap();
+        self.current_workspace_mut().cur_layout = LAYOUT_TYPES[(cur_idx + 1) % LAYOUT_TYPES.len()];
+    }
+
     fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
         client.set_inner_color(0xffffff);
@@ -132,6 +160,10 @@ impl<C: Client> MarsWM<C> {
         client.set_inner_color(0x000000);
         client.set_outer_color(0x000000);
         client.set_frame_color(0xffffff);
+    }
+
+    fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        return self.current_monitor().current_workspace().clients();
     }
 }
 
@@ -156,9 +188,15 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         if let Some(client) = client_option {
             client.borrow().raise();
             match button {
-                1 => backend.mouse_move(self, client, button),
+                1 => {
+                    backend.mouse_move(self, client, button);
+                    self.apply_layout(self.current_monitor());
+                },
                 2 => client.borrow().close(),
-                3 => backend.mouse_resize(self, client, button),
+                3 => {
+                    backend.mouse_resize(self, client, button);
+                    self.apply_layout(self.current_monitor());
+                },
                 _ => println!("unknown action"),
             }
         }
@@ -191,6 +229,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             if modifiers == MODKEY {
                 match key {
                     XK_Delete => client_rc.borrow().close(),
+                    XK_T => {
+                        self.cycle_layout();
+                        self.apply_layout(self.current_monitor());
+                    },
                     _ => (),
                 }
             } else if modifiers == MODKEY | ShiftMask {
@@ -249,15 +291,18 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.bind_key(MODKEY, XK_F2);
         client.bind_key(MODKEY, XK_F3);
         client.bind_key(MODKEY, XK_F1);
+        client.bind_key(MODKEY | ShiftMask, XK_F1);
         client.bind_key(MODKEY | ShiftMask, XK_F2);
         client.bind_key(MODKEY | ShiftMask, XK_F3);
         client.bind_key(MODKEY | ShiftMask, XK_F4);
-        client.bind_key(MODKEY | ShiftMask, XK_F4);
         client.bind_key(MODKEY, XK_Delete);
+        client.bind_key(MODKEY, XK_T);
 
         drop(client);
 
         backend.export_client_list(&self.clients);
+
+        self.apply_layout(self.current_monitor());
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -268,6 +313,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
+        self.apply_layout(self.current_monitor());
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
@@ -277,6 +323,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
+        self.apply_layout(self.current_monitor());
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -300,6 +347,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         backend.export_client_list(&self.clients);
+
+        self.apply_layout(self.current_monitor());
     }
 }
 
