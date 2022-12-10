@@ -132,7 +132,7 @@ pub struct MonitorConfig {
 }
 
 impl Dimensions {
-    fn new(x: i32, y: i32, w: u32, h: u32) -> Dimensions {
+    pub fn new(x: i32, y: i32, w: u32, h: u32) -> Dimensions {
         return Dimensions {x, y, w, h};
     }
 }

@@ -260,7 +260,7 @@ impl X11Backend {
 
     fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, mut event: xlib::XKeyEvent) {
         let keysym = unsafe {
-            xlib::XLookupKeysym(&mut event, 1)
+            xlib::XKeycodeToKeysym(self.display, event.keycode.try_into().unwrap(), 0)
         };
 
         let modifiers = sanitize_modifiers(event.state);
