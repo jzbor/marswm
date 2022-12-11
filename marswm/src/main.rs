@@ -18,25 +18,6 @@ mod bindings;
 
 const MODKEY: u32 = Mod1Mask;
 
-macro_rules! switch_workspace_binding {
-    ($key:expr, $ws:expr) => {
-        Keybinding::new(MODKEY, $key, |wm: &mut Self, backend, _client_option| {
-            wm.switch_workspace(backend, $ws);
-        })
-    }
-}
-
-macro_rules! move_workspace_binding {
-    ($key:expr, $ws:expr) => {
-        Keybinding::new(MODKEY|ShiftMask, $key, |wm: &mut Self, backend, client_option| {
-            if let Some(client_rc) = client_option {
-                wm.move_to_workspace(backend, client_rc, $ws)
-            }
-        })
-    }
-}
-
-
 
 trait ClientList<C: Client> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);

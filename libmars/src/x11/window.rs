@@ -8,14 +8,14 @@ use x11::xlib;
 
 use crate::*;
 use crate::x11::*;
-use crate::x11::atoms::*;
 
 
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
-    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>);
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str>;
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
     fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<xlib::Atom>;
@@ -60,11 +60,41 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str> {
+        let mut actual_type = 0;
+        let mut actual_format = 0;
+        let mut nitems = 0;
+        let mut remaining_bytes = 0;
+        unsafe {
+            let mut data_ptr: *mut u8 = ptr::null_mut();
+            let status = xlib::XGetWindowProperty(display, *self, property,
+                0, 8, xlib::False,
+                prop_type, &mut actual_type,
+                &mut actual_format,
+                &mut nitems, &mut remaining_bytes,
+                &mut data_ptr);
+            if status != 0 {
+                return Err("XGetWindowProperty failed");
+            } else if actual_type == XLIB_NONE
+                    && actual_format == 0
+                    && remaining_bytes == 0 {
+                return Err("Property does not exist for specified window");
+            } else if actual_type != prop_type {
+                return Err("Property as wrong actual type");
+            } else if actual_format != 32 {
+                return Err("Property is not u32 format");
+            } else {
+                let data = slice::from_raw_parts(data_ptr as *mut u64, nitems.try_into().unwrap());
+                return Ok(data);
+            }
+        }
+    }
+
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
         unsafe {
             xlib::XChangeProperty(display,
                                   *self,
-                                  property.to_xlib_atom(display),
+                                  property,
                                   prop_type,
                                   32,
                                   xlib::PropModeReplace,
@@ -73,14 +103,14 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>) {
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {
         let mut pointers: Vec<*mut i8> = list.iter().map(|cstr| cstr.clone().into_raw()).collect();
         let slice = &mut pointers;
         unsafe {
             let mut text: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
             let size = slice.len().try_into().unwrap();
             xlib::Xutf8TextListToTextProperty(display, slice.as_mut_ptr(), size, xlib::XUTF8StringStyle, text.as_mut_ptr());
-            xlib::XSetTextProperty(display, *self, &mut text.assume_init(), property.to_xlib_atom(display));
+            xlib::XSetTextProperty(display, *self, &mut text.assume_init(), property);
         }
     }
 
@@ -116,6 +146,7 @@ impl X11Window for xlib::Window {
         let mut dl = 0;
         unsafe {
             let mut win_types_ptr: *mut u8 = ptr::null_mut();
+            // TODO use x11_read_property_long
             let result = xlib::XGetWindowProperty(display, *self, NetWMWindowType.to_xlib_atom(display),
                 0, 8, xlib::False, xlib::XA_ATOM,
                 &mut da, &mut di, &mut nitems, &mut dl, &mut win_types_ptr);

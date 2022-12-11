@@ -5,6 +5,11 @@ use x11::xlib;
 
 use std::ffi::CString;
 
+#[macro_export]
+macro_rules! xatom {
+    ($atom:expr, $display:expr) => { $atom.to_xlib_atom(display) }
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum X11Atom {

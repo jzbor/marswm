@@ -239,7 +239,7 @@ impl Client for X11Client {
     fn export_workspace(&self, workspace_idx: usize) {
         let idx: u64 = workspace_idx.try_into().unwrap();
         let data = &[idx];
-        self.window.x11_replace_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL, data);
+        self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
 
     fn hide(&mut self) {
@@ -413,11 +413,15 @@ impl X11Window for X11Client {
         return self.window.x11_class_hint(display);
     }
 
-    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str> {
+        return self.window.x11_read_property_long(display, property, prop_type);
+    }
+
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
         self.window.x11_replace_property_long(display, property, prop_type, data);
     }
 
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: Vec<CString>) {
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {
         self.window.x11_set_text_list_property(display, property, list);
     }
 
