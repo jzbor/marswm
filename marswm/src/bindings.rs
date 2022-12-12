@@ -8,7 +8,7 @@ use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 use libmars::*;
 use crate::*;
 
-pub const MODKEY: u32 = Mod4Mask;
+pub const MODKEY: u32 = Mod1Mask;
 
 macro_rules! switch_workspace_binding {
     ($key:expr, $ws:expr) => {

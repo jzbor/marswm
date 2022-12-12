@@ -9,6 +9,7 @@ use libmars::*;
 pub enum LayoutType {
     Floating,
     Stack,
+    Monocle,
 }
 
 pub struct Layout<C: Client> {
@@ -18,9 +19,10 @@ pub struct Layout<C: Client> {
     apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, u32),
 }
 
-pub const LAYOUT_TYPES: &'static [LayoutType; 2] = & [
+pub const LAYOUT_TYPES: &'static [LayoutType; 3] = & [
     LayoutType::Floating,
     LayoutType::Stack,
+    LayoutType::Monocle,
 ];
 
 impl<C: Client> Layout<C> {
@@ -37,6 +39,12 @@ impl<C: Client> Layout<C> {
                 _symbol: "[]=",
                 _label: "stacking",
                 apply: apply_layout_stack,
+            },
+            LayoutType::Monocle => Layout {
+                _layout_type: layout_type,
+                _symbol: "[M]",
+                _label: "monocle",
+                apply: apply_layout_monocle,
             },
         }
     }
@@ -85,5 +93,15 @@ fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl C
                 stacked_width,
                 stacked_height);
         }
+    }
+}
+
+fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
+    for client_rc in clients {
+        client_rc.borrow_mut().move_resize(
+            win_area.x(),
+            win_area.y(),
+            win_area.w(),
+            win_area.h());
     }
 }
