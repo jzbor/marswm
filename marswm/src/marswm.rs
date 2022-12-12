@@ -9,11 +9,12 @@ use crate::monitor::*;
 use crate::workspace::*;
 
 
-const PRIMARY_COLOR: u64 = 0x31748f;
-const SECONDARY_COLOR: u64 = 0xe0def4;
-const FRAME_WIDTH: u32 = 5;
-const INNER_BORDER_WIDTH: u32 = 2;
-const OUTER_BORDER_WIDTH: u32 = 2;
+const PRIMARY_COLOR: u64 = 0xae0c0c;
+const SECONDARY_COLOR: u64 = 0x1f464f;
+const BACKGROUND_COLOR: u64 = 0xceccc6;
+const FRAME_WIDTH: u32 = 8;
+const INNER_BORDER_WIDTH: u32 = 1;
+const OUTER_BORDER_WIDTH: u32 = 1;
 
 
 pub struct MarsWM<C: Client> {
@@ -68,15 +69,15 @@ impl<C: Client> MarsWM<C> {
 
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(SECONDARY_COLOR);
-        client.set_outer_color(SECONDARY_COLOR);
+        client.set_inner_color(BACKGROUND_COLOR);
+        client.set_outer_color(BACKGROUND_COLOR);
         client.set_frame_color(PRIMARY_COLOR);
     }
 
     pub fn decorate_inactive(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(PRIMARY_COLOR);
-        client.set_outer_color(PRIMARY_COLOR);
+        client.set_inner_color(BACKGROUND_COLOR);
+        client.set_outer_color(BACKGROUND_COLOR);
         client.set_frame_color(SECONDARY_COLOR);
     }
 
@@ -95,6 +96,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         let workspace_idx = monitor.workspaces().enumerate()
             .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
         monitor.switch_workspace(backend, workspace_idx);
+        client_rc.borrow().raise();
+        client_rc.borrow().warp_pointer_to_center();
         self.handle_focus(backend, Some(client_rc));
     }
 

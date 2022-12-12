@@ -103,6 +103,7 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
         move_workspace_binding!(XK_3, 2),
         move_workspace_binding!(XK_4, 3),
         execute_binding!(MODKEY, XK_Return, "buttermilk"),
+        execute_binding!(MODKEY, XK_d, "rofi -show drun"),
     ]
 }
 
