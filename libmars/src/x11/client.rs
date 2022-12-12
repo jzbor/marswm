@@ -365,6 +365,16 @@ impl Client for X11Client {
 
         self.visible = true;
     }
+
+    fn warp_pointer_to_center(&self) {
+        unsafe {
+            // let (x, y) = self.center();
+            let (x, y) = ((self.w / 2) as i32, (self.h / 2) as i32);
+            println!("Warping pointer to ({}, {})", x, y);
+            let result = xlib::XWarpPointer(self.display, 0, self.frame, 0, 0, 0, 0, x, y);
+            println!("Result: {:x}", result);
+        }
+    }
 }
 
 impl Dimensioned for X11Client {

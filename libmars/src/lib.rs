@@ -41,6 +41,7 @@ pub trait Client: Eq + Dimensioned{
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
     fn show(&mut self);
+    fn warp_pointer_to_center(&self);
 }
 
 pub trait Backend<C: Client> {

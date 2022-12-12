@@ -54,6 +54,18 @@ impl<C: Client> MarsWM<C> {
         return self.current_monitor_mut().current_workspace_mut();
     }
 
+    pub fn cycle_client(&mut self) {
+        if let Some(active) = &self.active_client {
+            let ws = self.current_workspace();
+            if let Some(old_idx) = ws.clients().position(|c| c == active) {
+                let new_idx = (old_idx + 1) % ws.clients().count();
+                let client = ws.clients().nth(new_idx).unwrap();
+                client.borrow().warp_pointer_to_center();
+                client.borrow().raise();
+            }
+        }
+    }
+
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
         client.set_inner_color(SECONDARY_COLOR);

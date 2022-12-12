@@ -1,4 +1,4 @@
-use libmars::{ Client, MonitorConfig };
+use libmars::Client;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
