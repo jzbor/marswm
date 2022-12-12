@@ -267,6 +267,10 @@ impl Client for X11Client {
         self.visible = false;
     }
 
+    fn is_visible(&self) -> bool {
+        return self.visible;
+    }
+
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32) {
         let min_size = 2*self.obw + WINDOW_MIN_SIZE;
         if width < min_size {

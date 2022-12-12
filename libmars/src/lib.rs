@@ -27,6 +27,7 @@ pub trait Client: Eq + Dimensioned{
     fn close(&self);
     fn export_workspace(&self, workspace_idx: usize);
     fn hide(&mut self);
+    fn is_visible(&self) -> bool;
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);
     fn name(&self) -> &str;
     fn raise(&self);

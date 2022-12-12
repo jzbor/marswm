@@ -8,9 +8,9 @@ sleep 1
 
 moonwm &
 wm_pid="$!"
-sleep 2
+sleep 1
 moonctl tag 4
-sleep 2
+sleep 1
 kill "$wm_pid"
 sleep 2
 

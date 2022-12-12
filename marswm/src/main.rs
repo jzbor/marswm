@@ -1,8 +1,5 @@
 extern crate x11;
 
-use bindings::Keybinding;
-use x11::keysym::*;
-use x11::xlib::{Mod1Mask, ShiftMask};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -11,12 +8,10 @@ use libmars::*;
 use libmars::x11::backend::*;
 
 use crate::layouts::*;
+use crate::bindings::*;
 
 mod layouts;
 mod bindings;
-
-
-const MODKEY: u32 = Mod1Mask;
 
 
 trait ClientList<C: Client> {
@@ -42,7 +37,7 @@ struct Monitor<C: Client> {
     cur_workspace: usize,
 }
 
-struct MarsWM<C: Client> {
+pub struct MarsWM<C: Client> {
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
@@ -164,30 +159,6 @@ impl<C: Client> MarsWM<C> {
         client.set_frame_color(0xffffff);
     }
 
-    fn get_keybindings<B: Backend<C>>() -> Vec<Keybinding<Self, B, C>> {
-        vec![
-            Keybinding::new(MODKEY, XK_Delete, |_wm, _backend, client_option: Option<Rc<RefCell<C>>>| {
-                if let Some(client_rc) = client_option {
-                    client_rc.borrow().close();
-                }
-            }),
-            Keybinding::new(MODKEY, XK_t, |wm: &mut Self, _backend, _client_option| {
-                wm.cycle_layout();
-                wm.apply_layout(wm.current_monitor());
-            }),
-
-            switch_workspace_binding!(XK_1, 0),
-            switch_workspace_binding!(XK_2, 1),
-            switch_workspace_binding!(XK_3, 2),
-            switch_workspace_binding!(XK_4, 3),
-            move_workspace_binding!(XK_1, 0),
-            move_workspace_binding!(XK_2, 1),
-            move_workspace_binding!(XK_3, 2),
-            move_workspace_binding!(XK_4, 3),
-        ]
-    }
-
-
     fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return self.current_monitor().current_workspace().clients();
     }
@@ -251,7 +222,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     #[allow(non_upper_case_globals)]
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
-        Self::get_keybindings().iter().for_each(|kb| { kb.check(modifiers, key, self, backend, client_option.clone()); });
+        keybindings().iter().for_each(|kb| { kb.check(modifiers, key, self, backend, client_option.clone()); });
     }
 
     fn init(&mut self, backend: &mut B) {
@@ -284,7 +255,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.bind_button(MODKEY, 3);
 
         // bind keys
-        for keybinding in Self::get_keybindings::<B>() {
+        for keybinding in keybindings::<B, C>() {
             client.bind_key(keybinding.modifiers(), keybinding.key());
         }
 

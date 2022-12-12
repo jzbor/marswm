@@ -59,6 +59,8 @@ impl X11Backend {
                 root,
             };
 
+            xlib::XSynchronize(display, 1);
+
             // register as window manager
             xlib::XSetErrorHandler(Some(on_wm_detected));
             // select events
@@ -131,6 +133,7 @@ impl X11Backend {
         let boxed_client = Rc::new(RefCell::new(client));
         wm.manage(self, boxed_client.clone());
 
+        // Setting workspace as specified by _NET_WM_DESKTOP
         let workspace_req = {
             match boxed_client.clone().borrow().x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
                 Ok(data) => Some(data[0]),
@@ -138,7 +141,6 @@ impl X11Backend {
             }
         };
         if let Some(workspace) = workspace_req {
-            println!("Read Desktop {}", workspace);
             wm.move_to_workspace(self, boxed_client, workspace.try_into().unwrap())
         }
     }
@@ -432,6 +434,10 @@ impl Backend<X11Client> for X11Backend {
 
     fn set_input_focus(&self, client_rc: Rc<RefCell<X11Client>>) {
         let client = (*client_rc).borrow();
+        if !client.is_visible() {
+            return;
+        }
+
         unsafe {
             xlib::XSetInputFocus(self.display, client.frame(), xlib::RevertToPointerRoot, xlib::CurrentTime);
         }
