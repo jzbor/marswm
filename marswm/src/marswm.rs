@@ -54,11 +54,11 @@ impl<C: Client> MarsWM<C> {
         return self.current_monitor_mut().current_workspace_mut();
     }
 
-    pub fn cycle_client(&mut self) {
+    pub fn cycle_client(&mut self, inc: i32) {
         if let Some(active) = &self.active_client {
             let ws = self.current_workspace();
             if let Some(old_idx) = ws.clients().position(|c| c == active) {
-                let new_idx = (old_idx + 1) % ws.clients().count();
+                let new_idx = (old_idx as i32 + inc) as usize % ws.clients().count();
                 let client = ws.clients().nth(new_idx).unwrap();
                 client.borrow().warp_pointer_to_center();
                 client.borrow().raise();

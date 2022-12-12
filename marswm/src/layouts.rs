@@ -10,6 +10,7 @@ pub enum LayoutType {
     Floating,
     Stack,
     Monocle,
+    Deck,
 }
 
 pub struct Layout<C: Client> {
@@ -19,10 +20,11 @@ pub struct Layout<C: Client> {
     apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, u32),
 }
 
-pub const LAYOUT_TYPES: &'static [LayoutType; 3] = & [
+pub const LAYOUT_TYPES: &'static [LayoutType; 4] = & [
     LayoutType::Floating,
-    LayoutType::Stack,
+    LayoutType::Deck,
     LayoutType::Monocle,
+    LayoutType::Stack,
 ];
 
 impl<C: Client> Layout<C> {
@@ -45,6 +47,12 @@ impl<C: Client> Layout<C> {
                 _symbol: "[M]",
                 _label: "monocle",
                 apply: apply_layout_monocle,
+            },
+            LayoutType::Deck => Layout {
+                _layout_type: layout_type,
+                _symbol: "[]D",
+                _label: "deck",
+                apply: apply_layout_deck,
             },
         }
     }
@@ -103,5 +111,46 @@ fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl
             win_area.y(),
             win_area.w(),
             win_area.h());
+    }
+}
+
+fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
+    let nclients: u32 = clients.len().try_into().unwrap();
+
+    if nclients == 0 {
+        return;
+    }
+
+    let (main_width, main_height, stacked_width, stacked_height) = {
+        if nmain == 0 { // no windows in main area
+            (0, 0, win_area.w(), win_area.h() / nclients)
+        } else if nclients <= nmain { // no windows in stack area
+            (win_area.w(), win_area.h() / nclients, 0, 0)
+        } else {
+            let main_width = (win_area.w() as f32 * 0.6) as u32;
+            let main_height = win_area.h() / cmp::min(nclients, nmain);
+            let stacked_width = win_area.w() - main_width;
+            let stacked_height = win_area.h();
+            (main_width, main_height, stacked_width, stacked_height)
+        }
+    };
+
+    for (i, client_rc) in clients.iter().enumerate() {
+        if i < nmain.try_into().unwrap() { // main window(s)
+            let y_offset: i32 = (i as u32 * main_height).try_into().unwrap();
+            client_rc.borrow_mut().move_resize(
+                win_area.x(),
+                win_area.y() + y_offset,
+                main_width,
+                main_height);
+        } else { // stack windows
+            let i_stack: u32 = i as u32 - nmain;
+            let x_offset: i32 = main_width.try_into().unwrap();
+            client_rc.borrow_mut().move_resize(
+                win_area.x() + x_offset,
+                win_area.y(),
+                stacked_width,
+                stacked_height);
+        }
     }
 }

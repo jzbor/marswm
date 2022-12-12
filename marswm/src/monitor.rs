@@ -36,7 +36,10 @@ impl<C: Client> Monitor<C> {
     }
 
     pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
-        println!("Moving client at {:?} to workspace {}", client_rc.borrow().pos(), workspace_idx);
+        if workspace_idx >= self.workspaces.len() {
+            return;
+        }
+
         for ws in &mut self.workspaces {
             ws.detach_client(&client_rc);
         }
