@@ -1,8 +1,8 @@
 extern crate x11;
 
+use std::collections::VecDeque;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use libmars::*;
 use libmars::x11::backend::*;
@@ -34,7 +34,7 @@ trait ClientList<C: Client> {
 struct Workspace<C: Client> {
     _num: u32,
     name: &'static str,
-    clients: Vec<Rc<RefCell<C>>>,
+    clients: VecDeque<Rc<RefCell<C>>>,
     cur_layout: LayoutType,
 }
 
@@ -48,16 +48,31 @@ pub struct MarsWM<C: Client> {
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
-    layouts: HashMap<LayoutType, Layout<C>>,
 }
 
 impl<C: Client> Workspace<C> {
     fn new(_num: u32, name: &'static str) -> Workspace<C> {
         return Workspace {
             _num, name,
-            clients: Vec::new(),
+            clients: VecDeque::new(),
             cur_layout: LayoutType::Floating,
         };
+    }
+
+    fn apply_layout(&self, monitor_conf: MonitorConfig) {
+        Layout::get(self.cur_layout).apply_layout(monitor_conf, &self.clients)
+    }
+
+    fn pull_front(&mut self, client_rc: Rc<RefCell<C>>, monitor_conf: MonitorConfig) {
+        let mut index_option = None;
+        if let Some(index) = self.clients.iter().position(|c| c == &client_rc) {
+            index_option = Some(index);
+        }
+        if let Some(index) = index_option {
+            self.clients.remove(index);
+            self.clients.push_front(client_rc);
+            self.apply_layout(monitor_conf);
+        }
     }
 }
 
@@ -75,6 +90,10 @@ impl<C: Client> Monitor<C> {
             workspaces,
             cur_workspace: 0,
         };
+    }
+
+    fn apply_current_layout(&self) {
+        self.current_workspace().apply_layout(self.config);
     }
 
     fn current_workspace(&self) -> &Workspace<C> {
@@ -98,6 +117,10 @@ impl<C: Client> Monitor<C> {
         self.workspaces[workspace_idx].attach_client(client_rc);
     }
 
+    fn pull_front(&mut self, client_rc: Rc<RefCell<C>>) {
+        self.workspaces[self.cur_workspace].pull_front(client_rc, self.config);
+    }
+
     fn switch_workspace(&mut self, _backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
@@ -116,13 +139,11 @@ impl<C: Client> MarsWM<C> {
             active_client: None,
             clients: Vec::new(),
             monitors,
-            layouts: LAYOUT_TYPES.iter().map(|lt| (*lt, Layout::new(*lt))).collect(),
         };
     }
 
-    fn apply_layout(&self, monitor: &Monitor<C>) {
-        self.layouts.get(&monitor.current_workspace().cur_layout).unwrap()
-            .apply_layout(monitor.config, self.visible_clients().cloned().collect())
+    fn apply_current_layout(&self) {
+        self.current_monitor().apply_current_layout();
     }
 
     fn current_monitor(&self) -> &Monitor<C> {
@@ -150,6 +171,7 @@ impl<C: Client> MarsWM<C> {
     fn cycle_layout(&mut self) {
         let cur_idx = LAYOUT_TYPES.iter().position(|l| *l == self.current_workspace().cur_layout).unwrap();
         self.current_workspace_mut().cur_layout = LAYOUT_TYPES[(cur_idx + 1) % LAYOUT_TYPES.len()];
+        self.apply_current_layout();
     }
 
     fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
@@ -194,12 +216,12 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
-                    self.apply_layout(self.current_monitor());
+                    self.apply_current_layout();
                 },
                 2 => client.borrow().close(),
                 3 => {
                     backend.mouse_resize(self, client, button);
-                    self.apply_layout(self.current_monitor());
+                    self.apply_current_layout();
                 },
                 _ => println!("unknown action"),
             }
@@ -270,7 +292,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.apply_layout(self.current_monitor());
+        self.apply_current_layout();
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -283,7 +305,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_active_window(&self.active_client);
         client_rc.borrow().export_workspace(workspace_idx);
-        self.apply_layout(self.current_monitor());
+        self.apply_current_layout();
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
@@ -293,7 +315,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
-        self.apply_layout(self.current_monitor());
+        self.apply_current_layout();
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -318,13 +340,13 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.apply_layout(self.current_monitor());
+        self.apply_current_layout();
     }
 }
 
 impl<C: Client> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        self.clients.push(client_rc);
+        self.clients.push_front(client_rc);
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {

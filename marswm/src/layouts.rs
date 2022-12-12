@@ -1,10 +1,11 @@
 use std::cmp;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::VecDeque;
 
 use libmars::*;
 
-#[derive(Hash,Clone,Copy,Debug,PartialEq,Eq)]
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub enum LayoutType {
     Floating,
     Stack,
@@ -14,7 +15,7 @@ pub struct Layout<C: Client> {
     layout_type: LayoutType,
     symbol: &'static str,
     label: &'static str,
-    apply: fn(MonitorConfig, Vec<Rc<RefCell<C>>>),
+    apply: fn(MonitorConfig, &VecDeque<Rc<RefCell<C>>>),
 }
 
 pub const LAYOUT_TYPES: &'static [LayoutType; 2] = & [
@@ -23,7 +24,7 @@ pub const LAYOUT_TYPES: &'static [LayoutType; 2] = & [
 ];
 
 impl<C: Client> Layout<C> {
-    pub fn new(layout_type: LayoutType) -> Layout<C> {
+    pub fn get(layout_type: LayoutType) -> Layout<C> {
         return match layout_type {
             LayoutType::Floating => Layout {
                 layout_type,
@@ -40,12 +41,12 @@ impl<C: Client> Layout<C> {
         }
     }
 
-    pub fn apply_layout(&self, monitor_conf: MonitorConfig, clients: Vec<Rc<RefCell<C>>>) {
+    pub fn apply_layout(&self, monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<C>>>) {
         (self.apply)(monitor_conf, clients);
     }
 }
 
-fn apply_layout_stack(monitor_conf: MonitorConfig, clients: Vec<Rc<RefCell<impl Client>>>) {
+fn apply_layout_stack(monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<impl Client>>>) {
     let nclients: u32 = clients.len().try_into().unwrap();
     let nmain = 2;
 
