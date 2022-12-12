@@ -14,6 +14,13 @@ mod layouts;
 mod bindings;
 
 
+const PRIMARY_COLOR: u64 = 0x31748f;
+const SECONDARY_COLOR: u64 = 0xe0def4;
+const FRAME_WIDTH: u32 = 5;
+const INNER_BORDER_WIDTH: u32 = 2;
+const OUTER_BORDER_WIDTH: u32 = 2;
+
+
 trait ClientList<C: Client> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
@@ -147,16 +154,16 @@ impl<C: Client> MarsWM<C> {
 
     fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(0xffffff);
-        client.set_outer_color(0xffffff);
-        client.set_frame_color(0x000000);
+        client.set_inner_color(SECONDARY_COLOR);
+        client.set_outer_color(SECONDARY_COLOR);
+        client.set_frame_color(PRIMARY_COLOR);
     }
 
     fn decorate_inactive(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(0x000000);
-        client.set_outer_color(0x000000);
-        client.set_frame_color(0xffffff);
+        client.set_inner_color(PRIMARY_COLOR);
+        client.set_outer_color(PRIMARY_COLOR);
+        client.set_frame_color(SECONDARY_COLOR);
     }
 
     fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
@@ -242,9 +249,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.raise();
 
         // configure look
-        client.set_inner_bw(3);
-        client.set_outer_bw(3);
-        client.set_frame_width(10);
+        client.set_inner_bw(INNER_BORDER_WIDTH);
+        client.set_outer_bw(OUTER_BORDER_WIDTH);
+        client.set_frame_width(FRAME_WIDTH);
         client.set_inner_color(0x000000);
         client.set_outer_color(0x000000);
         client.set_frame_color(0xffffff);
