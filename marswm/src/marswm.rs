@@ -61,6 +61,10 @@ impl<C: Client> MarsWM<C> {
         self.current_monitor_mut().cycle_current_layout();
     }
 
+    pub fn dec_current_nmain(&mut self) {
+        self.current_monitor_mut().dec_current_nmain();
+    }
+
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
         client.set_inner_color(SECONDARY_COLOR);
@@ -73,6 +77,10 @@ impl<C: Client> MarsWM<C> {
         client.set_inner_color(PRIMARY_COLOR);
         client.set_outer_color(PRIMARY_COLOR);
         client.set_frame_color(SECONDARY_COLOR);
+    }
+
+    pub fn inc_current_nmain(&mut self) {
+        self.current_monitor_mut().inc_current_nmain();
     }
 
     pub fn pull_current_front(&mut self, client_rc: Rc<RefCell<C>>) {

@@ -81,6 +81,12 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 wm.pull_current_front(client_rc);
             }
         }),
+        Keybinding::new(MODKEY, XK_a, |wm: &mut MarsWM<C>, _backend, _client_option| {
+            wm.inc_current_nmain();
+        }),
+        Keybinding::new(MODKEY, XK_x, |wm: &mut MarsWM<C>, _backend, _client_option| {
+            wm.dec_current_nmain();
+        }),
 
         switch_workspace_binding!(XK_1, 0),
         switch_workspace_binding!(XK_2, 1),

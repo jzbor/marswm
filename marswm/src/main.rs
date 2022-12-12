@@ -1,6 +1,5 @@
 extern crate x11;
 
-use std::collections::VecDeque;
 use std::rc::Rc;
 use std::cell::RefCell;
 

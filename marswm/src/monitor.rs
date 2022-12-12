@@ -44,6 +44,16 @@ impl<C: Client> Monitor<C> {
         self.current_workspace_mut().cycle_layout(config);
     }
 
+    pub fn dec_current_nmain(&mut self) {
+        let config = self.config;
+        self.current_workspace_mut().dec_nmain(config);
+    }
+
+    pub fn inc_current_nmain(&mut self) {
+        let config = self.config;
+        self.current_workspace_mut().inc_nmain(config);
+    }
+
     pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
         println!("Moving client at {:?} to workspace {}", client_rc.borrow().pos(), workspace_idx);
         for ws in &mut self.workspaces {

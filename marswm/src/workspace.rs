@@ -11,6 +11,7 @@ pub struct Workspace<C: Client> {
     name: &'static str,
     clients: VecDeque<Rc<RefCell<C>>>,
     cur_layout: LayoutType,
+    nmain: u32,
 }
 
 impl<C: Client> Workspace<C> {
@@ -19,16 +20,29 @@ impl<C: Client> Workspace<C> {
             _num, name,
             clients: VecDeque::new(),
             cur_layout: LayoutType::Floating,
+            nmain: 1,
         };
     }
 
     pub fn apply_layout(&self, monitor_conf: MonitorConfig) {
-        Layout::get(self.cur_layout).apply_layout(monitor_conf, &self.clients)
+        Layout::get(self.cur_layout).apply_layout(monitor_conf, &self.clients, self.nmain);
     }
 
     pub fn cycle_layout(&mut self, monitor_conf: MonitorConfig) {
         let cur_idx = LAYOUT_TYPES.iter().position(|l| *l == self.cur_layout).unwrap();
         self.cur_layout = LAYOUT_TYPES[(cur_idx + 1) % LAYOUT_TYPES.len()];
+        self.apply_layout(monitor_conf);
+    }
+
+    pub fn dec_nmain(&mut self, monitor_conf: MonitorConfig) {
+        if self.nmain > 1 {
+            self.nmain -= 1;
+            self.apply_layout(monitor_conf);
+        }
+    }
+
+    pub fn inc_nmain(&mut self, monitor_conf: MonitorConfig) {
+        self.nmain += 1;
         self.apply_layout(monitor_conf);
     }
 

@@ -12,10 +12,10 @@ pub enum LayoutType {
 }
 
 pub struct Layout<C: Client> {
-    layout_type: LayoutType,
-    symbol: &'static str,
-    label: &'static str,
-    apply: fn(MonitorConfig, &VecDeque<Rc<RefCell<C>>>),
+    _layout_type: LayoutType,
+    _symbol: &'static str,
+    _label: &'static str,
+    apply: fn(MonitorConfig, &VecDeque<Rc<RefCell<C>>>, u32),
 }
 
 pub const LAYOUT_TYPES: &'static [LayoutType; 2] = & [
@@ -27,28 +27,27 @@ impl<C: Client> Layout<C> {
     pub fn get(layout_type: LayoutType) -> Layout<C> {
         return match layout_type {
             LayoutType::Floating => Layout {
-                layout_type,
-                symbol: "<><",
-                label: "floating",
-                apply: |_, _| {},
+                _layout_type: layout_type,
+                _symbol: "<><",
+                _label: "floating",
+                apply: |_, _, _| {},
             },
             LayoutType::Stack => Layout {
-                layout_type,
-                symbol: "[]=",
-                label: "stacking",
+                _layout_type: layout_type,
+                _symbol: "[]=",
+                _label: "stacking",
                 apply: apply_layout_stack,
             },
         }
     }
 
-    pub fn apply_layout(&self, monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<C>>>) {
-        (self.apply)(monitor_conf, clients);
+    pub fn apply_layout(&self, monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<C>>>, nmain: u32) {
+        (self.apply)(monitor_conf, clients, nmain);
     }
 }
 
-fn apply_layout_stack(monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<impl Client>>>) {
+fn apply_layout_stack(monitor_conf: MonitorConfig, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
     let nclients: u32 = clients.len().try_into().unwrap();
-    let nmain = 2;
 
     if nclients == 0 {
         return;
