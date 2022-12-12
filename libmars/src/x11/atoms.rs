@@ -13,6 +13,7 @@ macro_rules! xatom {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum X11Atom {
+    UTF8String,
     WMDeleteWindow,
     WMProtocols,
     WMState,
@@ -24,13 +25,16 @@ pub enum X11Atom {
     NetDesktopNames,
     NetNumberOfDesktops,
     NetSupported,
+    NetSupportingWMCheck,
     NetWMDesktop,
+    NetWMName,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
 }
 
-const ATOMS: &'static [X11Atom; 14] = & [
+const ATOMS: &'static [X11Atom; 17] = & [
+    X11Atom::UTF8String,
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
     X11Atom::WMState,
@@ -42,7 +46,9 @@ const ATOMS: &'static [X11Atom; 14] = & [
     X11Atom::NetDesktopNames,
     X11Atom::NetNumberOfDesktops,
     X11Atom::NetSupported,
+    X11Atom::NetSupportingWMCheck,
     X11Atom::NetWMDesktop,
+    X11Atom::NetWMName,
     X11Atom::NetWMWindowType,
     X11Atom::NetWMWindowTypeDock,
     X11Atom::NetWMWindowTypeDesktop,
@@ -51,6 +57,7 @@ const ATOMS: &'static [X11Atom; 14] = & [
 impl Display for X11Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
+            X11Atom::UTF8String => "UTF8_STRING",
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
             X11Atom::WMProtocols => "WM_PROTOCOLS",
             X11Atom::WMState => "WM_STATE",
@@ -62,7 +69,9 @@ impl Display for X11Atom {
             X11Atom::NetDesktopNames => "_NET_DESKTOP_NAMES",
             X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
             X11Atom::NetSupported => "_NET_SUPPORTED",
+            X11Atom::NetSupportingWMCheck => "_NET_SUPPORTING_WM_CHECK",
             X11Atom::NetWMDesktop => "_NET_WM_DESKTOP",
+            X11Atom::NetWMName => "_NET_WM_NAME",
             X11Atom::NetWMWindowType => "_NET_WM_WINDOW_TYPE",
             X11Atom::NetWMWindowTypeDock => "_NET_WM_WINDOW_TYPE_DOCK",
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",

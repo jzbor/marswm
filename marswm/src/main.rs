@@ -49,7 +49,7 @@ trait ClientList<C: Client> {
 }
 
 fn main() {
-    let mut backend = X11Backend::init().unwrap();
+    let mut backend = X11Backend::init("marswm").unwrap();
     let mut wm = MarsWM::new(&mut backend);
     wm.init(&mut backend);
     backend.run(&mut wm);

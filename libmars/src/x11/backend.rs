@@ -15,7 +15,7 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 11] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 13] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -23,7 +23,9 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 11] = & [
     NetDesktopNames,
     NetNumberOfDesktops,
     NetSupported,
+    NetSupportingWMCheck,
     NetWMDesktop,
+    NetWMName,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
@@ -33,11 +35,12 @@ pub struct X11Backend {
     display: *mut xlib::Display,
     screen: *mut xlib::Screen,
     root: u64,
+    wmcheck_win: u64,
 }
 
 impl X11Backend {
     /// Register window manager and initialize backend with new connection.
-    pub fn init() -> Result<X11Backend, String> {
+    pub fn init(name: &str) -> Result<X11Backend, String> {
         // open new connection to x11 server
         let display = unsafe {
             let display = xlib::XOpenDisplay(ptr::null());
@@ -47,11 +50,11 @@ impl X11Backend {
             display
         };
 
-        return Self::init_with_connection(display);
+        return Self::init_with_connection(display, name);
     }
 
     /// Register window manager and create backend from existing connection.
-    pub fn init_with_connection(display: *mut xlib::Display) -> Result<X11Backend, String> {
+    pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend, String> {
         unsafe {
             let screen = xlib::XDefaultScreenOfDisplay(display);
             let root = xlib::XDefaultRootWindow(display);
@@ -60,10 +63,20 @@ impl X11Backend {
                 display,
                 screen,
                 root,
+                wmcheck_win: 0,
             };
 
             // For debugging:
             xlib::XSynchronize(display, 1);
+
+            // export wm name
+            x11b.wmcheck_win = xlib::XCreateSimpleWindow(display, root, 0, 0, 1, 1, 0, 0, 0);
+            xlib::XChangeProperty(display, x11b.wmcheck_win, NetSupportingWMCheck.to_xlib_atom(display), xlib::XA_WINDOW,
+                32, xlib::PropModeReplace, &x11b.wmcheck_win as *const u64 as *const u8, 1);
+            xlib::XChangeProperty(display, x11b.wmcheck_win, NetWMName.to_xlib_atom(display),
+                UTF8String.to_xlib_atom(display), 8, xlib::PropModeReplace, name.as_ptr(), name.len() as i32);
+            xlib::XChangeProperty(display, root, NetSupportingWMCheck.to_xlib_atom(display), xlib::XA_WINDOW,
+                32, xlib::PropModeReplace, &x11b.wmcheck_win as *const u64 as *const u8, 1);
 
             // register as window manager
             xlib::XSetErrorHandler(Some(on_wm_detected));
@@ -102,6 +115,10 @@ impl X11Backend {
 
     /// Create a new client for the window and give it to the window manager
     fn manage(&mut self, wm: &mut WM, window: xlib::Window) {
+        if window == self.wmcheck_win {
+            return;
+        }
+
         let attributes = match window.x11_attributes(self.display) {
             Ok(attr) => attr,
             Err(_) => return, // unable to get attributes for client (ignoring client)

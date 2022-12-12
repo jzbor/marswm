@@ -83,6 +83,7 @@ impl<C: Client> Monitor<C> {
 
 impl<C: Client> ClientList<C> for Monitor<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
+        client_rc.borrow().export_workspace(self.cur_workspace);
         self.workspaces[self.cur_workspace].attach_client(client_rc);
     }
 

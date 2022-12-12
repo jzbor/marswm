@@ -171,7 +171,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         self.clients.push(client_rc.clone());
-        client_rc.borrow_mut().set_pos(backend.pointer_pos());
+        let mut pos = backend.pointer_pos();
+        pos.0 -= (client_rc.borrow().w() / 2) as i32;
+        pos.1 -= (client_rc.borrow().h() / 2) as i32;
+        client_rc.borrow_mut().set_pos(pos);
         if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
             let monitor = self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap();
             monitor.attach_client(client_rc.clone());
