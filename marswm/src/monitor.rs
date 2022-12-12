@@ -14,10 +14,10 @@ pub struct Monitor<C: Client> {
 impl<C: Client> Monitor<C> {
     pub fn new(config: MonitorConfig) -> Monitor<C> {
         let workspaces = [
-            Workspace::new(0, "I"),
-            Workspace::new(1, "II"),
-            Workspace::new(2, "III"),
-            Workspace::new(3, "IV"),
+            Workspace::new(0, "I", config.window_area()),
+            Workspace::new(1, "II", config.window_area()),
+            Workspace::new(2, "III", config.window_area()),
+            Workspace::new(3, "IV", config.window_area()),
         ];
 
         return Monitor {
@@ -27,31 +27,12 @@ impl<C: Client> Monitor<C> {
         };
     }
 
-    pub fn apply_current_layout(&self) {
-        self.current_workspace().apply_layout(self.config);
-    }
-
     pub fn current_workspace(&self) -> &Workspace<C> {
         return &self.workspaces[self.cur_workspace];
     }
 
     pub fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
         return &mut self.workspaces[self.cur_workspace];
-    }
-
-    pub fn cycle_current_layout(&mut self) {
-        let config = self.config;
-        self.current_workspace_mut().cycle_layout(config);
-    }
-
-    pub fn dec_current_nmain(&mut self) {
-        let config = self.config;
-        self.current_workspace_mut().dec_nmain(config);
-    }
-
-    pub fn inc_current_nmain(&mut self) {
-        let config = self.config;
-        self.current_workspace_mut().inc_nmain(config);
     }
 
     pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -65,10 +46,6 @@ impl<C: Client> Monitor<C> {
         }
 
         self.workspaces[workspace_idx].attach_client(client_rc);
-    }
-
-    pub fn pull_current_front(&mut self, client_rc: Rc<RefCell<C>>) {
-        self.workspaces[self.cur_workspace].pull_front(client_rc, self.config);
     }
 
     pub fn switch_workspace(&mut self, _backend: &impl Backend<C>, workspace_idx: usize) {

@@ -31,10 +31,6 @@ impl<C: Client> MarsWM<C> {
         };
     }
 
-    fn apply_current_layout(&self) {
-        self.current_monitor().apply_current_layout();
-    }
-
     pub fn current_monitor(&self) -> &Monitor<C> {
         return match &self.active_client {
             Some(c) => self.monitors.iter().find(|mon| mon.contains(&c)),
@@ -57,14 +53,6 @@ impl<C: Client> MarsWM<C> {
         return self.current_monitor_mut().current_workspace_mut();
     }
 
-    pub fn cycle_current_layout(&mut self) {
-        self.current_monitor_mut().cycle_current_layout();
-    }
-
-    pub fn dec_current_nmain(&mut self) {
-        self.current_monitor_mut().dec_current_nmain();
-    }
-
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
         client.set_inner_color(SECONDARY_COLOR);
@@ -77,14 +65,6 @@ impl<C: Client> MarsWM<C> {
         client.set_inner_color(PRIMARY_COLOR);
         client.set_outer_color(PRIMARY_COLOR);
         client.set_frame_color(SECONDARY_COLOR);
-    }
-
-    pub fn inc_current_nmain(&mut self) {
-        self.current_monitor_mut().inc_current_nmain();
-    }
-
-    pub fn pull_current_front(&mut self, client_rc: Rc<RefCell<C>>) {
-        self.current_monitor_mut().pull_current_front(client_rc);
     }
 
     pub fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
@@ -115,12 +95,12 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
-                    self.apply_current_layout();
+                    self.current_workspace_mut().apply_layout();
                 },
                 2 => client.borrow().close(),
                 3 => {
                     backend.mouse_resize(self, client, button);
-                    self.apply_current_layout();
+                    self.current_workspace_mut().apply_layout();
                 },
                 _ => println!("unknown action"),
             }
@@ -191,7 +171,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.apply_current_layout();
+        self.current_workspace_mut().apply_layout();
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -204,7 +184,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_active_window(&self.active_client);
         client_rc.borrow().export_workspace(workspace_idx);
-        self.apply_current_layout();
+        self.current_workspace_mut().apply_layout();
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
@@ -214,7 +194,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
-        self.apply_current_layout();
+        self.current_workspace_mut().apply_layout();
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -239,6 +219,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.apply_current_layout();
+        self.current_workspace_mut().apply_layout();
     }
 }
