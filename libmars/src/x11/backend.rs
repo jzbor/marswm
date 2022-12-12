@@ -1,10 +1,13 @@
 extern crate x11;
 
 use x11::xlib;
+use x11::xinerama;
 use std::ptr;
+use std::slice;
 use std::mem::MaybeUninit;
 
 use crate::*;
+use crate::Dimensioned;
 use crate::x11::*;
 use crate::x11::atoms::*;
 use crate::x11::client::*;
@@ -59,6 +62,7 @@ impl X11Backend {
                 root,
             };
 
+            // For debugging:
             xlib::XSynchronize(display, 1);
 
             // register as window manager
@@ -66,7 +70,7 @@ impl X11Backend {
             // select events
             let mut attributes: MaybeUninit<xlib::XSetWindowAttributes> = MaybeUninit::uninit();
             (*attributes.as_mut_ptr()).cursor = xlib::XCreateFontCursor(display, CURSOR_NORMAL);
-            (*attributes.as_mut_ptr()).event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::KeyPressMask;
+            (*attributes.as_mut_ptr()).event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::StructureNotifyMask | xlib::KeyPressMask;
             xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, attributes.as_mut_ptr());
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
@@ -82,6 +86,7 @@ impl X11Backend {
             match event.get_type() {
                 xlib::ButtonPress => self.on_button_press(wm, event.button),
                 xlib::ClientMessage => self.on_client_message(wm, event.client_message),
+                xlib::ConfigureNotify => self.on_configure_notify(wm, event.configure),
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
@@ -173,7 +178,16 @@ impl X11Backend {
                     let delta = (event.x_root - orig_pointer_pos.0,
                                  event.y_root - orig_pointer_pos.1);
 
+                    let old_mon = self.point_to_monitor(client_rc.borrow().center());
                     action(self, &client_rc, orig_client_pos, orig_client_size, delta);
+                    if let Some(old_mon) = old_mon {
+                        let center = client_rc.borrow().center();
+                        if let Some(new_mon) = self.point_to_monitor(center).clone() {
+                            if old_mon != new_mon {
+                                wm.handle_client_switches_monitor(client_rc.clone(), new_mon);
+                            }
+                        }
+                    }
                 } else if event.get_type() == xlib::ButtonRelease {
                     break;
                 } else {
@@ -231,6 +245,14 @@ impl X11Backend {
                 },
                 _ => println!("Other client message"),
             }
+        }
+    }
+
+    fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
+        if event.window == self.root {
+            println!("ConfigureNotify");
+            let monitor_configs = self.get_monitor_config();
+            wm.update_monitor_config(monitor_configs);
         }
     }
 
@@ -374,13 +396,24 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
-        let w = unsafe { xlib::XWidthOfScreen(self.screen).try_into().unwrap() };
-        let h = unsafe { xlib::XHeightOfScreen(self.screen).try_into().unwrap() };
-        let dims = Dimensions { x: 0, y: 0, w, h };
+        unsafe {
+            if xinerama::XineramaIsActive(self.display) != 0 {
+                let mut screen_count = 0;
+                let screens_raw = xinerama::XineramaQueryScreens(self.display, &mut screen_count);
+                let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
+                let configs =  screens_slice.iter().map(|x| MonitorConfig::from(*x)).collect();
+                xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
+                return configs;
+            } else {
+                let w = xlib::XWidthOfScreen(self.screen).try_into().unwrap();
+                let h = xlib::XHeightOfScreen(self.screen).try_into().unwrap();
+                let dims = Dimensions { x: 0, y: 0, w, h };
 
-        return vec!(
-            MonitorConfig { num: 0, dims, win_area: dims }
-        );
+                return vec![
+                    MonitorConfig { num: 0, dims, win_area: dims }
+                ];
+            }
+        }
     }
 
     fn handle_existing_windows(&mut self, wm: &mut WM) {
@@ -413,6 +446,18 @@ impl Backend<X11Client> for X11Backend {
 
     fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
         self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_resize);
+    }
+
+    fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
+        for mon in self.get_monitor_config() {
+            if point.0 >= mon.dimensions().x()
+                && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
+                && point.1 >= mon.dimensions().y()
+                && point.1 < mon.dimensions().y() + mon.dimensions().h() as i32{
+                    return Some(mon.num());
+            }
+        }
+        return None;
     }
 
     fn pointer_pos(&self) -> (i32, i32) {

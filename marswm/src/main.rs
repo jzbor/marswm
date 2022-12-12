@@ -23,6 +23,29 @@ trait ClientList<C: Client> {
     fn contains(&self, client_rc: &Rc<RefCell<C>>) -> bool {
         return self.clients().find(|&c| c == client_rc).is_some();
     }
+
+    fn detach_all(&mut self) -> Vec<Rc<RefCell<C>>> {
+        let mut clients = Vec::new();
+        for client in self.clients() {
+            clients.push(client.clone());
+        }
+        for client in &clients {
+            self.detach_client(client);
+        }
+
+        return clients;
+    }
+
+    fn attach_all(&mut self, clients: Vec<Rc<RefCell<C>>>) {
+        for client in clients {
+            self.attach_client(client);
+        }
+    }
+
+    fn transfer_all(from: &mut Self, other: &mut Self) {
+        let clients = from.detach_all();
+        other.attach_all(clients);
+    }
 }
 
 fn main() {

@@ -10,6 +10,6 @@ xinit ./xinitrc -- \
         -screen 800x600 \
         +xinerama \
         -ac \
-        # -screen 800x600 \
-        # -host-cursor \
+        -screen 400x300
+        # -host-cursor
 

@@ -3,12 +3,12 @@ extern crate x11;
 use std::rc::Rc;
 use std::cell::RefCell;
 use x11::keysym::*;
-use x11::xlib::{Mod1Mask, ShiftMask};
+use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 
 use libmars::*;
 use crate::*;
 
-pub const MODKEY: u32 = Mod1Mask;
+pub const MODKEY: u32 = Mod4Mask;
 
 macro_rules! switch_workspace_binding {
     ($key:expr, $ws:expr) => {
@@ -96,7 +96,7 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
         move_workspace_binding!(XK_2, 1),
         move_workspace_binding!(XK_3, 2),
         move_workspace_binding!(XK_4, 3),
-        execute_binding!(MODKEY, XK_Return, "xterm"),
+        execute_binding!(MODKEY, XK_Return, "buttermilk"),
     ]
 }
 

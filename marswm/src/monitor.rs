@@ -48,6 +48,10 @@ impl<C: Client> Monitor<C> {
         self.workspaces[workspace_idx].attach_client(client_rc);
     }
 
+    pub fn num(&self) -> u32 {
+        return self.config.num();
+    }
+
     pub fn switch_workspace(&mut self, _backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
@@ -56,6 +60,13 @@ impl<C: Client> Monitor<C> {
         self.workspaces[self.cur_workspace].clients().for_each(|c| c.borrow_mut().hide());
         self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
         self.cur_workspace = workspace_idx;
+    }
+
+    pub fn update_config(&mut self, config: MonitorConfig) {
+        self.config = config;
+        for ws in &mut self.workspaces {
+            ws.update_window_area(config.window_area());
+        }
     }
 
     pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{

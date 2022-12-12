@@ -1,4 +1,5 @@
 use libmars::{ Backend, Client, WindowManager };
+use std::cmp;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -107,6 +108,22 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
+    fn handle_client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32) {
+        println!("Client {} switched monitor to {}", client_rc.borrow().name(), monitor);
+        for mon in &mut self.monitors {
+            mon.detach_client(&client_rc)
+        }
+        if let Some(monitor) = self.monitors.iter_mut().find(|m| m.num() == monitor) {
+            monitor.attach_client(client_rc);
+        } else {
+            panic!("Monitor {} not found", monitor);
+        }
+
+        for mon in &mut self.monitors {
+            mon.current_workspace_mut().apply_layout();
+        }
+    }
+
     fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client_rc) = client_option {
             // if let Some(focused_rc) = &self.active_client {
@@ -128,7 +145,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.active_client = None;
     }
 
-    #[allow(non_upper_case_globals)]
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
         keybindings().iter().for_each(|kb| { kb.check(modifiers, key, self, backend, client_option.clone()); });
     }
@@ -143,7 +159,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         self.clients.push(client_rc.clone());
-        self.current_monitor_mut().attach_client(client_rc.clone());
+        client_rc.borrow_mut().set_pos(backend.pointer_pos());
+        if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
+            let monitor = self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap();
+            monitor.attach_client(client_rc.clone());
+        } else {
+            self.current_monitor_mut().attach_client(client_rc.clone());
+        }
+        // self.current_monitor_mut().attach_client(client_rc.clone());
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
@@ -220,5 +243,40 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_client_list(&self.clients);
 
         self.current_workspace_mut().apply_layout();
+    }
+
+    fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {
+        println!("Monitor config update");
+        if configs.len() == 0 {
+            return;
+        }
+
+        if configs.len() > self.monitors.len() {
+            let mut detached_clients = Vec::new();
+            for monitor in self.monitors.iter_mut().filter(|m| m.num() >= configs.len().try_into().unwrap()) {
+                detached_clients.extend(monitor.detach_all());
+            }
+            let last_monitor = self.monitors.get_mut(configs.len() - 1).unwrap();
+            last_monitor.attach_all(detached_clients);
+        } else if configs.len() < self.monitors.len() {
+            println!("Adding new monitor");
+            for i in self.monitors.len()..configs.len() {
+                let monitor = Monitor::new(*configs.get(i).unwrap());
+                self.monitors.push(monitor);
+            }
+            println!("Adding new monitor");
+        }
+
+        println!("Monitors:");
+        for mon in &self.monitors {
+            println!("{}", mon.num());
+        }
+
+        for i in 0..cmp::min(configs.len(), self.monitors.len()) {
+            // let config: MonitorConfig = *configs.get(i).unwrap();
+            // self.monitors.get_mut(config.num() as usize).unwrap().update_config(config);
+            self.monitors.get_mut(i).unwrap()
+                .update_config(*configs.get(i).unwrap());
+        }
     }
 }

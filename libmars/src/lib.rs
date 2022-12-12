@@ -11,6 +11,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
+    fn handle_client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32);
     fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
     fn handle_unfocus(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
@@ -19,6 +20,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize);
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>);
 }
 
 pub trait Client: Eq + Dimensioned{
@@ -65,6 +67,8 @@ pub trait Backend<C: Client> {
 
     /// Resize client with mouse
     fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>, button: u32);
+
+    fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32>;
 
     /// Get position of pointer on screen
     fn pointer_pos(&self) -> (i32, i32);
@@ -115,6 +119,12 @@ pub trait Dimensioned {
 
     /// Get [Dimensions]
     fn dimensions(&self) -> Dimensions;
+
+    fn center(&self) -> (i32, i32) {
+        let center_x = (self.x() + self.w() as i32) / 2;
+        let center_y = (self.y() + self.h() as i32) / 2;
+        return (center_x, center_y);
+    }
 }
 
 #[derive(Copy,Clone,PartialEq,Eq)]

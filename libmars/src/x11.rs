@@ -2,7 +2,9 @@ extern crate x11;
 
 use std::ffi::*;
 use x11::xlib;
+use x11::xinerama;
 
+use crate::*;
 use crate::x11::atoms::X11Atom::*;
 
 pub mod backend;
@@ -21,6 +23,18 @@ const WINDOW_MIN_SIZE: u32 = 40;
 const NORMAL_STATE: i32 = 1;
 const ICONIC_STATE: i32 = 3;
 
+
+impl From<xinerama::XineramaScreenInfo> for MonitorConfig {
+    fn from(info: xinerama::XineramaScreenInfo) -> MonitorConfig {
+        let area = Dimensions { x: info.x_org.into(), y: info.y_org.into(),
+                                w: info.width.try_into().unwrap(), h: info.height.try_into().unwrap() };
+        MonitorConfig {
+            num: info.screen_number.try_into().unwrap(),
+            dims: area,
+            win_area: area,
+        }
+    }
+}
 
 
 fn button_mask(button: u32) -> u32 {
