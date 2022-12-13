@@ -32,7 +32,11 @@ macro_rules! move_workspace_binding {
 macro_rules! execute_binding {
     ($mods:expr, $key:expr, $cmd:expr) => {
         Keybinding::new($mods, $key, |_wm, _backend, _client_option| {
-            std::process::Command::new("sh").arg("-c").arg($cmd).spawn();
+            if let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg($cmd).spawn() {
+                std::thread::spawn(move || {
+                    let _ignored = handle.wait();
+                });
+            }
         })
     }
 }
