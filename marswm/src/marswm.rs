@@ -284,7 +284,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {
-        println!("Monitor config update");
         if configs.len() == 0 {
             return;
         }
@@ -297,17 +296,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             let last_monitor = self.monitors.get_mut(configs.len() - 1).unwrap();
             last_monitor.attach_all(detached_clients);
         } else if configs.len() < self.monitors.len() {
-            println!("Adding new monitor");
             for i in self.monitors.len()..configs.len() {
                 let monitor = Monitor::new(*configs.get(i).unwrap());
                 self.monitors.push(monitor);
             }
-            println!("Adding new monitor");
-        }
-
-        println!("Monitors:");
-        for mon in &self.monitors {
-            println!("{}", mon.num());
         }
 
         for i in 0..cmp::min(configs.len(), self.monitors.len()) {

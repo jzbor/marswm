@@ -98,6 +98,17 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 wm.handle_fullscreen_toggle(backend, client_rc)
             }
         }),
+        Keybinding::new(MODKEY|ShiftMask, XK_f, |wm: &mut MarsWM<C>, _backend, client_option| {
+            if let Some(client_rc) = client_option {
+                let mut client = client_rc.borrow_mut();
+                let is_floating = client.get_flags(CLIENT_FLAG_FLOATING);
+                client.set_flags(CLIENT_FLAG_FLOATING, !is_floating);
+                drop(client);
+
+                // FIXME use workspace of client
+                wm.current_workspace_mut().apply_layout();
+            }
+        }),
 
         switch_workspace_binding!(XK_1, 0),
         switch_workspace_binding!(XK_2, 1),

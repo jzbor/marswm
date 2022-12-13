@@ -14,6 +14,7 @@ mod marswm;
 mod monitor;
 mod workspace;
 
+const CLIENT_FLAG_FLOATING: u32 = 1 << 0;
 
 trait ClientList<C: Client> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);

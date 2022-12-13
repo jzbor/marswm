@@ -31,12 +31,14 @@ pub trait Client: Eq + Dimensioned{
     fn close(&self);
     fn dont_decorate(&self) -> bool;
     fn export_workspace(&self, workspace_idx: usize);
+    fn get_flags(&self, bitmask: u32) -> bool;
     fn hide(&mut self);
     fn is_fullscreen(&self) -> bool;
     fn is_visible(&self) -> bool;
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);
     fn name(&self) -> &str;
     fn raise(&self);
+    fn set_flags(&mut self, bitmask: u32, value: bool);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: u32);
     fn set_fullscreen(&mut self, state: bool, dimensions: Dimensions);
