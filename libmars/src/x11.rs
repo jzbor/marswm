@@ -60,6 +60,7 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
         match (*error).error_code {
             xlib::Success => println!("X11 non-error: {} (request code: {})", msg, (*error).request_code),
             xlib::BadMatch => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
+            xlib::BadWindow => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
             _ => panic!("Fatal X11 error: {} (request code: {})", msg, (*error).request_code),
         }
     }

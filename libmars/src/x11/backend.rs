@@ -15,10 +15,11 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 13] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 14] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
+    NetCloseWindow,
     NetCurrentDesktop,
     NetDesktopNames,
     NetNumberOfDesktops,
@@ -249,6 +250,11 @@ impl X11Backend {
                 NetActiveWindow => {
                     if let Some(client_rc) = Self::client_by_window(wm, event.window){
                         wm.activate_client(self, client_rc);
+                    }
+                },
+                NetCloseWindow => {
+                    if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+                        client_rc.borrow().close();
                     }
                 },
                 NetCurrentDesktop => {

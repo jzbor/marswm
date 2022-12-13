@@ -93,10 +93,6 @@ impl<C: Client> MarsWM<C> {
         pos.1 = cmp::min(pos.1, win_area.y() + win_area.h() as i32 - client.h() as i32);
         return pos;
     }
-
-    pub fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return self.current_monitor().current_workspace().clients();
-    }
 }
 
 impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {

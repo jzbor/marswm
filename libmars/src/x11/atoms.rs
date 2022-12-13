@@ -21,6 +21,7 @@ pub enum X11Atom {
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
+    NetCloseWindow,
     NetCurrentDesktop,
     NetDesktopNames,
     NetNumberOfDesktops,
@@ -33,7 +34,7 @@ pub enum X11Atom {
     NetWMWindowTypeDesktop,
 }
 
-const ATOMS: &'static [X11Atom; 17] = & [
+const ATOMS: &'static [X11Atom; 18] = & [
     X11Atom::UTF8String,
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
@@ -42,6 +43,7 @@ const ATOMS: &'static [X11Atom; 17] = & [
     X11Atom::NetActiveWindow,
     X11Atom::NetClientList,
     X11Atom::NetClientListStacking,
+    X11Atom::NetCloseWindow,
     X11Atom::NetCurrentDesktop,
     X11Atom::NetDesktopNames,
     X11Atom::NetNumberOfDesktops,
@@ -65,6 +67,7 @@ impl Display for X11Atom {
             X11Atom::NetActiveWindow => "_NET_ACTIVE_WINDOW",
             X11Atom::NetClientList => "_NET_CLIENT_LIST",
             X11Atom::NetClientListStacking => "_NET_CLIENT_LIST_STACKING",
+            X11Atom::NetCloseWindow => "_NET_CLOSE_WINDOW",
             X11Atom::NetCurrentDesktop => "_NET_CURRENT_DESKTOP",
             X11Atom::NetDesktopNames => "_NET_DESKTOP_NAMES",
             X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
