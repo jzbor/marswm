@@ -37,8 +37,8 @@ impl<C: Client> Workspace<C> {
     }
 
     pub fn cycle_layout(&mut self) {
-        let cur_idx = LAYOUT_TYPES.iter().position(|l| *l == self.cur_layout).unwrap();
-        self.cur_layout = LAYOUT_TYPES[(cur_idx + 1) % LAYOUT_TYPES.len()];
+        let cur_idx = LayoutType::VALUES.iter().position(|l| *l == self.cur_layout).unwrap();
+        self.cur_layout = LayoutType::VALUES[(cur_idx + 1) % LayoutType::SIZE];
         self.apply_layout();
     }
 

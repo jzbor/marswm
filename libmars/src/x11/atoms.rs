@@ -2,8 +2,9 @@ extern crate x11;
 
 use std::fmt::{Display, Formatter, Result};
 use x11::xlib;
-
 use std::ffi::CString;
+
+use crate::*;
 
 #[macro_export]
 macro_rules! xatom {
@@ -11,58 +12,34 @@ macro_rules! xatom {
 }
 
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum X11Atom {
-    UTF8String,
-    WMDeleteWindow,
-    WMProtocols,
-    WMState,
+enum_with_values! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    vis pub enum X11Atom {
+        UTF8String,
+        WMDeleteWindow,
+        WMProtocols,
+        WMState,
 
-    NetActiveWindow,
-    NetClientList,
-    NetClientListStacking,
-    NetCloseWindow,
-    NetCurrentDesktop,
-    NetDesktopNames,
-    NetNumberOfDesktops,
-    NetSupported,
-    NetSupportingWMCheck,
-    NetWMDesktop,
-    NetWMName,
-    NetWMState,
-    NetWMStateFullscreen,
-    NetWMWindowType,
-    NetWMWindowTypeDock,
-    NetWMWindowTypeDesktop,
+        NetActiveWindow,
+        NetClientList,
+        NetClientListStacking,
+        NetCloseWindow,
+        NetCurrentDesktop,
+        NetDesktopNames,
+        NetNumberOfDesktops,
+        NetSupported,
+        NetSupportingWMCheck,
+        NetWMDesktop,
+        NetWMName,
+        NetWMState,
+        NetWMStateFullscreen,
+        NetWMWindowType,
+        NetWMWindowTypeDock,
+        NetWMWindowTypeDesktop,
 
-    MotifWMHints,
+        MotifWMHints
+    }
 }
-
-const ATOMS: &'static [X11Atom; 21] = & [
-    X11Atom::UTF8String,
-    X11Atom::WMDeleteWindow,
-    X11Atom::WMProtocols,
-    X11Atom::WMState,
-
-    X11Atom::NetActiveWindow,
-    X11Atom::NetClientList,
-    X11Atom::NetClientListStacking,
-    X11Atom::NetCloseWindow,
-    X11Atom::NetCurrentDesktop,
-    X11Atom::NetDesktopNames,
-    X11Atom::NetNumberOfDesktops,
-    X11Atom::NetSupported,
-    X11Atom::NetSupportingWMCheck,
-    X11Atom::NetWMDesktop,
-    X11Atom::NetWMName,
-    X11Atom::NetWMState,
-    X11Atom::NetWMStateFullscreen,
-    X11Atom::NetWMWindowType,
-    X11Atom::NetWMWindowTypeDock,
-    X11Atom::NetWMWindowTypeDesktop,
-
-    X11Atom::MotifWMHints,
-];
 
 impl Display for X11Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -102,7 +79,7 @@ impl X11Atom {
             // FIXME use CStr and XFree instead
             CString::from_raw(raw_string).into_string().unwrap()
         };
-        for atom in ATOMS {
+        for atom in Self::VALUES {
             if atom.to_string() == name {
                 return Some(*atom);
             }
@@ -117,8 +94,9 @@ impl X11Atom {
         }
     }
 
+    // TODO remove
     pub fn publish(display: *mut xlib::Display) {
-        ATOMS.iter().for_each(|a| { a.to_xlib_atom(display); });
+        Self::VALUES.iter().for_each(|a| { a.to_xlib_atom(display); });
     }
 }
 

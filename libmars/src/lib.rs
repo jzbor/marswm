@@ -5,6 +5,28 @@ use std::cell::RefCell;
 
 pub mod x11;
 
+#[macro_export]
+macro_rules! count {
+    () => (0usize);
+    ( $x:tt $($xs:tt)* ) => (1usize + $crate::count!($($xs)*));
+}
+
+// Improved version of
+// https://stackoverflow.com/a/64678145/10854888
+#[macro_export]
+macro_rules! enum_with_values {
+    ($(#[$derives:meta])* $(vis $visibility:vis)? enum $name:ident { $($(#[$nested_meta:meta])* $member:ident),* }) => {
+        $(#[$derives])*
+        $($visibility)? enum $name {
+            $($(#[$nested_meta])* $member),*
+        }
+        impl $name {
+            pub const VALUES: &'static [$name; $crate::count!($($member)*)] = &[$($name::$member,)*];
+            pub const SIZE: usize = $crate::count!($($member)*);
+        }
+    };
+}
+
 
 pub trait WindowManager<B: Backend<C>, C: Client> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>>;

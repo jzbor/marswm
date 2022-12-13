@@ -5,12 +5,15 @@ use std::collections::VecDeque;
 
 use libmars::*;
 
-#[derive(Clone,Copy,Debug,PartialEq,Eq)]
-pub enum LayoutType {
-    Floating,
-    Stack,
-    Monocle,
-    Deck,
+
+enum_with_values! {
+    #[derive(Clone,Copy,Debug,PartialEq,Eq)]
+    vis pub enum LayoutType {
+        Floating,
+        Stack,
+        Monocle,
+        Deck
+    }
 }
 
 pub struct Layout<C: Client> {
@@ -19,13 +22,6 @@ pub struct Layout<C: Client> {
     _label: &'static str,
     apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, u32),
 }
-
-pub const LAYOUT_TYPES: &'static [LayoutType; 4] = & [
-    LayoutType::Floating,
-    LayoutType::Deck,
-    LayoutType::Monocle,
-    LayoutType::Stack,
-];
 
 impl<C: Client> Layout<C> {
     pub fn get(layout_type: LayoutType) -> Layout<C> {

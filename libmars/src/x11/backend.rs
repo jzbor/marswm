@@ -91,7 +91,6 @@ impl X11Backend {
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
 
-            X11Atom::publish(display);
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
 
             return Ok(x11b);
