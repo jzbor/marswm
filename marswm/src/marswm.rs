@@ -1,7 +1,8 @@
 use libmars::{ Backend, Client, WindowManager };
-use std::cmp;
 use std::cell::RefCell;
+use std::cmp;
 use std::rc::Rc;
+use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 
 use crate::*;
 use crate::bindings::*;
@@ -132,7 +133,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         return Box::new(self.clients.iter());
     }
 
-    fn handle_button(&mut self, backend: &mut B, _modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
+    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client) = client_option {
             client.borrow().raise();
             match button {
@@ -140,7 +141,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                     backend.mouse_move(self, client, button);
                     self.current_workspace_mut().restack();
                 },
-                2 => client.borrow().close(),
+                2 => if modifiers & ShiftMask != 0 {
+                    client.borrow().close();
+                } else if let Some(ws) = self.get_workspace_mut(&client) {
+                    ws.toggle_floating(client);
+                },
                 3 => {
                     backend.mouse_resize(self, client, button);
                     self.current_workspace_mut().restack();
@@ -238,6 +243,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // bind buttons
         client.bind_button(MODKEY, 1);
         client.bind_button(MODKEY, 2);
+        client.bind_button(MODKEY | ShiftMask, 2);
         client.bind_button(MODKEY, 3);
 
         // bind keys

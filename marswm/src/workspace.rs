@@ -90,6 +90,7 @@ impl<C: Client> Workspace<C> {
     pub fn toggle_floating(&mut self, client_rc: Rc<RefCell<C>>) {
         let state = self.tiled_clients.contains(&client_rc);
         self.set_floating(client_rc, state);
+        self.restack();
     }
 
     pub fn update_window_area(&mut self, win_area: Dimensions) {
