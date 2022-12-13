@@ -468,7 +468,7 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
-        self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_resize);
+        self.mouse_action(wm, client_rc, CURSOR_RESIZE, Self::mouse_action_resize);
     }
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
