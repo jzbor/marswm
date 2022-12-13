@@ -257,7 +257,9 @@ impl X11Backend {
                 },
                 NetWMDesktop => {
                     if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-                        wm.move_to_workspace(self, client_rc, event.data.get_long(0).try_into().unwrap());
+                        if let Ok(workspace) = event.data.get_long(0).try_into() {
+                            wm.move_to_workspace(self, client_rc, workspace);
+                        }
                     }
                 },
                 _ => println!("Other client message"),

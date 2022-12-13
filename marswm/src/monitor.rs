@@ -72,6 +72,10 @@ impl<C: Client> Monitor<C> {
         }
     }
 
+    pub fn window_area(&self) -> Dimensions {
+        return self.config.window_area();
+    }
+
     pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
         return Box::new(self.workspaces.iter());
     }

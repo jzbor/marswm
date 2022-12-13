@@ -81,6 +81,19 @@ impl<C: Client> MarsWM<C> {
         client.set_frame_color(SECONDARY_COLOR);
     }
 
+    pub fn initial_position<B: Backend<C>>(&self, backend: &mut B, client_rc: &Rc<RefCell<C>>) -> (i32, i32) {
+        let win_area = self.current_monitor().window_area();
+        let mut pos = backend.pointer_pos();
+        let client = client_rc.borrow();
+        pos.0 -= (client.w() / 2) as i32;
+        pos.1 -= (client.h() / 2) as i32;
+        pos.0 = cmp::max(pos.0, win_area.x());
+        pos.1 = cmp::max(pos.1, win_area.y());
+        pos.0 = cmp::min(pos.0, win_area.x() + win_area.w() as i32 - client.w() as i32);
+        pos.1 = cmp::min(pos.1, win_area.y() + win_area.h() as i32 - client.h() as i32);
+        return pos;
+    }
+
     pub fn visible_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return self.current_monitor().current_workspace().clients();
     }
@@ -174,9 +187,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         self.clients.push(client_rc.clone());
-        let mut pos = backend.pointer_pos();
-        pos.0 -= (client_rc.borrow().w() / 2) as i32;
-        pos.1 -= (client_rc.borrow().h() / 2) as i32;
+        let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
         if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
             let monitor = self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap();
