@@ -153,6 +153,7 @@ impl X11Backend {
 
         let mut client = X11Client::new(self.display, self.root, window);
         client.apply_size_hints();
+        client.apply_motif_hints();
 
         println!("New client: {} with type {:?}", client.name(), window_types);
 

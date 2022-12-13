@@ -34,9 +34,11 @@ pub enum X11Atom {
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
+
+    MotifWMHints,
 }
 
-const ATOMS: &'static [X11Atom; 20] = & [
+const ATOMS: &'static [X11Atom; 21] = & [
     X11Atom::UTF8String,
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
@@ -58,6 +60,8 @@ const ATOMS: &'static [X11Atom; 20] = & [
     X11Atom::NetWMWindowType,
     X11Atom::NetWMWindowTypeDock,
     X11Atom::NetWMWindowTypeDesktop,
+
+    X11Atom::MotifWMHints,
 ];
 
 impl Display for X11Atom {
@@ -84,6 +88,8 @@ impl Display for X11Atom {
             X11Atom::NetWMWindowType => "_NET_WM_WINDOW_TYPE",
             X11Atom::NetWMWindowTypeDock => "_NET_WM_WINDOW_TYPE_DOCK",
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",
+
+            X11Atom::MotifWMHints => "_MOTIF_WM_HINTS",
         };
         return write!(f, "{}", string);
     }

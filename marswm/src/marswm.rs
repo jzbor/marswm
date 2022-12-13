@@ -213,12 +213,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.raise();
 
         // configure look
-        client.set_inner_bw(INNER_BORDER_WIDTH);
-        client.set_outer_bw(OUTER_BORDER_WIDTH);
-        client.set_frame_width(FRAME_WIDTH);
-        client.set_inner_color(0x000000);
-        client.set_outer_color(0x000000);
-        client.set_frame_color(0xffffff);
+        if !client.dont_decorate() {
+            client.set_inner_bw(INNER_BORDER_WIDTH);
+            client.set_outer_bw(OUTER_BORDER_WIDTH);
+            client.set_frame_width(FRAME_WIDTH);
+        }
 
         // bind buttons
         client.bind_button(MODKEY, 1);

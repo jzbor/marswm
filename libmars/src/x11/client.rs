@@ -24,6 +24,7 @@ pub struct X11Client {
     fw: u32,        // frame width
 
     actively_reparenting: bool,
+    dont_decorate: bool,
     fullscreen: bool,
     visible: bool,
 
@@ -72,12 +73,26 @@ impl X11Client {
             fw: 0,
 
             actively_reparenting: false,
+            dont_decorate: false,
             fullscreen: false,
             visible: false,
 
             saved_decorations: None,
             saved_dimensions: None,
         };
+    }
+
+    pub fn apply_motif_hints(&mut self) {
+        let motif_atom = MotifWMHints.to_xlib_atom(self.display);
+        if let Ok(hints) = self.x11_read_property_long(self.display, motif_atom, motif_atom) {
+            if hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0 {
+                if hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL == 0
+                        && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER == 0
+                        && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE == 0 {
+                    self.dont_decorate = true;
+                }
+            }
+        }
     }
 
     pub fn apply_size_hints(&mut self) {
@@ -258,6 +273,10 @@ impl Client for X11Client {
                 xlib::XUngrabServer(self.display);
             }
         }
+    }
+
+    fn dont_decorate(&self) -> bool {
+        return self.dont_decorate;
     }
 
     fn export_workspace(&self, workspace_idx: usize) {
