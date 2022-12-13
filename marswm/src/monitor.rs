@@ -27,6 +27,10 @@ impl<C: Client> Monitor<C> {
         };
     }
 
+    pub fn config(&self) -> &MonitorConfig {
+        return &self.config;
+    }
+
     pub fn current_workspace(&self) -> &Workspace<C> {
         return &self.workspaces[self.cur_workspace];
     }

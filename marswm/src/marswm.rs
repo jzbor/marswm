@@ -166,16 +166,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn handle_fullscreen(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
         if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
-            let dimensions = mon.dimensions();
-            client_rc.borrow_mut().set_fullscreen(state, dimensions);
+            client_rc.borrow_mut().set_fullscreen(state, mon.config());
         }
     }
 
     fn handle_fullscreen_toggle(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
         if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
-            let dimensions = mon.dimensions();
             let old_state = client_rc.borrow().is_fullscreen();
-            client_rc.borrow_mut().set_fullscreen(!old_state, dimensions);
+            client_rc.borrow_mut().set_fullscreen(!old_state, mon.config());
         }
     }
 

@@ -109,6 +109,13 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 wm.current_workspace_mut().apply_layout();
             }
         }),
+        Keybinding::new(MODKEY, XK_z, |wm: &mut MarsWM<C>, _backend, client_option| {
+            if let Some(client_rc) = client_option {
+                // FIXME use monitor of client
+                let mon = wm.current_monitor();
+                client_rc.borrow_mut().center_on_screen(mon.config());
+            }
+        }),
 
         switch_workspace_binding!(XK_1, 0),
         switch_workspace_binding!(XK_2, 1),

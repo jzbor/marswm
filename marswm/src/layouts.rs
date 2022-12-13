@@ -64,7 +64,7 @@ impl<C: Client> Layout<C> {
 }
 
 fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
-    let clients = clients.iter().filter(|c| c.borrow().get_flags(CLIENT_FLAG_FLOATING));
+    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
     let nclients: u32 = clients.clone().count().try_into().unwrap();
 
     if nclients == 0 {
@@ -107,7 +107,7 @@ fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl C
 }
 
 fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, _nmain: u32) {
-    let clients = clients.iter().filter(|c| c.borrow().get_flags(CLIENT_FLAG_FLOATING));
+    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
     for client_rc in clients {
         client_rc.borrow_mut().move_resize(
             win_area.x(),
@@ -118,7 +118,7 @@ fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl
 }
 
 fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
-    let clients = clients.iter().filter(|c| c.borrow().get_flags(CLIENT_FLAG_FLOATING));
+    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
     let nclients: u32 = clients.clone().count().try_into().unwrap();
 
     if nclients == 0 {

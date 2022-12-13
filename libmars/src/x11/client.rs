@@ -258,6 +258,13 @@ impl Client for X11Client {
         }
     }
 
+    fn center_on_screen(&mut self, monitor_conf: &MonitorConfig) {
+        let (center_x, center_y) = monitor_conf.window_area().center();
+        self.move_resize(center_x - (self.w as i32 / 2),
+            center_y - (self.h as i32 / 2),
+            self.w(), self.h())
+    }
+
     fn close(&self) {
         if self.supports_protocol(X11Atom::WMDeleteWindow) {
             let msg_type = X11Atom::WMProtocols;
@@ -380,7 +387,8 @@ impl Client for X11Client {
         self.move_resize(self.x, self.y, self.w, self.h);
     }
 
-    fn set_fullscreen(&mut self, state: bool, dimensions: Dimensions) {
+    fn set_fullscreen(&mut self, state: bool, monitor_conf: &MonitorConfig) {
+        let dimensions = monitor_conf.dimensions();
         if state {
             self.saved_dimensions = Some(self.dimensions());
             self.fullscreen = true;

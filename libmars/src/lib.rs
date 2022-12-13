@@ -28,6 +28,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
 pub trait Client: Eq + Dimensioned{
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
+    fn center_on_screen(&mut self, monitor_conf: &MonitorConfig);
     fn close(&self);
     fn dont_decorate(&self) -> bool;
     fn export_workspace(&self, workspace_idx: usize);
@@ -41,7 +42,7 @@ pub trait Client: Eq + Dimensioned{
     fn set_flags(&mut self, bitmask: u32, value: bool);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: u32);
-    fn set_fullscreen(&mut self, state: bool, dimensions: Dimensions);
+    fn set_fullscreen(&mut self, state: bool, monitor_conf: &MonitorConfig);
     fn set_height(&mut self, height: u32);
     fn set_inner_bw(&mut self, bw: u32);
     fn set_inner_color(&mut self, color: u64);
