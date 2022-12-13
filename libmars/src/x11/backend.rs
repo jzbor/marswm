@@ -106,8 +106,6 @@ impl X11Backend {
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
-                xlib::FocusIn => self.on_focus_in(wm, event.focus_change),
-                xlib::FocusOut => self.on_focus_out(wm, event.focus_change),
                 xlib::MapRequest => self.on_map_request(wm, event.map_request),
                 xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
                 _ => (),
@@ -308,33 +306,11 @@ impl X11Backend {
         // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
         //     println!("EnterNotify on window for client {}", client_rc.borrow().window());
         // }
-        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-            // wm.handle_focus(self, Some(client_rc.clone()));
-            self.set_input_focus(client_rc);
-        }
-    }
 
-    fn on_focus_in(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XFocusChangeEvent) {
-        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-        //     println!("FocusIn on frame for client {}", client_rc.borrow().window());
-        // }
-        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-        //     println!("FocusIn on window for client {}", client_rc.borrow().window());
-        // }
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             wm.handle_focus(self, Some(client_rc.clone()));
-        }
-    }
-
-    fn on_focus_out(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XFocusChangeEvent) {
-        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-        //     println!("FocusOut on frame for client {}", client_rc.borrow().window());
-        // }
-        // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-        //     println!("FocusOut on window for client {}", client_rc.borrow().window());
-        // }
-        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-            wm.handle_unfocus(self, client_rc.clone());
+        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            wm.handle_focus(self, Some(client_rc.clone()));
         }
     }
 
@@ -349,18 +325,20 @@ impl X11Backend {
         wm.handle_key(self, modifiers, key, client_opt)
     }
 
-    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<X11Backend,X11Client>, _event: xlib::XCrossingEvent) {
-        // let client_option = Self::client_by_frame(wm, event.window);
-        // println!("LeaveNotify for client {}", event.window);
+    fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+        let client_option = Self::client_by_frame(wm, event.window);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
         // }
         // if let Some(client_rc) = Self::client_by_window(wm, event.window) {
         //     println!("LeaveNotify on window for client {}", client_rc.borrow().window());
         // }
-        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-        //     wm.handle_unfocus(self, client_rc.clone());
-        // }
+
+        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            wm.handle_unfocus(self, client_rc.clone());
+        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            wm.handle_unfocus(self, client_rc.clone());
+        }
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {

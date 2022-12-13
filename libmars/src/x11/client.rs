@@ -46,7 +46,7 @@ impl X11Client {
         let frame = unsafe {
             let frame = xlib:: XCreateSimpleWindow(display, root, x, y, w, h, 0, 0, 0);
             xlib::XSelectInput(display, frame,
-                    xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::FocusChangeMask
+                    xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask
                     | xlib::ButtonPressMask | xlib::PointerMotionMask | xlib::ButtonReleaseMask
                     | xlib::ButtonMotionMask | xlib::EnterWindowMask | xlib::LeaveWindowMask);
             xlib::XAddToSaveSet(display, window);
@@ -55,6 +55,10 @@ impl X11Client {
 
             frame
         };
+
+        unsafe {
+            xlib::XSelectInput(display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask);
+        }
 
         let name = match window.x11_class_hint(display) {
             Ok((name, class)) => format!("{}::{} [0x{:x}]", name, class, window),

@@ -124,7 +124,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
         monitor.switch_workspace(backend, workspace_idx);
         client_rc.borrow().raise();
-        client_rc.borrow().warp_pointer_to_center();
+        // client_rc.borrow().warp_pointer_to_center();
         self.handle_focus(backend, Some(client_rc));
     }
 
@@ -173,6 +173,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             // }
 
             self.decorate_active(client_rc.clone());
+            backend.set_input_focus(client_rc.clone());
 
             self.active_client = Some(client_rc);
         } else {
