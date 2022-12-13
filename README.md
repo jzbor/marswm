@@ -1,6 +1,8 @@
 # MARSWM
 
-This is my attempt at implementing a window manager with its own library.
+A rusty successor to [moonwm](https://github.com/jzbor/moonwm) - my attempt at implementing a window manager with its own library.
+
+*DISCLAIMER: This is still in development. The library API as well as the window manager itself might be subject to frequent changes. Neither can be considered stable yet.*
 
 ## The Components
 
