@@ -10,6 +10,7 @@ pub struct Workspace<C: Client> {
     _num: u32,
     name: &'static str,
     clients: VecDeque<Rc<RefCell<C>>>,
+    tiled_clients: VecDeque<Rc<RefCell<C>>>,
     win_area: Dimensions,
     cur_layout: LayoutType,
     nmain: u32,
@@ -20,6 +21,7 @@ impl<C: Client> Workspace<C> {
         return Workspace {
             _num, name,
             clients: VecDeque::new(),
+            tiled_clients: VecDeque::new(),
             win_area,
             cur_layout: LayoutType::Floating,
             nmain: 1,
@@ -31,7 +33,7 @@ impl<C: Client> Workspace<C> {
         let mut win_area = self.win_area;
         win_area.set_y(win_area.y() + inset as i32);
         win_area.set_h(win_area.h() - inset);
-        Layout::get(self.cur_layout).apply_layout(win_area, &self.clients, self.nmain);
+        Layout::get(self.cur_layout).apply_layout(win_area, &self.tiled_clients, self.nmain);
     }
 
     pub fn cycle_layout(&mut self) {
@@ -58,14 +60,36 @@ impl<C: Client> Workspace<C> {
 
     pub fn pull_front(&mut self, client_rc: Rc<RefCell<C>>) {
         let mut index_option = None;
-        if let Some(index) = self.clients.iter().position(|c| c == &client_rc) {
+        if let Some(index) = self.tiled_clients.iter().position(|c| c == &client_rc) {
             index_option = Some(index);
         }
         if let Some(index) = index_option {
-            self.clients.remove(index);
-            self.clients.push_front(client_rc);
+            self.tiled_clients.remove(index);
+            self.tiled_clients.push_front(client_rc);
             self.apply_layout();
         }
+    }
+
+    pub fn restack(&mut self) {
+        self.apply_layout();
+    }
+
+    pub fn set_floating(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
+        if !self.clients.contains(&client_rc) {
+            return;
+        }
+
+        if state {
+            let index = self.clients.iter().position(|c| c == &client_rc).unwrap();
+            self.tiled_clients.remove(index);
+        } else {
+            self.tiled_clients.push_front(client_rc);
+        }
+    }
+
+    pub fn toggle_floating(&mut self, client_rc: Rc<RefCell<C>>) {
+        let state = self.tiled_clients.contains(&client_rc);
+        self.set_floating(client_rc, state);
     }
 
     pub fn update_window_area(&mut self, win_area: Dimensions) {
@@ -76,6 +100,7 @@ impl<C: Client> Workspace<C> {
 
 impl<C: Client> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
+        self.tiled_clients.push_front(client_rc.clone());
         self.clients.push_front(client_rc);
     }
 
@@ -85,7 +110,15 @@ impl<C: Client> ClientList<C> for Workspace<C> {
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
         let mut index_option = None;
-        if let Some(index) = self.clients().position(|c| c == client_rc) {
+        if let Some(index) = self.tiled_clients.iter().position(|c| c == client_rc) {
+            index_option = Some(index);
+        }
+        if let Some(index) = index_option {
+            self.tiled_clients.remove(index);
+        }
+
+        let mut index_option = None;
+        if let Some(index) = self.clients.iter().position(|c| c == client_rc) {
             index_option = Some(index);
         }
         if let Some(index) = index_option {

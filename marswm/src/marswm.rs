@@ -93,6 +93,24 @@ impl<C: Client> MarsWM<C> {
         pos.1 = cmp::min(pos.1, win_area.y() + win_area.h() as i32 - client.h() as i32);
         return pos;
     }
+
+    pub fn get_monitor(&self, client_rc: &Rc<RefCell<C>>) -> Option<&Monitor<C>> {
+        return self.monitors.iter().find(|m| m.contains(client_rc));
+    }
+
+    pub fn get_monitor_mut(&mut self, client_rc: &Rc<RefCell<C>>) -> Option<&mut Monitor<C>> {
+        return self.monitors.iter_mut().find(|m| m.contains(client_rc));
+    }
+
+    pub fn get_workspace(&self, client_rc: &Rc<RefCell<C>>) -> Option<&Workspace<C>> {
+        return self.monitors.iter().flat_map(|m| m.workspaces())
+            .find(|ws| ws.contains(client_rc));
+    }
+
+    pub fn get_workspace_mut(&mut self, client_rc: &Rc<RefCell<C>>) -> Option<&mut Workspace<C>> {
+        return self.monitors.iter_mut().flat_map(|m| m.workspaces_mut())
+            .find(|ws| ws.contains(client_rc));
+    }
 }
 
 impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
@@ -101,7 +119,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        let monitor = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
+        let monitor = self.get_monitor_mut(&client_rc).unwrap();
         let workspace_idx = monitor.workspaces().enumerate()
             .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
         monitor.switch_workspace(backend, workspace_idx);
@@ -120,12 +138,12 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
-                    self.current_workspace_mut().apply_layout();
+                    self.current_workspace_mut().restack();
                 },
                 2 => client.borrow().close(),
                 3 => {
                     backend.mouse_resize(self, client, button);
-                    self.current_workspace_mut().apply_layout();
+                    self.current_workspace_mut().restack();
                 },
                 _ => println!("unknown action"),
             }
@@ -144,7 +162,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         for mon in &mut self.monitors {
-            mon.current_workspace_mut().apply_layout();
+            mon.current_workspace_mut().restack();
         }
     }
 
@@ -165,16 +183,15 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn handle_fullscreen(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
-        if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
+        if let Some(mon) = self.get_monitor_mut(&client_rc) {
             client_rc.borrow_mut().set_fullscreen(state, mon.config());
+            self.get_workspace_mut(&client_rc).unwrap().restack();
         }
     }
 
-    fn handle_fullscreen_toggle(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
-            let old_state = client_rc.borrow().is_fullscreen();
-            client_rc.borrow_mut().set_fullscreen(!old_state, mon.config());
-        }
+    fn handle_fullscreen_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        let old_state = client_rc.borrow().is_fullscreen();
+        self.handle_fullscreen(backend, client_rc, !old_state)
     }
 
     fn handle_unfocus(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -231,11 +248,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.current_workspace_mut().apply_layout();
+        self.current_workspace_mut().restack();
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
-        let mon = self.monitors.iter_mut().find(|m| m.contains(&client_rc)).unwrap();
+        let mon = self.get_monitor_mut(&client_rc).unwrap();
         mon.move_to_workspace(client_rc.clone(), workspace_idx);
         self.decorate_inactive(client_rc.clone());
         // TODO focus other client or drop focus
@@ -244,7 +261,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_active_window(&self.active_client);
         client_rc.borrow().export_workspace(workspace_idx);
-        self.current_workspace_mut().apply_layout();
+        self.current_workspace_mut().restack();
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
@@ -253,7 +270,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
-        self.current_workspace_mut().apply_layout();
+        self.current_workspace_mut().restack();
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -278,7 +295,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.current_workspace_mut().apply_layout();
+        self.current_workspace_mut().restack();
     }
 
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {

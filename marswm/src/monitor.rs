@@ -89,8 +89,8 @@ impl<C: Client> Monitor<C> {
         return Box::new(self.workspaces.iter());
     }
 
-    pub fn workspaces_mut(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
-        return Box::new(self.workspaces.iter());
+    pub fn workspaces_mut(&mut self) -> Box<dyn Iterator<Item = &mut Workspace<C>> + '_>{
+        return Box::new(self.workspaces.iter_mut());
     }
 }
 

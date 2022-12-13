@@ -100,20 +100,17 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
         }),
         Keybinding::new(MODKEY|ShiftMask, XK_f, |wm: &mut MarsWM<C>, _backend, client_option| {
             if let Some(client_rc) = client_option {
-                let mut client = client_rc.borrow_mut();
-                let is_floating = client.get_flags(CLIENT_FLAG_FLOATING);
-                client.set_flags(CLIENT_FLAG_FLOATING, !is_floating);
-                drop(client);
-
-                // FIXME use workspace of client
-                wm.current_workspace_mut().apply_layout();
+                if let Some(ws) = wm.get_workspace_mut(&client_rc) {
+                    ws.toggle_floating(client_rc);
+                    ws.apply_layout();
+                }
             }
         }),
         Keybinding::new(MODKEY, XK_z, |wm: &mut MarsWM<C>, _backend, client_option| {
             if let Some(client_rc) = client_option {
-                // FIXME use monitor of client
-                let mon = wm.current_monitor();
-                client_rc.borrow_mut().center_on_screen(mon.config());
+                if let Some(mon) = wm.get_monitor(&client_rc) {
+                    client_rc.borrow_mut().center_on_screen(mon.config());
+                }
             }
         }),
 

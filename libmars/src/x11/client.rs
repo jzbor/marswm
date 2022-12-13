@@ -17,7 +17,6 @@ pub struct X11Client {
     root: u64,
     window: u64,
     frame: u64,
-    user_flags: u32,
 
     x: i32, y: i32, // x, y position
     w: u32, h: u32, // width, height
@@ -72,7 +71,6 @@ impl X11Client {
             ibw: 0,
             obw: 0,
             fw: 0,
-            user_flags: 0,
 
             actively_reparenting: false,
             dont_decorate: false,
@@ -197,10 +195,12 @@ impl X11Client {
     }
 
     fn remove_decoration(&mut self) {
-        self.saved_decorations = Some((self.ibw, self.obw, self.fw));
-        self.set_inner_bw(0);
-        self.set_outer_bw(0);
-        self.set_frame_width(0);
+        if self.saved_decorations.is_none() {
+            self.saved_decorations = Some((self.ibw, self.obw, self.fw));
+            self.set_inner_bw(0);
+            self.set_outer_bw(0);
+            self.set_frame_width(0);
+        }
     }
 
     fn restore_decoration(&mut self) {
@@ -294,10 +294,6 @@ impl Client for X11Client {
         self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
 
-    fn get_flags(&self, bitmask: u32) -> bool {
-        return self.user_flags & bitmask != 0;
-    }
-
     fn hide(&mut self) {
         if !self.visible {
             return;
@@ -363,14 +359,6 @@ impl Client for X11Client {
     fn raise(&self) {
         unsafe {
             xlib::XRaiseWindow(self.display, self.frame);
-        }
-    }
-
-    fn set_flags(&mut self, bitmask: u32, value: bool) {
-        if value {
-            self.user_flags |= bitmask;
-        } else {
-            self.user_flags &= !bitmask;
         }
     }
 

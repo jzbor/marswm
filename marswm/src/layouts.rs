@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 
 use libmars::*;
-use crate::*;
 
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub enum LayoutType {
@@ -64,8 +63,7 @@ impl<C: Client> Layout<C> {
 }
 
 fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
-    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
-    let nclients: u32 = clients.clone().count().try_into().unwrap();
+    let nclients: u32 = clients.len().try_into().unwrap();
 
     if nclients == 0 {
         return;
@@ -85,8 +83,10 @@ fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl C
         }
     };
 
-    for (i, client_rc) in clients.enumerate() {
-        if i < nmain.try_into().unwrap() { // main window(s)
+    for (i, client_rc) in clients.iter().enumerate() {
+        if client_rc.borrow().is_fullscreen() {
+            continue;
+        } else if i < nmain.try_into().unwrap() { // main window(s)
             let y_offset: i32 = (i as u32 * main_height).try_into().unwrap();
             client_rc.borrow_mut().move_resize(
                 win_area.x(),
@@ -107,19 +107,21 @@ fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl C
 }
 
 fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, _nmain: u32) {
-    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
     for client_rc in clients {
-        client_rc.borrow_mut().move_resize(
-            win_area.x(),
-            win_area.y(),
-            win_area.w(),
-            win_area.h());
+        if client_rc.borrow().is_fullscreen() {
+            continue;
+        } else {
+            client_rc.borrow_mut().move_resize(
+                win_area.x(),
+                win_area.y(),
+                win_area.w(),
+                win_area.h());
+        }
     }
 }
 
 fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
-    let clients = clients.iter().filter(|c| !c.borrow().get_flags(CLIENT_FLAG_FLOATING));
-    let nclients: u32 = clients.clone().count().try_into().unwrap();
+    let nclients: u32 = clients.len().try_into().unwrap();
 
     if nclients == 0 {
         return;
@@ -139,8 +141,10 @@ fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Cl
         }
     };
 
-    for (i, client_rc) in clients.enumerate() {
-        if i < nmain.try_into().unwrap() { // main window(s)
+    for (i, client_rc) in clients.iter().enumerate() {
+        if client_rc.borrow().is_fullscreen() {
+            continue;
+        } else if i < nmain.try_into().unwrap() { // main window(s)
             let y_offset: i32 = (i as u32 * main_height).try_into().unwrap();
             client_rc.borrow_mut().move_resize(
                 win_area.x(),
