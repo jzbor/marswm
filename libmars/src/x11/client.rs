@@ -24,7 +24,11 @@ pub struct X11Client {
     fw: u32,        // frame width
 
     actively_reparenting: bool,
+    fullscreen: bool,
     visible: bool,
+
+    saved_decorations: Option<(u32, u32, u32)>,
+    saved_dimensions: Option<Dimensions>,
 }
 
 impl X11Client {
@@ -68,7 +72,11 @@ impl X11Client {
             fw: 0,
 
             actively_reparenting: false,
+            fullscreen: false,
             visible: false,
+
+            saved_decorations: None,
+            saved_dimensions: None,
         };
     }
 
@@ -171,6 +179,22 @@ impl X11Client {
         return self.frame;
     }
 
+    fn remove_decoration(&mut self) {
+        self.saved_decorations = Some((self.ibw, self.obw, self.fw));
+        self.set_inner_bw(0);
+        self.set_outer_bw(0);
+        self.set_frame_width(0);
+    }
+
+    fn restore_decoration(&mut self) {
+        if let Some((ibw, obw, fw)) = self.saved_decorations {
+            self.set_inner_bw(ibw);
+            self.set_outer_bw(obw);
+            self.set_frame_width(fw);
+            self.saved_decorations = None;
+        }
+    }
+
     pub fn is_reparenting(&self) -> bool {
         return self.actively_reparenting;
     }
@@ -267,6 +291,10 @@ impl Client for X11Client {
         self.visible = false;
     }
 
+    fn is_fullscreen(&self) -> bool {
+        return self.fullscreen;
+    }
+
     fn is_visible(&self) -> bool {
         return self.visible;
     }
@@ -317,6 +345,27 @@ impl Client for X11Client {
     fn set_frame_width(&mut self, width: u32) {
         self.fw = width;
         self.move_resize(self.x, self.y, self.w, self.h);
+    }
+
+    fn set_fullscreen(&mut self, state: bool, dimensions: Dimensions) {
+        if state {
+            self.saved_dimensions = Some(self.dimensions());
+            self.fullscreen = true;
+            let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
+            let data = &[xatom];
+            self.x11_replace_property_long(self.display, NetWMState.to_xlib_atom(self.display), xlib::XA_ATOM, data);
+            self.remove_decoration();
+            self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+            self.raise();
+        } else {
+            if let Some(dimensions) = self.saved_dimensions {
+                self.fullscreen = false;
+                let data = &[0];
+                self.x11_replace_property_long(self.display, NetWMState.to_xlib_atom(self.display), xlib::XA_ATOM, data);
+                self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+                self.restore_decoration();
+            }
+        }
     }
 
     fn set_height(&mut self, height: u32) {

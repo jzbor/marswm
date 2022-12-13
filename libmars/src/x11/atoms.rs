@@ -29,12 +29,14 @@ pub enum X11Atom {
     NetSupportingWMCheck,
     NetWMDesktop,
     NetWMName,
+    NetWMState,
+    NetWMStateFullscreen,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
 }
 
-const ATOMS: &'static [X11Atom; 18] = & [
+const ATOMS: &'static [X11Atom; 20] = & [
     X11Atom::UTF8String,
     X11Atom::WMDeleteWindow,
     X11Atom::WMProtocols,
@@ -51,6 +53,8 @@ const ATOMS: &'static [X11Atom; 18] = & [
     X11Atom::NetSupportingWMCheck,
     X11Atom::NetWMDesktop,
     X11Atom::NetWMName,
+    X11Atom::NetWMState,
+    X11Atom::NetWMStateFullscreen,
     X11Atom::NetWMWindowType,
     X11Atom::NetWMWindowTypeDock,
     X11Atom::NetWMWindowTypeDesktop,
@@ -75,6 +79,8 @@ impl Display for X11Atom {
             X11Atom::NetSupportingWMCheck => "_NET_SUPPORTING_WM_CHECK",
             X11Atom::NetWMDesktop => "_NET_WM_DESKTOP",
             X11Atom::NetWMName => "_NET_WM_NAME",
+            X11Atom::NetWMState => "_NET_WM_STATE",
+            X11Atom::NetWMStateFullscreen => "_NET_WM_STATE_FULLSCREEN",
             X11Atom::NetWMWindowType => "_NET_WM_WINDOW_TYPE",
             X11Atom::NetWMWindowTypeDock => "_NET_WM_WINDOW_TYPE_DOCK",
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",
@@ -87,6 +93,7 @@ impl X11Atom {
     pub fn from_xlib_atom(display: *mut xlib::Display, atom: xlib::Atom) -> Option<X11Atom> {
         let name = unsafe {
             let raw_string = xlib::XGetAtomName(display, atom);
+            // FIXME use CStr and XFree instead
             CString::from_raw(raw_string).into_string().unwrap()
         };
         for atom in ATOMS {
@@ -102,6 +109,10 @@ impl X11Atom {
         unsafe {
             return xlib::XInternAtom(display, atom_name, xlib::False);
         }
+    }
+
+    pub fn publish(display: *mut xlib::Display) {
+        ATOMS.iter().for_each(|a| { a.to_xlib_atom(display); });
     }
 }
 

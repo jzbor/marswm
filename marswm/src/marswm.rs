@@ -164,6 +164,21 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_active_window(&self.active_client);
     }
 
+    fn handle_fullscreen(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+        if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
+            let dimensions = mon.dimensions();
+            client_rc.borrow_mut().set_fullscreen(state, dimensions);
+        }
+    }
+
+    fn handle_fullscreen_toggle(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains(&client_rc)) {
+            let dimensions = mon.dimensions();
+            let old_state = client_rc.borrow().is_fullscreen();
+            client_rc.borrow_mut().set_fullscreen(!old_state, dimensions);
+        }
+    }
+
     fn handle_unfocus(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
         self.decorate_inactive(client_rc);
         self.active_client = None;
@@ -237,7 +252,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
         self.current_monitor_mut().switch_workspace(backend, workspace_idx);
-        backend.export_current_workspace(workspace_idx);
         // TODO focus other client or drop focus
         // hacky workaround:
         self.active_client = None;

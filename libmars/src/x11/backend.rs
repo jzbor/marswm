@@ -15,7 +15,7 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 14] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 16] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -27,6 +27,8 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 14] = & [
     NetSupportingWMCheck,
     NetWMDesktop,
     NetWMName,
+    NetWMState,
+    NetWMStateFullscreen,
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
@@ -89,6 +91,7 @@ impl X11Backend {
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
 
+            X11Atom::publish(display);
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
 
             return Ok(x11b);
@@ -268,6 +271,23 @@ impl X11Backend {
                         }
                     }
                 },
+                NetWMState => {
+                    if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+                        if event.data.get_long(1) as u64 == NetWMStateFullscreen.to_xlib_atom(self.display)
+                                || event.data.get_long(2) as u64 == NetWMStateFullscreen.to_xlib_atom(self.display) {
+                            let mode = event.data.get_long(0) as u64;
+                            if mode == 1 {
+                                wm.handle_fullscreen(self, client_rc, true);
+                            } else if mode == 0 {
+                                wm.handle_fullscreen(self, client_rc, false);
+                            } else if mode == 2 {
+                                wm.handle_fullscreen_toggle(self, client_rc);
+                            } else {
+                                println!("Unknown atom: {} ({:x})", mode, mode);
+                            }
+                        }
+                    }
+                }
                 _ => println!("Other client message"),
             }
         }

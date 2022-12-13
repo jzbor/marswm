@@ -93,6 +93,11 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
         Keybinding::new(MODKEY, XK_p, |wm: &mut MarsWM<C>, _backend, _client_option| {
             wm.cycle_client(-1);
         }),
+        Keybinding::new(MODKEY, XK_f, |wm: &mut MarsWM<C>, backend, client_option| {
+            if let Some(client_rc) = client_option {
+                wm.handle_fullscreen_toggle(backend, client_rc)
+            }
+        }),
 
         switch_workspace_binding!(XK_1, 0),
         switch_workspace_binding!(XK_2, 1),

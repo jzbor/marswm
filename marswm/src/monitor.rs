@@ -35,6 +35,10 @@ impl<C: Client> Monitor<C> {
         return &mut self.workspaces[self.cur_workspace];
     }
 
+    pub fn dimensions(&self) -> Dimensions {
+        return self.config.dimensions();
+    }
+
     pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
         if workspace_idx >= self.workspaces.len() {
             return;
@@ -55,7 +59,7 @@ impl<C: Client> Monitor<C> {
         return self.config.num();
     }
 
-    pub fn switch_workspace(&mut self, _backend: &impl Backend<C>, workspace_idx: usize) {
+    pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
         }
@@ -63,6 +67,7 @@ impl<C: Client> Monitor<C> {
         self.workspaces[self.cur_workspace].clients().for_each(|c| c.borrow_mut().hide());
         self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
         self.cur_workspace = workspace_idx;
+        backend.export_current_workspace(workspace_idx);
     }
 
     pub fn update_config(&mut self, config: MonitorConfig) {

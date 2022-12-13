@@ -6,7 +6,6 @@ use std::ptr;
 use std::slice;
 use x11::xlib;
 
-use crate::*;
 use crate::x11::*;
 
 
