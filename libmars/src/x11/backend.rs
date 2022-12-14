@@ -39,6 +39,7 @@ pub struct X11Backend {
     screen: *mut xlib::Screen,
     root: u64,
     wmcheck_win: u64,
+    last_active: Option<Rc<RefCell<X11Client>>>,
 }
 
 impl X11Backend {
@@ -67,6 +68,7 @@ impl X11Backend {
                 screen,
                 root,
                 wmcheck_win: 0,
+                last_active: None,
             };
 
             // For debugging:
@@ -317,14 +319,24 @@ impl X11Backend {
         //     println!("EnterNotify on window for client {}", client_rc.borrow().window());
         // }
 
-        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-            wm.handle_focus(self, Some(client_rc.clone()));
+        let client_option = if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            Some(client_rc)
         } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            Some(client_rc)
+        } else {
+            None
+        };
+
+        if let Some(client_rc) = client_option {
+            if let Some(last_active_client) = &self.last_active {
+                wm.handle_unfocus(self, last_active_client.clone());
+            }
             wm.handle_focus(self, Some(client_rc.clone()));
+            self.last_active = Some(client_rc);
         }
     }
 
-    fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, mut event: xlib::XKeyEvent) {
+    fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XKeyEvent) {
         let keysym = unsafe {
             xlib::XKeycodeToKeysym(self.display, event.keycode.try_into().unwrap(), 0)
         };
@@ -343,11 +355,11 @@ impl X11Backend {
         //     println!("LeaveNotify on window for client {}", client_rc.borrow().window());
         // }
 
-        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
-            wm.handle_unfocus(self, client_rc.clone());
-        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-            wm.handle_unfocus(self, client_rc.clone());
-        }
+        // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+        //     wm.handle_unfocus(self, client_rc.clone());
+        // } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+        //     wm.handle_unfocus(self, client_rc.clone());
+        // }
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
