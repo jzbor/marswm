@@ -73,6 +73,14 @@ impl<C: Client> MarsWM<C> {
         }
     }
 
+    pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
+        let monitor = self.current_monitor();
+        let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace()).unwrap();
+        let monitor = self.current_monitor_mut();
+        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as usize % NUM_WORKSPACES;
+        monitor.switch_workspace(backend, new_workspace_idx);
+    }
+
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
         client.set_inner_color(BACKGROUND_COLOR);
@@ -278,11 +286,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
         self.current_monitor_mut().switch_workspace(backend, workspace_idx);
-        // TODO focus other client or drop focus
-        // hacky workaround:
-        self.active_client = None;
-        backend.export_active_window(&self.active_client);
-        self.current_workspace_mut().restack();
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {

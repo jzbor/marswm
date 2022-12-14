@@ -6,6 +6,7 @@ use std::rc::Rc;
 use crate::*;
 use crate::layouts::*;
 
+#[derive(PartialEq)]
 pub struct Workspace<C: Client> {
     _num: usize,
     name: &'static str,

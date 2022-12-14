@@ -91,11 +91,17 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
         Keybinding::new(MODKEY, XK_x, |wm: &mut MarsWM<C>, _backend, _client_option| {
             wm.current_workspace_mut().dec_nmain();
         }),
-        Keybinding::new(MODKEY, XK_n, |wm: &mut MarsWM<C>, _backend, _client_option| {
+        Keybinding::new(MODKEY, XK_j, |wm: &mut MarsWM<C>, _backend, _client_option| {
             wm.cycle_client(1);
         }),
-        Keybinding::new(MODKEY, XK_p, |wm: &mut MarsWM<C>, _backend, _client_option| {
+        Keybinding::new(MODKEY, XK_k, |wm: &mut MarsWM<C>, _backend, _client_option| {
             wm.cycle_client(-1);
+        }),
+        Keybinding::new(MODKEY, XK_period, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.cycle_workspace(backend, 1);
+        }),
+        Keybinding::new(MODKEY, XK_comma, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.cycle_workspace(backend, -1);
         }),
         Keybinding::new(MODKEY, XK_f, |wm: &mut MarsWM<C>, backend, client_option| {
             if let Some(client_rc) = client_option {
