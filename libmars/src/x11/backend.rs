@@ -103,6 +103,7 @@ impl X11Backend {
                 xlib::ButtonPress => self.on_button_press(wm, event.button),
                 xlib::ClientMessage => self.on_client_message(wm, event.client_message),
                 xlib::ConfigureNotify => self.on_configure_notify(wm, event.configure),
+                xlib::DestroyNotify => self.on_destroy_notify(wm, event.destroy_window),
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
@@ -299,6 +300,15 @@ impl X11Backend {
         }
     }
 
+    fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XDestroyWindowEvent) {
+        let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
+            Some(client_rc) => client_rc.clone(),
+            None => return,
+        };
+
+        self.unmanage(wm, client_rc);
+    }
+
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("EnterNotify on frame for client {}", client_rc.borrow().window());
@@ -356,13 +366,7 @@ impl X11Backend {
             return;
         }
 
-        // tell window manager to drop client
-        wm.unmanage(self, client_rc.clone());
-
-        println!("Closed client: {}", client_rc.borrow().name());
-
-        // remove client frame
-        client_rc.borrow().destroy_frame();
+        self.unmanage(wm, client_rc);
     }
 
     fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
@@ -373,6 +377,16 @@ impl X11Backend {
         let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| a.to_xlib_atom(self.display)).collect();
         let data = atom_vec.as_slice();
         self.root.x11_replace_property_long(self.display, X11Atom::NetSupported.to_xlib_atom(self.display), xlib::XA_ATOM, data)
+    }
+
+    fn unmanage(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
+        // tell window manager to drop client
+        wm.unmanage(self, client_rc.clone());
+
+        println!("Closed client: {}", client_rc.borrow().name());
+
+        // remove client frame
+        client_rc.borrow().destroy_frame();
     }
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {

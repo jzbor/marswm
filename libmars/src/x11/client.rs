@@ -186,7 +186,9 @@ impl X11Client {
     pub fn destroy_frame(&self) {
         println!("Destroying frame for client {}", self.name);
         unsafe {
-            xlib::XUnmapWindow(self.display, self.frame);
+            // if self.is_visible() {
+            //     xlib::XUnmapWindow(self.display, self.frame);
+            // }
             // The following lines were here before, but generate "parameter not a window" errors
             //xlib::XReparentWindow(self.display, self.window, self.root, 0, 0);
             //xlib::XRemoveFromSaveSet(self.display, self.window);
