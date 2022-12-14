@@ -58,6 +58,10 @@ impl<C: Client> MarsWM<C> {
 
     pub fn cycle_client(&mut self, inc: i32) {
         if let Some(active) = &self.active_client {
+            if active.borrow().is_fullscreen() {
+                return;
+            }
+
             let ws = self.current_workspace();
             if let Some(old_idx) = ws.clients().position(|c| c == active) {
                 let new_idx = (old_idx as i32 + inc) as usize % ws.clients().count();
