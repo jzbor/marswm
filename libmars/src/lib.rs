@@ -21,7 +21,9 @@ macro_rules! enum_with_values {
             $($(#[$nested_meta])* $member),*
         }
         impl $name {
+            #[allow(dead_code)]
             pub const VALUES: &'static [$name; $crate::count!($($member)*)] = &[$($name::$member,)*];
+            #[allow(dead_code)]
             pub const SIZE: usize = $crate::count!($($member)*);
         }
     };
