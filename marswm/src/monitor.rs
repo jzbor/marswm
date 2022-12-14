@@ -7,18 +7,17 @@ use crate::workspace::*;
 
 pub struct Monitor<C: Client> {
     config: MonitorConfig,
-    workspaces: [Workspace<C>; 4],
+    workspaces: Vec<Workspace<C>>,
     cur_workspace: usize,
 }
 
 impl<C: Client> Monitor<C> {
     pub fn new(config: MonitorConfig) -> Monitor<C> {
-        let workspaces = [
-            Workspace::new(0, "I", config.window_area()),
-            Workspace::new(1, "II", config.window_area()),
-            Workspace::new(2, "III", config.window_area()),
-            Workspace::new(3, "IV", config.window_area()),
-        ];
+        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(NUM_WORKSPACES)
+            .enumerate().map(|(i, name)| Workspace::new(i, name, config.window_area()))
+            .collect();
+
+        assert!(workspaces.len() == NUM_WORKSPACES);
 
         return Monitor {
             config,

@@ -7,7 +7,7 @@ use crate::*;
 use crate::layouts::*;
 
 pub struct Workspace<C: Client> {
-    _num: u32,
+    _num: usize,
     name: &'static str,
     clients: VecDeque<Rc<RefCell<C>>>,
     tiled_clients: VecDeque<Rc<RefCell<C>>>,
@@ -16,8 +16,14 @@ pub struct Workspace<C: Client> {
     nmain: u32,
 }
 
+
+pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
+    "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+];
+
+
 impl<C: Client> Workspace<C> {
-    pub fn new(_num: u32, name: &'static str, win_area: Dimensions) -> Workspace<C> {
+    pub fn new(_num: usize, name: &'static str, win_area: Dimensions) -> Workspace<C> {
         return Workspace {
             _num, name,
             clients: VecDeque::new(),

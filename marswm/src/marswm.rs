@@ -16,6 +16,7 @@ const BACKGROUND_COLOR: u64 = 0xceccc6;
 const FRAME_WIDTH: u32 = 8;
 const INNER_BORDER_WIDTH: u32 = 1;
 const OUTER_BORDER_WIDTH: u32 = 1;
+pub const NUM_WORKSPACES: usize = 4;
 
 
 pub struct MarsWM<C: Client> {
