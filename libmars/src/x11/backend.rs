@@ -326,7 +326,6 @@ impl X11Backend {
     }
 
     fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
-        let client_option = Self::client_by_frame(wm, event.window);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
         // }
@@ -342,11 +341,14 @@ impl X11Backend {
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
+        println!("UnmapNotify for 0x{:x}", event.window);
         let root = self.root;
         let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
             Some(client_rc) => client_rc.clone(),
             None => return,
         };
+
+        println!("\t(for client {})", client_rc.borrow().name());
 
         // ignore unmap notifies generated from reparenting
         if event.event == root || client_rc.borrow().is_reparenting() {
@@ -507,7 +509,7 @@ impl Backend<X11Client> for X11Backend {
         }
 
         unsafe {
-            xlib::XSetInputFocus(self.display, client.frame(), xlib::RevertToPointerRoot, xlib::CurrentTime);
+            xlib::XSetInputFocus(self.display, client.window(), xlib::RevertToPointerRoot, xlib::CurrentTime);
         }
     }
 
