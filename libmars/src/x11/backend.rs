@@ -15,7 +15,7 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 16] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 17] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -32,6 +32,7 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 16] = & [
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
+    NetWMWindowTypeMenu,
 ];
 
 pub struct X11Backend {
@@ -135,11 +136,26 @@ impl X11Backend {
 
         let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display).iter()
             .map(|a| X11Atom::from_xlib_atom(self.display, *a)).flatten().collect();
-        if window_types.contains(&NetWMWindowTypeDock) {
-            unsafe {
-                xlib::XMapRaised(self.display, window);
+        for win_type in &window_types {
+            match win_type {
+                NetWMWindowTypeDesktop => unsafe {
+                    xlib::XMapWindow(self.display, window);
+                    xlib::XLowerWindow(self.display, window);
+                    return;
+                },
+                NetWMWindowTypeDock => unsafe {
+                    xlib::XMapRaised(self.display, window);
+                    return;
+                },
+                NetWMWindowTypeMenu => unsafe {
+                    unsafe {
+                        xlib::XSelectInput(self.display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask);
+                    }
+                    xlib::XMapRaised(self.display, window);
+                    return;
+                },
+                _ => (),
             }
-            return;
         }
 
         // TODO
@@ -324,6 +340,9 @@ impl X11Backend {
         } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
             Some(client_rc)
         } else {
+            unsafe {
+                xlib::XSetInputFocus(self.display, event.window, xlib::RevertToPointerRoot, xlib::CurrentTime);
+            }
             None
         };
 
