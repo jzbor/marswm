@@ -26,6 +26,7 @@ pub struct X11Client {
     actively_reparenting: bool,
     dont_decorate: bool,
     fullscreen: bool,
+    is_dialog: bool,
     visible: bool,
 
     saved_decorations: Option<(u32, u32, u32)>,
@@ -33,7 +34,7 @@ pub struct X11Client {
 }
 
 impl X11Client {
-    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window) -> X11Client {
+    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> X11Client {
         let attributes = window.x11_attributes(display)
             .expect("Unable to retrieve attributes for new client");
         let x = attributes.x;
@@ -79,6 +80,7 @@ impl X11Client {
             actively_reparenting: false,
             dont_decorate: false,
             fullscreen: false,
+            is_dialog,
             visible: false,
 
             saved_decorations: None,
@@ -324,6 +326,10 @@ impl Client for X11Client {
         }
 
         self.visible = false;
+    }
+
+    fn is_dialog(&self) -> bool {
+        return self.is_dialog;
     }
 
     fn is_fullscreen(&self) -> bool {

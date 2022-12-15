@@ -234,17 +234,20 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
-        if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
+        let monitor_conf = if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
             let monitor = self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap();
             monitor.attach_client(client_rc.clone());
+            monitor.config()
         } else {
             self.current_monitor_mut().attach_client(client_rc.clone());
-        }
+            self.current_monitor().config()
+        };
         // self.current_monitor_mut().attach_client(client_rc.clone());
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
         client.raise();
+        client.center_on_screen(monitor_conf);
 
         // configure look
         if !client.dont_decorate() {
@@ -266,8 +269,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         drop(client);
 
-        backend.export_client_list(&self.clients);
+        // set client as currently focused
+        self.handle_focus(backend, Some(client_rc.clone()));
+        client_rc.borrow_mut().warp_pointer_to_center();
 
+        backend.export_client_list(&self.clients);
         self.current_workspace_mut().restack();
     }
 

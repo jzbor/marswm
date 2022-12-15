@@ -15,7 +15,7 @@ use crate::x11::window::*;
 
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 17] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 18] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -32,6 +32,7 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 17] = & [
     NetWMWindowType,
     NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
+    NetWMWindowTypeDialog,
     NetWMWindowTypeMenu,
 ];
 
@@ -134,6 +135,7 @@ impl X11Backend {
             return;
         }
 
+        let mut is_dialog = false;
         let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display).iter()
             .map(|a| X11Atom::from_xlib_atom(self.display, *a)).flatten().collect();
         for win_type in &window_types {
@@ -143,14 +145,15 @@ impl X11Backend {
                     xlib::XLowerWindow(self.display, window);
                     return;
                 },
+                NetWMWindowTypeDialog => {
+                    is_dialog = true;
+                },
                 NetWMWindowTypeDock => unsafe {
                     xlib::XMapRaised(self.display, window);
                     return;
                 },
                 NetWMWindowTypeMenu => unsafe {
-                    unsafe {
-                        xlib::XSelectInput(self.display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask);
-                    }
+                    xlib::XSelectInput(self.display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask);
                     xlib::XMapRaised(self.display, window);
                     return;
                 },
@@ -167,7 +170,7 @@ impl X11Backend {
         //     None => None,
         // };
 
-        let mut client = X11Client::new(self.display, self.root, window);
+        let mut client = X11Client::new(self.display, self.root, window, is_dialog);
         client.apply_size_hints();
         client.apply_motif_hints();
 

@@ -57,6 +57,7 @@ pub trait Client: Eq + Dimensioned{
     fn dont_decorate(&self) -> bool;
     fn export_workspace(&self, workspace_idx: usize);
     fn hide(&mut self);
+    fn is_dialog(&self) -> bool;
     fn is_fullscreen(&self) -> bool;
     fn is_visible(&self) -> bool;
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);

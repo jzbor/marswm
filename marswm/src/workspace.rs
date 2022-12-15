@@ -108,7 +108,9 @@ impl<C: Client> Workspace<C> {
 
 impl<C: Client> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        self.tiled_clients.push_front(client_rc.clone());
+        if !client_rc.borrow().is_dialog() {
+            self.tiled_clients.push_front(client_rc.clone());
+        }
         self.clients.push_front(client_rc);
     }
 
