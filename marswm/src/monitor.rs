@@ -48,7 +48,10 @@ impl<C: Client> Monitor<C> {
         }
 
         for ws in &mut self.workspaces {
-            ws.detach_client(&client_rc);
+            if ws.contains(&client_rc) {
+                ws.detach_client(&client_rc);
+                ws.restack();
+            }
         }
 
         if workspace_idx != self.cur_workspace {
@@ -56,6 +59,7 @@ impl<C: Client> Monitor<C> {
         }
 
         self.workspaces[workspace_idx].attach_client(client_rc);
+        self.workspaces[workspace_idx].restack();
     }
 
     pub fn num(&self) -> u32 {

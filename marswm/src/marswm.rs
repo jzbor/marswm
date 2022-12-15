@@ -13,7 +13,7 @@ use crate::workspace::*;
 const PRIMARY_COLOR: u64 = 0xae0c0c;
 const SECONDARY_COLOR: u64 = 0x1f464f;
 const BACKGROUND_COLOR: u64 = 0xceccc6;
-const FRAME_WIDTH: u32 = 8;
+const FRAME_WIDTH: u32 = 4;
 const INNER_BORDER_WIDTH: u32 = 1;
 const OUTER_BORDER_WIDTH: u32 = 1;
 pub const NUM_WORKSPACES: usize = 4;
@@ -287,7 +287,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_active_window(&self.active_client);
         client_rc.borrow().export_workspace(workspace_idx);
-        self.current_workspace_mut().restack();
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
