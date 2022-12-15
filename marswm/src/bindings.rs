@@ -123,6 +123,9 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 }
             }
         }),
+        Keybinding::new(MODKEY, XK_Tab, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_monitor_mut().switch_prev_workspace(backend);
+        }),
 
         switch_workspace_binding!(XK_1, 0),
         switch_workspace_binding!(XK_2, 1),

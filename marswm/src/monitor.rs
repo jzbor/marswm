@@ -9,6 +9,7 @@ pub struct Monitor<C: Client> {
     config: MonitorConfig,
     workspaces: Vec<Workspace<C>>,
     cur_workspace: usize,
+    prev_workspace: usize,
 }
 
 impl<C: Client> Monitor<C> {
@@ -23,6 +24,7 @@ impl<C: Client> Monitor<C> {
             config,
             workspaces,
             cur_workspace: 0,
+            prev_workspace: 0,
         };
     }
 
@@ -66,6 +68,10 @@ impl<C: Client> Monitor<C> {
         return self.config.num();
     }
 
+    pub fn switch_prev_workspace(&mut self, backend: &impl Backend<C>) {
+        self.switch_workspace(backend, self.prev_workspace);
+    }
+
     pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: usize) {
         if workspace_idx == self.cur_workspace {
             return;
@@ -73,6 +79,7 @@ impl<C: Client> Monitor<C> {
 
         self.workspaces[self.cur_workspace].clients().for_each(|c| c.borrow_mut().hide());
         self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
+        self.prev_workspace = self.cur_workspace;
         self.cur_workspace = workspace_idx;
         backend.export_current_workspace(workspace_idx);
     }
