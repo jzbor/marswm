@@ -445,7 +445,7 @@ impl X11Backend {
             client_rc.borrow_mut().set_reparenting(false);
             return;
         } else if event.send_event == xlib::True {
-            client_rc.borrow_mut().x11_set_state(self.display, WITHDRAWN_STATE as u64);
+            client_rc.borrow_mut().x11_set_state(self.display, WITHDRAWN_STATE);
         } else {
             self.unmanage(wm, client_rc);
         }

@@ -21,9 +21,9 @@ const CURSOR_NORMAL: u32 = 68;
 const CURSOR_RESIZE: u32 = 120;
 const CURSOR_MOVE: u32 = 52;
 // Window states
-const WITHDRAWN_STATE: u64 = 0;
-const NORMAL_STATE: u64 = 1;
-const ICONIC_STATE: u64 = 3;
+const WITHDRAWN_STATE: i32 = 0;
+const NORMAL_STATE: i32 = 1;
+const ICONIC_STATE: i32 = 3;
 // Motif hints
 const MWM_HINTS_FLAGS_FIELD: usize = 0;
 const MWM_HINTS_DECORATIONS_FIELD: usize = 2;

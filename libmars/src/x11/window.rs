@@ -1,6 +1,7 @@
 extern crate x11;
 
 use std::ffi::*;
+use std::mem;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::slice;
@@ -14,7 +15,7 @@ pub trait X11Window {
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
-    fn x11_set_state(&self, display: *mut xlib::Display, state: u64);
+    fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
@@ -103,10 +104,16 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_set_state(&self, display: *mut xlib::Display, state: u64) {
-        let data = [state, 0];
-        self.x11_replace_property_long(display, NetWMState.to_xlib_atom(display), NetWMState.to_xlib_atom(display), &data);
+    fn x11_set_state(&self, display: *mut xlib::Display, state: i32) {
+        let data = state;
+        let state_atom = WMState.to_xlib_atom(display);
+
+        unsafe {
+            xlib::XChangeProperty(display, *self, state_atom, state_atom,
+                                  32, xlib::PropModeReplace, mem::transmute(&data), 1);
+        }
     }
+
 
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {
         let mut pointers: Vec<*mut i8> = list.iter().map(|cstr| cstr.clone().into_raw()).collect();

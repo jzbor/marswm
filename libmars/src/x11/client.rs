@@ -510,7 +510,7 @@ impl X11Window for X11Client {
         self.window.x11_replace_property_long(display, property, prop_type, data);
     }
 
-    fn x11_set_state(&self, display: *mut xlib::Display, state: u64) {
+    fn x11_set_state(&self, display: *mut xlib::Display, state: i32) {
         self.window.x11_set_state(display, state);
     }
 
