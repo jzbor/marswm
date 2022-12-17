@@ -8,9 +8,9 @@ use crate::*;
 use crate::x11::atoms::X11Atom::*;
 
 pub mod backend;
-mod window;
+pub mod window;
+pub mod atoms;
 mod client;
-mod atoms;
 
 const XLIB_NONE: u64 = 0;
 const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;

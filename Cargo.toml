@@ -2,6 +2,7 @@
 members = [
 	"marswm",
 	"libmars",
+	"mars-relay",
 ]
 
 [profile.release]

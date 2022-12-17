@@ -13,7 +13,7 @@ use crate::x11::*;
 pub trait X11Window {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
-    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str>;
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>);
@@ -61,34 +61,39 @@ impl X11Window for xlib::Window {
         }
     }
 
-    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str> {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
         let mut actual_type = 0;
         let mut actual_format = 0;
         let mut nitems = 0;
-        let mut remaining_bytes = 0;
-        unsafe {
-            let mut data_ptr: *mut u8 = ptr::null_mut();
-            let status = xlib::XGetWindowProperty(display, *self, property,
-                0, 8, xlib::False,
-                prop_type, &mut actual_type,
-                &mut actual_format,
-                &mut nitems, &mut remaining_bytes,
-                &mut data_ptr);
-            if status != 0 {
-                return Err("XGetWindowProperty failed");
-            } else if actual_type == XLIB_NONE
-                    && actual_format == 0
-                    && remaining_bytes == 0 {
-                return Err("Property does not exist for specified window");
-            } else if actual_type != prop_type {
-                return Err("Property as wrong actual type");
-            } else if actual_format != 32 {
-                return Err("Property is not u32 format");
-            } else {
-                let data = slice::from_raw_parts(data_ptr as *mut u64, nitems.try_into().unwrap());
-                return Ok(data);
+        let mut remaining_bytes: u64 = 0;
+        let mut data: Vec<u64> = Vec::new();
+        let mut first_run = true;
+        while first_run || remaining_bytes != 0 {
+            unsafe {
+                let mut data_ptr: *mut u8 = ptr::null_mut();
+                first_run = false;
+                let status = xlib::XGetWindowProperty(display, *self, property,
+                    data.len() as i64 / 2, 8, xlib::False,
+                    prop_type, &mut actual_type,
+                    &mut actual_format,
+                    &mut nitems, &mut remaining_bytes,
+                    &mut data_ptr);
+                if status != 0 {
+                    return Err("XGetWindowProperty failed");
+                } else if actual_type == XLIB_NONE
+                        && actual_format == 0
+                        && remaining_bytes == 0 {
+                    return Err("Property does not exist for specified window");
+                } else if actual_type != prop_type {
+                    return Err("Property as wrong actual type");
+                } else if actual_format != 32 {
+                    return Err("Property is not u32 format");
+                } else {
+                    data.extend_from_slice(slice::from_raw_parts(data_ptr as *mut u64, nitems.try_into().unwrap()));
+                }
             }
         }
+        return Ok(data);
     }
 
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {

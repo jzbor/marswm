@@ -505,7 +505,7 @@ impl X11Window for X11Client {
         return self.window.x11_class_hint(display);
     }
 
-    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str> {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
         return self.window.x11_read_property_long(display, property, prop_type);
     }
 
