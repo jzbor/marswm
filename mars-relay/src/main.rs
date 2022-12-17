@@ -27,6 +27,7 @@ struct Args {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ArgEnum)]
 enum Command {
     Activate,
+    Close,
     SendToDesktop,
     SetFullscreen,
     ToggleFullscreen,
@@ -42,20 +43,14 @@ const MODE_TOGGLE: u64 = 2;
 impl Command {
     fn execute(&self, display: *mut xlib::Display, window: xlib::Window, desktop: Option<usize>) -> Result<(), &'static str> {
         match self {
-            Command::Activate => Self::activate_window(display, window),
+            Command::Activate => Self::simple_window_message(display, window, NetActiveWindow),
+            Command::Close => Self::simple_window_message(display, window, NetCloseWindow),
             Command::SendToDesktop => Self::send_window_to_desktop(display, window, desktop),
             Command::SetFullscreen => Self::fullscreen_window(display, window, MODE_SET),
             Command::ToggleFullscreen => Self::fullscreen_window(display, window, MODE_TOGGLE),
             Command::UnsetFullscreen => Self::fullscreen_window(display, window, MODE_UNSET),
             Command::SwitchDesktop => Self::switch_desktop(display, desktop),
         }
-    }
-
-    fn activate_window(display: *mut xlib::Display, window: xlib::Window) -> Result<(), &'static str> {
-        require_ewmh_atom(display, NetActiveWindow)?;
-        let data = xlib::ClientMessageData::new();
-        send_client_message(display, NetActiveWindow, window, data);
-        return Ok(());
     }
 
     fn fullscreen_window(display: *mut xlib::Display, window: xlib::Window, mode: u64) -> Result<(), &'static str> {
@@ -80,6 +75,14 @@ impl Command {
         let mut data = xlib::ClientMessageData::new();
         data.set_long(0, desktop);
         send_client_message(display, NetWMDesktop, window, data);
+        return Ok(());
+    }
+
+    fn simple_window_message(display: *mut xlib::Display, window: xlib::Window, atom: X11Atom)
+            -> Result<(), &'static str> {
+        require_ewmh_atom(display, atom)?;
+        let data = xlib::ClientMessageData::new();
+        send_client_message(display, atom, window, data);
         return Ok(());
     }
 
