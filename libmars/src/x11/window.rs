@@ -14,6 +14,7 @@ pub trait X11Window {
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<&[u64], &str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
+    fn x11_set_state(&self, display: *mut xlib::Display, state: u64);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>);
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
@@ -100,6 +101,11 @@ impl X11Window for xlib::Window {
                                   data.as_ptr().cast::<u8>(),
                                   data.len() as i32);
         }
+    }
+
+    fn x11_set_state(&self, display: *mut xlib::Display, state: u64) {
+        let data = [state, 0];
+        self.x11_replace_property_long(display, NetWMState.to_xlib_atom(display), NetWMState.to_xlib_atom(display), &data);
     }
 
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {

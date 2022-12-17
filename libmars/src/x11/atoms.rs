@@ -97,10 +97,5 @@ impl X11Atom {
             return xlib::XInternAtom(display, atom_name, xlib::False);
         }
     }
-
-    // TODO remove
-    pub fn publish(display: *mut xlib::Display) {
-        Self::VALUES.iter().for_each(|a| { a.to_xlib_atom(display); });
-    }
 }
 

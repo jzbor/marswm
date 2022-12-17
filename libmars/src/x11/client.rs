@@ -1,7 +1,6 @@
 extern crate x11;
 
 use x11::xlib;
-use std::mem;
 use std::cmp;
 
 use crate::*;
@@ -188,12 +187,9 @@ impl X11Client {
     pub fn destroy_frame(&self) {
         println!("Destroying frame for client {}", self.name);
         unsafe {
-            // if self.is_visible() {
-            //     xlib::XUnmapWindow(self.display, self.frame);
-            // }
-            // The following lines were here before, but generate "parameter not a window" errors
-            //xlib::XReparentWindow(self.display, self.window, self.root, 0, 0);
-            //xlib::XRemoveFromSaveSet(self.display, self.window);
+            // These generate xlib errors if the window is already unmapped
+            xlib::XReparentWindow(self.display, self.window, self.root, 0, 0);
+            xlib::XRemoveFromSaveSet(self.display, self.window);
             xlib::XDestroyWindow(self.display, self.frame);
         }
 
@@ -227,16 +223,6 @@ impl X11Client {
 
     pub fn set_reparenting(&mut self, status: bool) {
         self.actively_reparenting = status;
-    }
-
-    fn set_state(&self, state: i32) {
-        let data = state;
-        let state_atom = X11Atom::WMState.to_xlib_atom(self.display);
-
-        unsafe {
-            xlib::XChangeProperty(self.display, self.window, state_atom, state_atom,
-                                  32, xlib::PropModeReplace, mem::transmute(&data), 1);
-        }
     }
 
     fn supports_protocol(&self, atom: atoms::X11Atom) -> bool {
@@ -319,7 +305,7 @@ impl Client for X11Client {
             xlib::XUnmapWindow(self.display, self.frame);
             xlib::XUnmapWindow(self.display, self.window);
             // @TODO set IconicState (see moonwm - window_set_state(dpy, win, IconicState))
-            self.set_state(ICONIC_STATE);
+            self.x11_set_state(self.display, ICONIC_STATE);
             xlib::XSelectInput(self.display, self.root, ra.your_event_mask);
             xlib::XSelectInput(self.display, self.frame, fa.your_event_mask);
             xlib::XUngrabServer(self.display);
@@ -450,7 +436,7 @@ impl Client for X11Client {
         unsafe {
             xlib::XMapWindow(self.display, self.window);
             xlib::XMapWindow(self.display, self.frame);
-            self.set_state(NORMAL_STATE);
+            self.x11_set_state(self.display, NORMAL_STATE);
             xlib::XSetInputFocus(self.display, self.frame, xlib::RevertToPointerRoot, xlib::CurrentTime);
         }
 
@@ -522,6 +508,10 @@ impl X11Window for X11Client {
 
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
         self.window.x11_replace_property_long(display, property, prop_type, data);
+    }
+
+    fn x11_set_state(&self, display: *mut xlib::Display, state: u64) {
+        self.window.x11_set_state(display, state);
     }
 
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {

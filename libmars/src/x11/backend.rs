@@ -13,7 +13,48 @@ use crate::x11::atoms::*;
 use crate::x11::client::*;
 use crate::x11::window::*;
 
+
+macro_rules! print_event {
+    ($wm:expr, $event:expr) => {
+        #[cfg(debug_assertions)]
+        if let Some(client) = $wm.clients().find(|c| c.borrow().window() == $event.window) {
+            println!("Received {} for window 0x{:x} (window of {})", event_type(&$event), $event.window, client.borrow().name());
+        } else if let Some(client) = $wm.clients().find(|c| c.borrow().frame() == $event.window) {
+            println!("Received {} for window 0x{:x} (frame of {})", event_type(&$event), $event.window, client.borrow().name());
+        } else {
+            println!("Received {} for window 0x{:x} (not a client)", event_type(&$event), $event.window);
+        }
+        #[cfg(debug_assertions)]
+        println!("\t{:?}", $event);
+        #[cfg(not(debug_assertions))]
+        let (_, _) = (&$wm, &$event);
+    }
+}
+
+#[allow(unused_macros)]
+macro_rules! debug_occurences {
+    ($wm:expr, $client:expr) => {
+        let window = $client.borrow().window();
+        let frame = $client.borrow().frame();
+        println!("Number of occurences in client list: {} / {} / {}",
+                 $wm.clients().filter(|c| *c == &$client).count(),
+                 $wm.clients().filter(|c| c.borrow().window() == window).count(),
+                 $wm.clients().filter(|c| c.borrow().frame() == frame).count());
+    }
+}
+
+
+
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
+
+pub struct X11Backend {
+    display: *mut xlib::Display,
+    screen: *mut xlib::Screen,
+    root: u64,
+    wmcheck_win: u64,
+    last_active: Option<Rc<RefCell<X11Client>>>,
+}
+
 
 const SUPPORTED_ATOMS: &'static [X11Atom; 18] = & [
     NetActiveWindow,
@@ -36,13 +77,6 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 18] = & [
     NetWMWindowTypeMenu,
 ];
 
-pub struct X11Backend {
-    display: *mut xlib::Display,
-    screen: *mut xlib::Screen,
-    root: u64,
-    wmcheck_win: u64,
-    last_active: Option<Rc<RefCell<X11Client>>>,
-}
 
 impl X11Backend {
     /// Register window manager and initialize backend with new connection.
@@ -74,6 +108,7 @@ impl X11Backend {
             };
 
             // For debugging:
+            #[cfg(debug_assertions)]
             xlib::XSynchronize(display, 1);
 
             // export wm name
@@ -112,6 +147,7 @@ impl X11Backend {
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
                 xlib::MapRequest => self.on_map_request(wm, event.map_request),
+                xlib::MapNotify => self.on_map_notify(wm, event.map),
                 xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
                 _ => (),
                 // _ => { print!("."); stdout().flush().unwrap(); },
@@ -174,7 +210,7 @@ impl X11Backend {
         client.apply_size_hints();
         client.apply_motif_hints();
 
-        println!("New client: {} with type {:?}", client.name(), window_types);
+        println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
 
         let boxed_client = Rc::new(RefCell::new(client));
         wm.manage(self, boxed_client.clone());
@@ -262,12 +298,14 @@ impl X11Backend {
 
 
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XButtonEvent) {
+        //print_event!(wm, event);
         let modifiers = sanitize_modifiers(event.state);
         let client = Self::client_by_frame(wm, event.window);
         wm.handle_button(self, modifiers, event.button, client);
     }
 
     fn on_client_message(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XClientMessageEvent) {
+        print_event!(wm, event);
         if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
             match atom {
                 NetActiveWindow => {
@@ -302,26 +340,25 @@ impl X11Backend {
                                 wm.handle_fullscreen(self, client_rc, false);
                             } else if mode == 2 {
                                 wm.handle_fullscreen_toggle(self, client_rc);
-                            } else {
-                                println!("Unknown atom: {} ({:x})", mode, mode);
                             }
                         }
                     }
                 }
-                _ => println!("Other client message"),
+                _ => (),
             }
         }
     }
 
     fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
+        //print_event!(wm, event);
         if event.window == self.root {
-            println!("ConfigureNotify");
             let monitor_configs = self.get_monitor_config();
             wm.update_monitor_config(monitor_configs);
         }
     }
 
     fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XDestroyWindowEvent) {
+        print_event!(wm, event);
         let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
             Some(client_rc) => client_rc.clone(),
             None => return,
@@ -331,6 +368,7 @@ impl X11Backend {
     }
 
     fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+        //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("EnterNotify on frame for client {}", client_rc.borrow().window());
         // }
@@ -359,6 +397,8 @@ impl X11Backend {
     }
 
     fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XKeyEvent) {
+        //print_event!(wm, event);
+
         let keysym = unsafe {
             xlib::XKeycodeToKeysym(self.display, event.keycode.try_into().unwrap(), 0)
         };
@@ -370,6 +410,7 @@ impl X11Backend {
     }
 
     fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+        //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
         // }
@@ -385,26 +426,41 @@ impl X11Backend {
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
-        println!("UnmapNotify for 0x{:x}", event.window);
+        print_event!(wm, event);
         let root = self.root;
-        let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
+        let client_option = if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            Some(client_rc)
+        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            Some(client_rc)
+        } else {
+            None
+        };
+        let client_rc = match client_option {
             Some(client_rc) => client_rc.clone(),
             None => return,
         };
-
-        println!("\t(for client {})", client_rc.borrow().name());
 
         // ignore unmap notifies generated from reparenting
         if event.event == root || client_rc.borrow().is_reparenting() {
             client_rc.borrow_mut().set_reparenting(false);
             return;
+        } else if event.send_event == xlib::True {
+            client_rc.borrow_mut().x11_set_state(self.display, WITHDRAWN_STATE as u64);
+        } else {
+            self.unmanage(wm, client_rc);
         }
-
-        self.unmanage(wm, client_rc);
     }
 
     fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
-        self.manage(wm, event.window);
+        print_event!(wm, event);
+        let already_managed = wm.clients().find(|c| c.borrow().window() == event.window).is_some();
+        if !already_managed {
+            self.manage(wm, event.window);
+        }
+    }
+
+    fn on_map_notify(&mut self, wm: &mut WM, event: xlib::XMapEvent) {
+        print_event!(wm, event);
     }
 
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
@@ -414,13 +470,28 @@ impl X11Backend {
     }
 
     fn unmanage(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
+        println!("Closing client: {}", client_rc.borrow().name());
+
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());
 
-        println!("Closed client: {}", client_rc.borrow().name());
+        // drop reference from last active field
+        if let Some(last_active) = &self.last_active {
+            if &client_rc == last_active {
+                self.last_active = None;
+            }
+        }
+
+        let client = client_rc.borrow();
 
         // remove client frame
-        client_rc.borrow().destroy_frame();
+        client.destroy_frame();
+
+        // set WM_STATE to Withdrawn according to ICCCM
+        let data = [WITHDRAWN_STATE as u64, 0];
+        let wm_state_atom = WMState.to_xlib_atom(self.display);
+        client.window().x11_replace_property_long(self.display, wm_state_atom, wm_state_atom, &data);
+        debug_assert!(Rc::strong_count(&client_rc) == 1);
     }
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {
@@ -570,6 +641,10 @@ impl Backend<X11Client> for X11Backend {
             };
         }
     }
+}
+
+fn event_type<T>(_: &T) -> &str {
+    return std::any::type_name::<T>();
 }
 
 
