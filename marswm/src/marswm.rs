@@ -64,9 +64,10 @@ impl<C: Client> MarsWM<C> {
             }
 
             let ws = self.current_workspace();
-            if let Some(old_idx) = ws.clients().position(|c| c == active) {
-                let new_idx = (old_idx as i32 + inc) as usize % ws.clients().count();
-                let client = ws.clients().nth(new_idx).unwrap();
+            if let Some(old_idx) = ws.tiled_clients().position(|c| c == active) {
+                let nclients = ws.tiled_clients().count();
+                let new_idx = ((old_idx + nclients) as i32 + inc) as usize % nclients;
+                let client = ws.tiled_clients().nth(new_idx).unwrap();
                 client.borrow().warp_pointer_to_center();
                 client.borrow().raise();
             }

@@ -94,6 +94,10 @@ impl<C: Client> Workspace<C> {
         }
     }
 
+    pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        return Box::new(self.tiled_clients.iter());
+    }
+
     pub fn toggle_floating(&mut self, client_rc: Rc<RefCell<C>>) {
         let state = self.tiled_clients.contains(&client_rc);
         self.set_floating(client_rc, state);
