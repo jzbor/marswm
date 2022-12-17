@@ -370,8 +370,9 @@ impl Client for X11Client {
     }
 
     fn set_frame_width(&mut self, width: u32) {
+        let diff = (width as i32) - (self.fw as i32);
         self.fw = width;
-        self.move_resize(self.x, self.y, self.w, self.h);
+        self.move_resize(self.x - diff, self.y - diff, (self.w as i32 + 2 * diff) as u32, (self.h as i32 + 2 * diff) as u32);
     }
 
     fn set_fullscreen(&mut self, state: bool, monitor_conf: &MonitorConfig) {
@@ -401,11 +402,12 @@ impl Client for X11Client {
     }
 
     fn set_inner_bw(&mut self, bw: u32) {
+        let diff = (bw as i32) - (self.ibw as i32);
         self.ibw = bw;
         unsafe {
             xlib::XSetWindowBorderWidth(self.display, self.window, self.ibw);
         }
-        self.move_resize(self.x, self.y, self.w, self.h);
+        self.move_resize(self.x - diff, self.y - diff, (self.w as i32 + 2 * diff) as u32, (self.h as i32 + 2 * diff) as u32);
     }
 
     fn set_inner_color(&mut self, color: u64) {
@@ -415,11 +417,12 @@ impl Client for X11Client {
     }
 
     fn set_outer_bw(&mut self, bw: u32) {
+        let diff = (bw as i32) - (self.obw as i32);
         self.obw = bw;
         unsafe {
             xlib::XSetWindowBorderWidth(self.display, self.frame, self.obw);
         }
-        self.move_resize(self.x, self.y, self.w, self.h);
+        self.move_resize(self.x - diff, self.y - diff, (self.w as i32 + 2 * diff) as u32, (self.h as i32 + 2 * diff) as u32);
     }
 
     fn set_outer_color(&mut self, color: u64) {
