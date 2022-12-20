@@ -2,6 +2,7 @@ use libmars::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
+use std::marker::PhantomData;
 use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 
 use crate::*;
@@ -35,35 +36,46 @@ impl<C: Client> MarsWM<C> {
         };
     }
 
-    pub fn current_monitor(&self) -> &Monitor<C> {
-        return match &self.active_client {
-            Some(c) => self.monitors.iter().find(|mon| mon.contains(&c)),
-            None => self.monitors.get(0),
-        }.unwrap();
+    fn current_monitor_index<B: Backend<C>>(&self, backend: &B) -> usize {
+        let cursor_pos = backend.pointer_pos();
+        let monitor_by_pointer = self.monitors.iter().find(|m| {
+            let dims = m.config().dimensions();
+            dims.x() <= cursor_pos.0 && cursor_pos.0 < dims.x() + (dims.w() as i32)
+                && dims.y() <= cursor_pos.1 && cursor_pos.1 < dims.y() + (dims.h() as i32)
+        });
+
+        if let Some(monitor) = monitor_by_pointer {
+            return self.monitors.iter().position(|m| m == monitor).unwrap();
+        } else {
+            return 0;
+        }
     }
 
-    pub fn current_monitor_mut(&mut self) -> &mut Monitor<C> {
-        return match &self.active_client {
-            Some(c) => self.monitors.iter_mut().find(|mon| mon.contains(&c)),
-            None => self.monitors.get_mut(0),
-        }.unwrap();
+    pub fn current_monitor<B: Backend<C>>(&self, backend: &B) -> &Monitor<C> {
+        let index = self.current_monitor_index(backend);
+        return self.monitors.get(index).unwrap();
     }
 
-    pub fn current_workspace(&self) -> &Workspace<C> {
-        return self.current_monitor().current_workspace();
+    pub fn current_monitor_mut<B: Backend<C>>(&mut self, backend: &B) -> &mut Monitor<C> {
+        let index = self.current_monitor_index(backend);
+        return self.monitors.get_mut(index).unwrap();
     }
 
-    pub fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
-        return self.current_monitor_mut().current_workspace_mut();
+    pub fn current_workspace<B: Backend<C>>(&self, backend: &mut B) -> &Workspace<C> {
+        return self.current_monitor(backend).current_workspace();
     }
 
-    pub fn cycle_client(&mut self, inc: i32) {
+    pub fn current_workspace_mut<B: Backend<C>>(&mut self, backend: &mut B) -> &mut Workspace<C> {
+        return self.current_monitor_mut(backend).current_workspace_mut();
+    }
+
+    pub fn cycle_client<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
         if let Some(active) = &self.active_client {
             if active.borrow().is_fullscreen() {
                 return;
             }
 
-            let ws = self.current_workspace();
+            let ws = self.current_workspace(backend);
             if let Some(old_idx) = ws.tiled_clients().position(|c| c == active) {
                 let nclients = ws.tiled_clients().count();
                 let new_idx = ((old_idx + nclients) as i32 + inc) as usize % nclients;
@@ -75,9 +87,9 @@ impl<C: Client> MarsWM<C> {
     }
 
     pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
-        let monitor = self.current_monitor();
-        let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace()).unwrap();
-        let monitor = self.current_monitor_mut();
+        let monitor = self.current_monitor(backend);
+        let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
+        let monitor = self.current_monitor_mut(backend);
         let new_workspace_idx = (cur_workspace_idx as i32 + inc) as usize % NUM_WORKSPACES;
         monitor.switch_workspace(backend, new_workspace_idx);
     }
@@ -97,7 +109,7 @@ impl<C: Client> MarsWM<C> {
     }
 
     pub fn initial_position<B: Backend<C>>(&self, backend: &mut B, client_rc: &Rc<RefCell<C>>) -> (i32, i32) {
-        let win_area = self.current_monitor().window_area();
+        let win_area = self.current_monitor(backend).window_area();
         let mut pos = backend.pointer_pos();
         let client = client_rc.borrow();
         pos.0 -= (client.w() / 2) as i32;
@@ -153,7 +165,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
-                    self.current_workspace_mut().restack();
+                    self.current_workspace_mut(backend).restack();
                 },
                 2 => if modifiers & ShiftMask != 0 {
                     client.borrow().close();
@@ -162,7 +174,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                 },
                 3 => {
                     backend.mouse_resize(self, client, button);
-                    self.current_workspace_mut().restack();
+                    self.current_workspace_mut(backend).restack();
                 },
                 _ => println!("unknown action"),
             }
@@ -224,7 +236,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn init(&mut self, backend: &mut B) {
-        let ws_names = self.current_monitor().workspaces().map(|ws| ws.name().to_owned()).collect();
+        let ws_names = self.current_monitor(backend).workspaces().map(|ws| ws.name().to_owned()).collect();
         backend.export_workspaces(ws_names);
         backend.export_current_workspace(0);
 
@@ -240,8 +252,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             monitor.attach_client(client_rc.clone());
             monitor.config()
         } else {
-            self.current_monitor_mut().attach_client(client_rc.clone());
-            self.current_monitor().config()
+            self.current_monitor_mut(backend).attach_client(client_rc.clone());
+            self.current_monitor(backend).config()
         };
         // self.current_monitor_mut().attach_client(client_rc.clone());
 
@@ -275,7 +287,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client_rc.borrow_mut().warp_pointer_to_center();
 
         backend.export_client_list(&self.clients);
-        self.current_workspace_mut().restack();
+        self.current_workspace_mut(backend).restack();
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -291,7 +303,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
-        self.current_monitor_mut().switch_workspace(backend, workspace_idx);
+        self.current_monitor_mut(backend).switch_workspace(backend, workspace_idx);
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -316,7 +328,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_client_list(&self.clients);
 
-        self.current_workspace_mut().restack();
+        self.current_workspace_mut(backend).restack();
     }
 
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {
@@ -324,14 +336,17 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             return;
         }
 
-        if configs.len() > self.monitors.len() {
+        let cur_monitor_count = self.monitors.len();
+
+        if configs.len() < cur_monitor_count {
             let mut detached_clients = Vec::new();
             for monitor in self.monitors.iter_mut().filter(|m| m.num() >= configs.len().try_into().unwrap()) {
                 detached_clients.extend(monitor.detach_all());
             }
-            let last_monitor = self.monitors.get_mut(configs.len() - 1).unwrap();
+            let last_monitor = self.monitors.get_mut(cur_monitor_count - 1).unwrap();
             last_monitor.attach_all(detached_clients);
-        } else if configs.len() < self.monitors.len() {
+            self.monitors.truncate(configs.len());
+        } else if configs.len() > self.monitors.len() {
             for i in self.monitors.len()..configs.len() {
                 let monitor = Monitor::new(*configs.get(i).unwrap());
                 self.monitors.push(monitor);

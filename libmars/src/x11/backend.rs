@@ -255,11 +255,12 @@ impl X11Backend {
                     let delta = (event.x_root - orig_pointer_pos.0,
                                  event.y_root - orig_pointer_pos.1);
 
-                    let old_mon = self.point_to_monitor(client_rc.borrow().center());
+                    let old_center = client_rc.borrow().center();
+                    let old_mon = self.point_to_monitor(old_center);
                     action(self, &client_rc, orig_client_pos, orig_client_size, delta);
                     if let Some(old_mon) = old_mon {
-                        let center = client_rc.borrow().center();
-                        if let Some(new_mon) = self.point_to_monitor(center).clone() {
+                        let new_center = client_rc.borrow().center();
+                        if let Some(new_mon) = self.point_to_monitor(new_center).clone() {
                             if old_mon != new_mon {
                                 wm.handle_client_switches_monitor(client_rc.clone(), new_mon);
                             }
@@ -597,7 +598,7 @@ impl Backend<X11Client> for X11Backend {
             if point.0 >= mon.dimensions().x()
                 && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
                 && point.1 >= mon.dimensions().y()
-                && point.1 < mon.dimensions().y() + mon.dimensions().h() as i32{
+                && point.1 < mon.dimensions().y() + mon.dimensions().h() as i32 {
                     return Some(mon.num());
             }
         }

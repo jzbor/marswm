@@ -153,8 +153,8 @@ pub trait Dimensioned {
     fn dimensions(&self) -> Dimensions;
 
     fn center(&self) -> (i32, i32) {
-        let center_x = (self.x() + self.w() as i32) / 2;
-        let center_y = (self.y() + self.h() as i32) / 2;
+        let center_x = self.x() + (self.w() / 2) as i32;
+        let center_y = self.y() + (self.h() / 2) as i32;
         return (center_x, center_y);
     }
 }

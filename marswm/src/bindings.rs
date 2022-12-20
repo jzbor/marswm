@@ -77,25 +77,25 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 client_rc.borrow().close();
             }
         }),
-        Keybinding::new(MODKEY, XK_t, |wm: &mut MarsWM<C>, _backend, _client_option| {
-            wm.current_workspace_mut().cycle_layout();
+        Keybinding::new(MODKEY, XK_t, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).cycle_layout();
         }),
-        Keybinding::new(MODKEY, XK_BackSpace, |wm: &mut MarsWM<C>, _backend, client_option| {
+        Keybinding::new(MODKEY, XK_BackSpace, |wm: &mut MarsWM<C>, backend, client_option| {
             if let Some(client_rc) = client_option {
-                wm.current_workspace_mut().pull_front(client_rc);
+                wm.current_workspace_mut(backend).pull_front(client_rc);
             }
         }),
-        Keybinding::new(MODKEY, XK_a, |wm: &mut MarsWM<C>, _backend, _client_option| {
-            wm.current_workspace_mut().inc_nmain();
+        Keybinding::new(MODKEY, XK_a, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).inc_nmain();
         }),
-        Keybinding::new(MODKEY, XK_x, |wm: &mut MarsWM<C>, _backend, _client_option| {
-            wm.current_workspace_mut().dec_nmain();
+        Keybinding::new(MODKEY, XK_x, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).dec_nmain();
         }),
-        Keybinding::new(MODKEY, XK_j, |wm: &mut MarsWM<C>, _backend, _client_option| {
-            wm.cycle_client(1);
+        Keybinding::new(MODKEY, XK_j, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.cycle_client(backend, 1);
         }),
-        Keybinding::new(MODKEY, XK_k, |wm: &mut MarsWM<C>, _backend, _client_option| {
-            wm.cycle_client(-1);
+        Keybinding::new(MODKEY, XK_k, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.cycle_client(backend, -1);
         }),
         Keybinding::new(MODKEY, XK_period, |wm: &mut MarsWM<C>, backend, _client_option| {
             wm.cycle_workspace(backend, 1);
@@ -124,7 +124,7 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
             }
         }),
         Keybinding::new(MODKEY, XK_Tab, |wm: &mut MarsWM<C>, backend, _client_option| {
-            wm.current_monitor_mut().switch_prev_workspace(backend);
+            wm.current_monitor_mut(backend).switch_prev_workspace(backend);
         }),
 
         switch_workspace_binding!(XK_1, 0),
