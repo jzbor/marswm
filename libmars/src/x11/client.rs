@@ -381,16 +381,15 @@ impl Client for X11Client {
             self.saved_dimensions = Some(self.dimensions());
             self.fullscreen = true;
             let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
-            let data = &[xatom];
-            self.x11_replace_property_long(self.display, NetWMState.to_xlib_atom(self.display), xlib::XA_ATOM, data);
+            self.x11_net_wm_state_add(self.display, xatom);
             self.remove_decoration();
             self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
             self.raise();
         } else {
             if let Some(dimensions) = self.saved_dimensions {
                 self.fullscreen = false;
-                let data = &[0];
-                self.x11_replace_property_long(self.display, NetWMState.to_xlib_atom(self.display), xlib::XA_ATOM, data);
+                let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
+                self.x11_net_wm_state_remove(self.display, xatom);
                 self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
                 self.restore_decoration();
             }
@@ -497,6 +496,14 @@ impl Dimensioned for X11Client {
 }
 
 impl X11Window for X11Client {
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: xlib::Atom) {
+        self.window.x11_net_wm_state_add(display, state);
+    }
+
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: xlib::Atom) {
+        self.window.x11_net_wm_state_remove(display, state);
+    }
+
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         return self.window.x11_attributes(display);
     }

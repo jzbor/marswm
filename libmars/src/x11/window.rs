@@ -11,6 +11,8 @@ use crate::x11::*;
 
 
 pub trait X11Window {
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: xlib::Atom);
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: xlib::Atom);
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str>;
@@ -27,6 +29,28 @@ pub trait X11Window {
 }
 
 impl X11Window for xlib::Window {
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: xlib::Atom) {
+        let states_result = self.x11_read_property_long(display, NetWMState.to_xlib_atom(display), xlib::XA_ATOM);
+        let mut states = match states_result {
+            Ok(states) => states,
+            Err(_) => Vec::new(),
+        };
+
+        states.push(state);
+        self.x11_replace_property_long(display, NetWMState.to_xlib_atom(display), xlib::XA_ATOM, &states);
+    }
+
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: xlib::Atom) {
+        let states_result = self.x11_read_property_long(display, NetWMState.to_xlib_atom(display), xlib::XA_ATOM);
+        let mut states = match states_result {
+            Ok(states) => states,
+            Err(_) => return,
+        };
+
+        states.retain(|s| *s != state);
+        self.x11_replace_property_long(display, NetWMState.to_xlib_atom(display), xlib::XA_ATOM, &states);
+    }
+
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         unsafe {
             let mut attributes: MaybeUninit<xlib::XWindowAttributes> = MaybeUninit::uninit();
