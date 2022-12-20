@@ -101,6 +101,11 @@ impl<C: Client> Workspace<C> {
         }
     }
 
+    pub fn set_layout(&mut self, layout: LayoutType) {
+        self.cur_layout = layout;
+        self.apply_layout();
+    }
+
     pub fn set_floating(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
         if state && self.tiled_clients.contains(&client_rc) {
             let index = self.tiled_clients.iter().position(|c| c == &client_rc).unwrap();

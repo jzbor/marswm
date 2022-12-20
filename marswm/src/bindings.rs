@@ -7,6 +7,7 @@ use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 
 use libmars::*;
 use crate::*;
+use crate::layouts::*;
 
 pub const MODKEY: u32 = Mod4Mask;
 
@@ -77,8 +78,17 @@ pub fn keybindings<B: Backend<C>, C: Client>() -> Vec<Keybinding<B, C>> {
                 client_rc.borrow().close();
             }
         }),
-        Keybinding::new(MODKEY, XK_t, |wm: &mut MarsWM<C>, backend, _client_option| {
+        Keybinding::new(MODKEY, XK_n, |wm: &mut MarsWM<C>, backend, _client_option| {
             wm.current_workspace_mut(backend).cycle_layout();
+        }),
+        Keybinding::new(MODKEY, XK_t, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).set_layout(LayoutType::Stack);
+        }),
+        Keybinding::new(MODKEY, XK_c, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).set_layout(LayoutType::Deck);
+        }),
+        Keybinding::new(MODKEY, XK_m, |wm: &mut MarsWM<C>, backend, _client_option| {
+            wm.current_workspace_mut(backend).set_layout(LayoutType::Monocle);
         }),
         Keybinding::new(MODKEY, XK_BackSpace, |wm: &mut MarsWM<C>, backend, client_option| {
             if let Some(client_rc) = client_option {
