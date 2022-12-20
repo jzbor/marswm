@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 
 use libmars::*;
+use crate::marswm::*;
 
 
 enum_with_values! {
@@ -58,102 +59,96 @@ impl<C: Client> Layout<C> {
     }
 }
 
-fn apply_layout_stack(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
+fn apply_layout_stack<C: Client>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, nmain: u32) {
     let nclients: u32 = clients.len().try_into().unwrap();
+    let mut clients = clients.iter();
+    let main_clients = (&mut clients).take(nmain.try_into().unwrap()).collect();
+    let stack_clients = clients.collect();
+    let gap_width = GAP_WIDTH;
 
-    if nclients == 0 {
-        return;
-    }
+    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, MAIN_RATIO, gap_width, nmain, nclients);
 
-    let (main_width, main_height, stacked_width, stacked_height) = {
-        if nmain == 0 { // no windows in main area
-            (0, 0, win_area.w(), win_area.h() / nclients)
-        } else if nclients <= nmain { // no windows in stack area
-            (win_area.w(), win_area.h() / nclients, 0, 0)
-        } else {
-            let main_width = (win_area.w() as f32 * 0.6) as u32;
-            let main_height = win_area.h() / cmp::min(nclients, nmain);
-            let stacked_width = win_area.w() - main_width;
-            let stacked_height = win_area.h() / (nclients - nmain);
-            (main_width, main_height, stacked_width, stacked_height)
-        }
-    };
-
-    for (i, client_rc) in clients.iter().enumerate() {
-        if client_rc.borrow().is_fullscreen() {
-            continue;
-        } else if i < nmain.try_into().unwrap() { // main window(s)
-            let y_offset: i32 = (i as u32 * main_height).try_into().unwrap();
-            client_rc.borrow_mut().move_resize(
-                win_area.x(),
-                win_area.y() + y_offset,
-                main_width,
-                main_height);
-        } else { // stack windows
-            let i_stack: u32 = i as u32 - nmain;
-            let x_offset: i32 = main_width.try_into().unwrap();
-            let y_offset: i32 = (i_stack * stacked_height).try_into().unwrap();
-            client_rc.borrow_mut().move_resize(
-                win_area.x() + x_offset,
-                win_area.y() + y_offset,
-                stacked_width,
-                stacked_height);
-        }
-    }
+    stack_clients_vertically(main_area, main_clients, gap_width);
+    stack_clients_vertically(stack_area, stack_clients, gap_width);
 }
 
 fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, _nmain: u32) {
-    for client_rc in clients {
-        if client_rc.borrow().is_fullscreen() {
-            continue;
-        } else {
-            client_rc.borrow_mut().move_resize(
-                win_area.x(),
-                win_area.y(),
-                win_area.w(),
-                win_area.h());
-        }
-    }
+    let clients = clients.iter().collect();
+    stack_clients_ontop(win_area, clients);
 }
 
 fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
     let nclients: u32 = clients.len().try_into().unwrap();
+    let mut clients = clients.iter();
+    let main_clients = (&mut clients).take(nmain.try_into().unwrap()).collect();
+    let stack_clients = clients.collect();
+    let gap_width = GAP_WIDTH;
 
+    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, MAIN_RATIO, gap_width, nmain, nclients);
+
+    stack_clients_vertically(main_area, main_clients, gap_width);
+    stack_clients_ontop(stack_area, stack_clients);
+}
+
+fn layout_dimensions_horizontal(win_area: Dimensions, main_ratio: f32, gap_width: u32, nmain: u32, nclients: u32) -> (Dimensions, Dimensions) {
+    let main_width: u32 = (win_area.w() as f32 * main_ratio) as u32;
+
+    let (main_area, stack_area) = {
+        if nmain == 0 {  // all windows in stack area
+            let main_area = Dimensions::new(0, 0, 0, 0);
+            let stack_x = win_area.x() + gap_width as i32;
+            let stack_y = win_area.y() + gap_width as i32;
+            let stack_w = win_area.w() - 2 * gap_width;
+            let stack_h = win_area.h() - 2 * gap_width;
+            let stack_area = Dimensions::new(stack_x, stack_y, stack_w, stack_h);
+            (main_area, stack_area)
+        } else if nclients <= nmain {  // no windows in stack area
+            let stack_area = Dimensions::new(0, 0, 0, 0);
+            let main_x = win_area.x() + gap_width as i32;
+            let main_y = win_area.y() + gap_width as i32;
+            let main_w = win_area.w() - 2 * gap_width;
+            let main_h = win_area.h() - 2 * gap_width;
+            let main_area = Dimensions::new(main_x, main_y, main_w, main_h);
+            (main_area, stack_area)
+        } else {
+            let main_x = win_area.x() + gap_width as i32;
+            let main_y = win_area.y() + gap_width as i32;
+            let main_w = main_width - 2 * gap_width;
+            let main_h = win_area.h() - 2 * gap_width;
+            let main_area = Dimensions::new(main_x, main_y, main_w, main_h);
+
+            let stack_x = win_area.x() + main_width as i32;
+            let stack_y = win_area.y() + gap_width as i32;
+            let stack_w = win_area.w() - main_width - gap_width;  // center gap already included
+            let stack_h = win_area.h() - 2 * gap_width;
+            let stack_area = Dimensions::new(stack_x, stack_y, stack_w, stack_h);
+            (main_area, stack_area)
+        }
+    };
+    return (main_area, stack_area);
+}
+
+fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client>>>, gap_width: u32) {
+    let nclients: u32 = clients.len().try_into().unwrap();
     if nclients == 0 {
         return;
     }
 
-    let (main_width, main_height, stacked_width, stacked_height) = {
-        if nmain == 0 { // no windows in main area
-            (0, 0, win_area.w(), win_area.h() / nclients)
-        } else if nclients <= nmain { // no windows in stack area
-            (win_area.w(), win_area.h() / nclients, 0, 0)
-        } else {
-            let main_width = (win_area.w() as f32 * 0.6) as u32;
-            let main_height = win_area.h() / cmp::min(nclients, nmain);
-            let stacked_width = win_area.w() - main_width;
-            let stacked_height = win_area.h();
-            (main_width, main_height, stacked_width, stacked_height)
-        }
-    };
-
+    let width = area.w();
+    let height = (area.h() - ((nclients - 1) * gap_width)) / nclients;
     for (i, client_rc) in clients.iter().enumerate() {
-        if client_rc.borrow().is_fullscreen() {
-            continue;
-        } else if i < nmain.try_into().unwrap() { // main window(s)
-            let y_offset: i32 = (i as u32 * main_height).try_into().unwrap();
-            client_rc.borrow_mut().move_resize(
-                win_area.x(),
-                win_area.y() + y_offset,
-                main_width,
-                main_height);
-        } else { // stack windows
-            let x_offset: i32 = main_width.try_into().unwrap();
-            client_rc.borrow_mut().move_resize(
-                win_area.x() + x_offset,
-                win_area.y(),
-                stacked_width,
-                stacked_height);
+        if !client_rc.borrow().is_fullscreen() {
+            let x: i32 = area.x();
+            let y: i32 = area.y() + (i as i32 * (height + gap_width) as i32);
+            client_rc.borrow_mut().move_resize(x, y, width, height);
+        }
+    }
+}
+
+fn stack_clients_ontop(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client>>>) {
+    for client_rc in clients {
+        if !client_rc.borrow().is_fullscreen() {
+            client_rc.borrow_mut().move_resize(area.x(), area.y(), area.w(), area.h());
         }
     }
 }
