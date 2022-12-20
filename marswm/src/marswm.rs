@@ -18,7 +18,7 @@ pub const GAP_WIDTH: u32 = 5;
 pub const MAIN_RATIO: f32 = 0.6;
 const INNER_BORDER_WIDTH: u32 = 1;
 const OUTER_BORDER_WIDTH: u32 = 1;
-pub const NUM_WORKSPACES: usize = 4;
+pub const NUM_WORKSPACES: usize = 10;
 
 
 pub struct MarsWM<C: Client> {
