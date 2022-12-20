@@ -514,12 +514,14 @@ impl Backend<X11Client> for X11Backend {
         self.root.x11_replace_property_long(self.display, NetActiveWindow.to_xlib_atom(self.display), xlib::XA_WINDOW, data);
     }
 
-    fn export_client_list(&self, clients: &Vec<Rc<RefCell<X11Client>>>) {
-        // TODO ensure correct sorting as defined by EWMH
+    fn export_client_list(&self, clients: Vec<&Rc<RefCell<X11Client>>>, clients_stacked: Vec<&Rc<RefCell<X11Client>>>) {
         let data_vec: Vec<u64> = clients.iter().map(|c| c.borrow().window()).collect();
+        let data_stacked_vec: Vec<u64> = clients_stacked.iter().map(|c| c.borrow().window()).collect();
         let data = data_vec.as_slice();
+        let data_stacked = data_stacked_vec.as_slice();
         self.root.x11_replace_property_long(self.display, X11Atom::NetClientList.to_xlib_atom(self.display), xlib::XA_WINDOW, data);
-        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking.to_xlib_atom(self.display), xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking.to_xlib_atom(self.display), xlib::XA_WINDOW, data_stacked);
+
     }
 
     fn export_current_workspace(&self, workspace_idx: usize) {

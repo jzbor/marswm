@@ -35,6 +35,11 @@ impl<C: Client> MarsWM<C> {
         };
     }
 
+    fn clients_stacked_order(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        let clients = self.monitors.iter().flat_map(|m| m.clients());
+        return Box::new(clients);
+    }
+
     fn current_monitor_index<B: Backend<C>>(&self, backend: &B) -> usize {
         let cursor_pos = backend.pointer_pos();
         let monitor_by_pointer = self.monitors.iter().find(|m| {
@@ -287,8 +292,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.handle_focus(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
-        backend.export_client_list(&self.clients);
-        self.current_workspace_mut(backend).restack();
+        let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
+        let clients_stacked = self.clients_stacked_order().collect();
+        backend.export_client_list(clients, clients_stacked);
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
@@ -324,9 +330,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.active_client = None;
         }
 
-        backend.export_client_list(&self.clients);
-
         self.current_workspace_mut(backend).restack();
+
+        let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
+        let clients_stacked = self.clients_stacked_order().collect();
+        backend.export_client_list(clients, clients_stacked);
     }
 
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {
