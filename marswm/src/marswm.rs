@@ -2,7 +2,6 @@ use libmars::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
-use std::marker::PhantomData;
 use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask};
 
 use crate::*;
@@ -76,12 +75,14 @@ impl<C: Client> MarsWM<C> {
             }
 
             let ws = self.current_workspace(backend);
-            if let Some(old_idx) = ws.tiled_clients().position(|c| c == active) {
+            let old_idx_option = ws.tiled_clients().position(|c| c == active);
+            let ws = self.current_workspace_mut(backend);
+            if let Some(old_idx) = old_idx_option {
                 let nclients = ws.tiled_clients().count();
                 let new_idx = ((old_idx + nclients) as i32 + inc) as usize % nclients;
-                let client = ws.tiled_clients().nth(new_idx).unwrap();
+                let client = ws.tiled_clients().nth(new_idx).unwrap().clone();
                 client.borrow().warp_pointer_to_center();
-                client.borrow().raise();
+                ws.raise_client(&client);
             }
         }
     }
@@ -161,7 +162,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client) = client_option {
-            client.borrow().raise();
+            self.get_workspace_mut(&client).unwrap().raise_client(&client);
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
@@ -308,10 +309,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         // remove from clients list
-        let mut index_option = None;
-        if let Some(index) = self.clients.iter().position(|c| c == &client_rc) {
-            index_option = Some(index);
-        }
+        let index_option = self.clients.iter().position(|c| c == &client_rc);
         if let Some(index) = index_option {
             self.clients.remove(index);
         }
