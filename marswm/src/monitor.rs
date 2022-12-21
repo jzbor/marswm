@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::*;
 use crate::workspace::*;
+use crate::config::Configuration;
 
 pub struct Monitor<C: Client> {
     config: MonitorConfig,
@@ -13,15 +14,16 @@ pub struct Monitor<C: Client> {
 }
 
 impl<C: Client> Monitor<C> {
-    pub fn new(config: MonitorConfig) -> Monitor<C> {
-        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(NUM_WORKSPACES)
-            .enumerate().map(|(i, name)| Workspace::new(i, name, config.window_area()))
+    pub fn new(monitor_config: MonitorConfig, config: &Configuration) -> Monitor<C> {
+        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces)
+            .enumerate().map(|(i, name)| Workspace::new(i, name, monitor_config.window_area(),
+                                                        config.layout, config.default_layout))
             .collect();
 
-        assert!(workspaces.len() == NUM_WORKSPACES);
+        assert!(workspaces.len() == config.workspaces);
 
         return Monitor {
-            config,
+            config: monitor_config,
             workspaces,
             cur_workspace: 0,
             prev_workspace: 0,

@@ -1,14 +1,15 @@
-use std::cmp;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::VecDeque;
+use serde::{Serialize, Deserialize};
 
 use libmars::*;
-use crate::marswm::*;
+use crate::config::LayoutConfiguration;
 
 
 enum_with_values! {
-    #[derive(Clone,Copy,Debug,PartialEq,Eq)]
+    #[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
+    #[serde(rename_all = "kebab-case")]
     vis pub enum LayoutType {
         Floating,
         Stack,
@@ -21,7 +22,7 @@ pub struct Layout<C: Client> {
     _layout_type: LayoutType,
     _symbol: &'static str,
     _label: &'static str,
-    apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, u32),
+    apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, &LayoutConfiguration),
 }
 
 impl<C: Client> Layout<C> {
@@ -54,39 +55,39 @@ impl<C: Client> Layout<C> {
         }
     }
 
-    pub fn apply_layout(&self, win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, nmain: u32) {
-        (self.apply)(win_area, clients, nmain);
+    pub fn apply_layout(&self, win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+        (self.apply)(win_area, clients, config);
     }
 }
 
-fn apply_layout_stack<C: Client>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, nmain: u32) {
+fn apply_layout_stack<C: Client>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
     let nclients: u32 = clients.len().try_into().unwrap();
     let mut clients = clients.iter();
-    let main_clients = (&mut clients).take(nmain.try_into().unwrap()).collect();
+    let main_clients = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
     let stack_clients = clients.collect();
-    let gap_width = GAP_WIDTH;
 
-    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, MAIN_RATIO, gap_width, nmain, nclients);
+    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, config.main_ratio,
+                                                   config.gap_width, config.nmain, nclients);
 
-    stack_clients_vertically(main_area, main_clients, gap_width);
-    stack_clients_vertically(stack_area, stack_clients, gap_width);
+    stack_clients_vertically(main_area, main_clients, config.gap_width);
+    stack_clients_vertically(stack_area, stack_clients, config.gap_width);
 }
 
-fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, _nmain: u32) {
+fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, _config: &LayoutConfiguration) {
     let clients = clients.iter().collect();
     stack_clients_ontop(win_area, clients);
 }
 
-fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, nmain: u32) {
+fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client>>>, config: &LayoutConfiguration) {
     let nclients: u32 = clients.len().try_into().unwrap();
     let mut clients = clients.iter();
-    let main_clients = (&mut clients).take(nmain.try_into().unwrap()).collect();
+    let main_clients = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
     let stack_clients = clients.collect();
-    let gap_width = GAP_WIDTH;
 
-    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, MAIN_RATIO, gap_width, nmain, nclients);
+    let (main_area, stack_area) = layout_dimensions_horizontal(win_area, config.main_ratio,
+                                                   config.gap_width, config.nmain, nclients);
 
-    stack_clients_vertically(main_area, main_clients, gap_width);
+    stack_clients_vertically(main_area, main_clients, config.gap_width);
     stack_clients_ontop(stack_area, stack_clients);
 }
 

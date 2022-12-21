@@ -1,5 +1,6 @@
 extern crate x11;
 
+use std::env;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -7,7 +8,9 @@ use libmars::*;
 use libmars::x11::backend::*;
 
 use crate::marswm::*;
+use crate::config::*;
 
+mod config;
 mod layouts;
 mod bindings;
 mod marswm;
@@ -48,8 +51,14 @@ trait ClientList<C: Client> {
 }
 
 fn main() {
+    if env::args().find(|a| a == "print-default-config").is_some() {
+        println!("{}", toml::to_string(&Configuration::default()).unwrap());
+        return;
+    }
+
+    let config = read_config();
     let mut backend = X11Backend::init("marswm").unwrap();
-    let mut wm = MarsWM::new(&mut backend);
+    let mut wm = MarsWM::new(&mut backend, config);
     wm.init(&mut backend);
     backend.run(&mut wm);
 }

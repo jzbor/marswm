@@ -8,29 +8,21 @@ use crate::*;
 use crate::bindings::*;
 use crate::monitor::*;
 use crate::workspace::*;
-
-
-const PRIMARY_COLOR: u64 = 0xae0c0c;
-const SECONDARY_COLOR: u64 = 0x1f464f;
-const BACKGROUND_COLOR: u64 = 0xceccc6;
-const FRAME_WIDTH: u32 = 4;
-pub const GAP_WIDTH: u32 = 5;
-pub const MAIN_RATIO: f32 = 0.6;
-const INNER_BORDER_WIDTH: u32 = 1;
-const OUTER_BORDER_WIDTH: u32 = 1;
-pub const NUM_WORKSPACES: usize = 8;
+use crate::config::*;
 
 
 pub struct MarsWM<C: Client> {
+    config: Configuration,
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
 }
 
 impl<C: Client> MarsWM<C> {
-    pub fn new<B: Backend<C>>(backend: &mut B) -> MarsWM<C> {
-        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc)).collect();
+    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration) -> MarsWM<C> {
+        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc, &config)).collect();
         return MarsWM {
+            config,
             active_client: None,
             clients: Vec::new(),
             monitors,
@@ -98,23 +90,23 @@ impl<C: Client> MarsWM<C> {
     pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
+        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as usize % self.config.workspaces;
         let monitor = self.current_monitor_mut(backend);
-        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as usize % NUM_WORKSPACES;
         monitor.switch_workspace(backend, new_workspace_idx);
     }
 
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(BACKGROUND_COLOR);
-        client.set_outer_color(BACKGROUND_COLOR);
-        client.set_frame_color(PRIMARY_COLOR);
+        client.set_inner_color(self.config.theming.background_color);
+        client.set_outer_color(self.config.theming.background_color);
+        client.set_frame_color(self.config.theming.primary_color);
     }
 
     pub fn decorate_inactive(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(BACKGROUND_COLOR);
-        client.set_outer_color(BACKGROUND_COLOR);
-        client.set_frame_color(SECONDARY_COLOR);
+        client.set_inner_color(self.config.theming.background_color);
+        client.set_outer_color(self.config.theming.background_color);
+        client.set_frame_color(self.config.theming.secondary_color);
     }
 
     pub fn initial_position<B: Backend<C>>(&self, backend: &mut B, client_rc: &Rc<RefCell<C>>) -> (i32, i32) {
@@ -277,9 +269,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         // configure look
         if !client.dont_decorate() {
-            client.set_inner_bw(INNER_BORDER_WIDTH);
-            client.set_outer_bw(OUTER_BORDER_WIDTH);
-            client.set_frame_width(FRAME_WIDTH);
+            client.set_inner_bw(self.config.theming.inner_border_width);
+            client.set_outer_bw(self.config.theming.outer_border_width);
+            client.set_frame_width(self.config.theming.frame_width);
         }
 
         // bind buttons
@@ -365,7 +357,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.monitors.truncate(configs.len());
         } else if configs.len() > self.monitors.len() {
             for i in self.monitors.len()..configs.len() {
-                let monitor = Monitor::new(*configs.get(i).unwrap());
+                let monitor = Monitor::new(*configs.get(i).unwrap(), &self.config);
                 self.monitors.push(monitor);
             }
         }

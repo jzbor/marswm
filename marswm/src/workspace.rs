@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use crate::*;
 use crate::layouts::*;
+use crate::config::LayoutConfiguration;
 
 #[derive(PartialEq)]
 pub struct Workspace<C: Client> {
@@ -14,7 +15,7 @@ pub struct Workspace<C: Client> {
     tiled_clients: VecDeque<Rc<RefCell<C>>>, // sorted by user
     win_area: Dimensions,
     cur_layout: LayoutType,
-    nmain: u32,
+    layout_config: LayoutConfiguration,
 }
 
 
@@ -24,14 +25,15 @@ pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
 
 
 impl<C: Client> Workspace<C> {
-    pub fn new(_num: usize, name: &'static str, win_area: Dimensions) -> Workspace<C> {
+    pub fn new(_num: usize, name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration,
+               layout: LayoutType) -> Workspace<C> {
         return Workspace {
             _num, name,
             floating_clients: VecDeque::new(),
             tiled_clients: VecDeque::new(),
             win_area,
-            cur_layout: LayoutType::Floating,
-            nmain: 1,
+            cur_layout: layout,
+            layout_config,
         };
     }
 
@@ -40,7 +42,7 @@ impl<C: Client> Workspace<C> {
         let mut win_area = self.win_area;
         win_area.set_y(win_area.y() + inset as i32);
         win_area.set_h(win_area.h() - inset);
-        Layout::get(self.cur_layout).apply_layout(win_area, &self.tiled_clients, self.nmain);
+        Layout::get(self.cur_layout).apply_layout(win_area, &self.tiled_clients, &self.layout_config);
     }
 
     pub fn cycle_layout(&mut self) {
@@ -50,14 +52,14 @@ impl<C: Client> Workspace<C> {
     }
 
     pub fn dec_nmain(&mut self) {
-        if self.nmain > 0 {
-            self.nmain -= 1;
+        if self.layout_config.nmain > 0 {
+            self.layout_config.nmain -= 1;
             self.apply_layout();
         }
     }
 
     pub fn inc_nmain(&mut self) {
-        self.nmain += 1;
+        self.layout_config.nmain += 1;
         self.apply_layout();
     }
 
