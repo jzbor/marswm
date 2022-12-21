@@ -32,6 +32,7 @@ macro_rules! enum_with_values {
 
 pub trait WindowManager<B: Backend<C>, C: Client> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>>;
+    fn active_workspace(&self, backend: &mut B) -> usize;
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
@@ -59,6 +60,7 @@ pub trait Client: Eq + Dimensioned{
     fn hide(&mut self);
     fn is_dialog(&self) -> bool;
     fn is_fullscreen(&self) -> bool;
+    fn is_pinned(&self) -> bool;
     fn is_visible(&self) -> bool;
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);
     fn name(&self) -> &str;
@@ -71,6 +73,7 @@ pub trait Client: Eq + Dimensioned{
     fn set_inner_color(&mut self, color: u64);
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
+    fn set_pinned(&mut self, state: bool);
     fn show(&mut self);
     fn warp_pointer_to_center(&self);
 }

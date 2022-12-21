@@ -325,8 +325,16 @@ impl X11Backend {
                 },
                 NetWMDesktop => {
                     if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-                        if let Ok(workspace) = event.data.get_long(0).try_into() {
-                            wm.move_to_workspace(self, client_rc, workspace);
+                        let workspace = event.data.get_long(0);
+                        println!("Changing workspace for {} to {:x}", client_rc.borrow().name(), workspace);
+                        if workspace == -1 {
+                            let mut client = client_rc.borrow_mut();
+                            println!("Pinning {}", client.name());
+                            client.set_pinned(true);
+                            client.export_workspace(workspace as usize);
+                        } else {
+                            client_rc.borrow_mut().set_pinned(false);
+                            wm.move_to_workspace(self, client_rc, workspace as usize);
                         }
                     }
                 },

@@ -32,6 +32,10 @@ impl<C: Client> Monitor<C> {
         return &self.config;
     }
 
+    pub fn current_workspace_idx(&self) -> usize {
+        return self.cur_workspace;
+    }
+
     pub fn current_workspace(&self) -> &Workspace<C> {
         return &self.workspaces[self.cur_workspace];
     }
@@ -56,7 +60,8 @@ impl<C: Client> Monitor<C> {
             }
         }
 
-        if workspace_idx != self.cur_workspace {
+        if workspace_idx != self.cur_workspace
+                && !client_rc.borrow().is_pinned() {
             client_rc.borrow_mut().hide();
         }
 
@@ -68,6 +73,10 @@ impl<C: Client> Monitor<C> {
         return self.config.num();
     }
 
+    pub fn workspace_count(&self) -> usize {
+        return self.workspaces.len();
+    }
+
     pub fn switch_prev_workspace(&mut self, backend: &impl Backend<C>) {
         self.switch_workspace(backend, self.prev_workspace);
     }
@@ -77,7 +86,13 @@ impl<C: Client> Monitor<C> {
             return;
         }
 
-        self.workspaces[self.cur_workspace].clients().for_each(|c| c.borrow_mut().hide());
+        self.workspaces[self.cur_workspace].clients()
+            .for_each(|c| {
+                let mut client = c.borrow_mut();
+                if !client.is_pinned() {
+                    client.hide();
+                }
+            });
         self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
         self.prev_workspace = self.cur_workspace;
         self.cur_workspace = workspace_idx;

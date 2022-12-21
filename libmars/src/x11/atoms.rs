@@ -40,6 +40,7 @@ enum_with_values! {
         NetWMWindowTypeMenu,
 
         MotifWMHints
+        // TODO add custom hints for pinned, tiled
     }
 }
 

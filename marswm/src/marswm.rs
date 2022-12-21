@@ -43,6 +43,7 @@ impl<C: Client> MarsWM<C> {
     }
 
     fn current_monitor_index<B: Backend<C>>(&self, backend: &B) -> usize {
+        // TODO save last active monitor to avoid having to use the pointer (avoid backend usage)
         let cursor_pos = backend.pointer_pos();
         let monitor_by_pointer = self.monitors.iter().find(|m| {
             let dims = m.config().dimensions();
@@ -151,6 +152,10 @@ impl<C: Client> MarsWM<C> {
 impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>> {
         return self.active_client.clone();
+    }
+
+    fn active_workspace(&self, backend: &mut B) -> usize {
+        return self.current_monitor(backend).current_workspace_idx();
     }
 
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -301,6 +306,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
         let mon = self.get_monitor_mut(&client_rc).unwrap();
+        if workspace_idx >= mon.workspace_count() {
+            return;
+        }
+
         mon.move_to_workspace(client_rc.clone(), workspace_idx);
         self.decorate_inactive(client_rc.clone());
         // TODO focus other client or drop focus

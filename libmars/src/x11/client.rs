@@ -26,6 +26,7 @@ pub struct X11Client {
     dont_decorate: bool,
     fullscreen: bool,
     is_dialog: bool,
+    pinned: bool,
     visible: bool,
 
     saved_decorations: Option<(u32, u32, u32)>,
@@ -80,6 +81,7 @@ impl X11Client {
             dont_decorate: false,
             fullscreen: false,
             is_dialog,
+            pinned: false,
             visible: false,
 
             saved_decorations: None,
@@ -322,6 +324,10 @@ impl Client for X11Client {
         return self.fullscreen;
     }
 
+    fn is_pinned(&self) -> bool {
+        return self.pinned;
+    }
+
     fn is_visible(&self) -> bool {
         return self.visible;
     }
@@ -428,6 +434,10 @@ impl Client for X11Client {
         unsafe {
             xlib::XSetWindowBorder(self.display, self.frame, color);
         }
+    }
+
+    fn set_pinned(&mut self, state: bool) {
+        self.pinned = state;
     }
 
     fn show(&mut self) {
