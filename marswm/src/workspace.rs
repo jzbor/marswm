@@ -38,11 +38,7 @@ impl<C: Client> Workspace<C> {
     }
 
     pub fn apply_layout(&self) {
-        let inset: u32 = 27;
-        let mut win_area = self.win_area;
-        win_area.set_y(win_area.y() + inset as i32);
-        win_area.set_h(win_area.h() - inset);
-        Layout::get(self.cur_layout).apply_layout(win_area, &self.tiled_clients, &self.layout_config);
+        Layout::get(self.cur_layout).apply_layout(self.win_area, &self.tiled_clients, &self.layout_config);
     }
 
     pub fn cycle_layout(&mut self) {

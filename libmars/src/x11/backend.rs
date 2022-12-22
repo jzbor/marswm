@@ -51,7 +51,9 @@ pub struct X11Backend {
     display: *mut xlib::Display,
     screen: *mut xlib::Screen,
     root: u64,
+    monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
+    dock_windows: Vec<xlib::Window>,
     last_active: Option<Rc<RefCell<X11Client>>>,
 }
 
@@ -103,7 +105,9 @@ impl X11Backend {
                 display,
                 screen,
                 root,
+                monitors: Vec::new(),
                 wmcheck_win: 0,
+                dock_windows: Vec::new(),
                 last_active: None,
             };
 
@@ -131,8 +135,31 @@ impl X11Backend {
             xlib::XSetErrorHandler(Some(on_error));
 
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
+            x11b.monitors = x11b.query_monitor_config();
 
             return Ok(x11b);
+        }
+    }
+
+    fn apply_dock_insets(&mut self) {
+        self.monitors.iter_mut().for_each(|m| m.remove_insets());
+
+        println!("Applying insets for {} docks", self.dock_windows.len());
+
+        for dock in &self.dock_windows {
+            let dimensions = match dock.x11_dimensions(self.display) {
+                Ok(dimensions) => dimensions,
+                Err(_) => continue,
+            };
+
+            if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains_point(dimensions.center())) {
+                // apply top indent
+                if dimensions.x() == mon.dimensions().x() {
+                    let inset = dimensions.bottom() - mon.dimensions().x();
+                    println!("Adding inset: {}", inset);
+                    mon.add_inset_top(inset as u32);
+                }
+            }
         }
     }
 
@@ -186,6 +213,9 @@ impl X11Backend {
                 },
                 NetWMWindowTypeDock => unsafe {
                     xlib::XMapRaised(self.display, window);
+                    self.dock_windows.push(window);
+                    self.apply_dock_insets();
+                    wm.update_monitor_config(self.monitors.clone());
                     return;
                 },
                 NetWMWindowTypeMenu => unsafe {
@@ -361,18 +391,29 @@ impl X11Backend {
     fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
         if event.window == self.root {
-            let monitor_configs = self.get_monitor_config();
-            wm.update_monitor_config(monitor_configs);
+            self.monitors = self.query_monitor_config();
+            self.apply_dock_insets();
+            wm.update_monitor_config(self.monitors.clone());
         }
     }
 
     fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XDestroyWindowEvent) {
         print_event!(wm, event);
+
+        // unmanage dock window
+        if self.dock_windows.contains(&event.window) {
+            let index = self.dock_windows.iter().position(|w| *w == event.window).unwrap();
+            self.dock_windows.swap_remove(index);
+            self.apply_dock_insets();
+            wm.update_monitor_config(self.monitors.clone());
+        }
+
         let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
             Some(client_rc) => client_rc.clone(),
             None => return,
         };
 
+        // unmanage clients
         self.unmanage(wm, client_rc);
     }
 
@@ -436,6 +477,14 @@ impl X11Backend {
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
         print_event!(wm, event);
+        // unmanage dock window
+        if self.dock_windows.contains(&event.window) {
+            let index = self.dock_windows.iter().position(|w| *w == event.window).unwrap();
+            self.dock_windows.swap_remove(index);
+            self.apply_dock_insets();
+            wm.update_monitor_config(self.monitors.clone());
+        }
+
         let root = self.root;
         let client_option = if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             Some(client_rc)
@@ -503,6 +552,27 @@ impl X11Backend {
         debug_assert!(Rc::strong_count(&client_rc) == 1);
     }
 
+    fn query_monitor_config(&self) -> Vec<MonitorConfig> {
+        unsafe {
+            if xinerama::XineramaIsActive(self.display) != 0 {
+                let mut screen_count = 0;
+                let screens_raw = xinerama::XineramaQueryScreens(self.display, &mut screen_count);
+                let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
+                let configs =  screens_slice.iter().map(|x| MonitorConfig::from(*x)).collect();
+                xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
+                return configs;
+            } else {
+                let w = xlib::XWidthOfScreen(self.screen).try_into().unwrap();
+                let h = xlib::XHeightOfScreen(self.screen).try_into().unwrap();
+                let dims = Dimensions { x: 0, y: 0, w, h };
+
+                return vec![
+                    MonitorConfig { num: 0, dims, win_area: dims }
+                ];
+            }
+        }
+    }
+
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
     }
@@ -551,24 +621,7 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
-        unsafe {
-            if xinerama::XineramaIsActive(self.display) != 0 {
-                let mut screen_count = 0;
-                let screens_raw = xinerama::XineramaQueryScreens(self.display, &mut screen_count);
-                let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
-                let configs =  screens_slice.iter().map(|x| MonitorConfig::from(*x)).collect();
-                xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
-                return configs;
-            } else {
-                let w = xlib::XWidthOfScreen(self.screen).try_into().unwrap();
-                let h = xlib::XHeightOfScreen(self.screen).try_into().unwrap();
-                let dims = Dimensions { x: 0, y: 0, w, h };
-
-                return vec![
-                    MonitorConfig { num: 0, dims, win_area: dims }
-                ];
-            }
-        }
+        return self.monitors.clone();
     }
 
     fn handle_existing_windows(&mut self, wm: &mut WM) {
@@ -604,7 +657,7 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
-        for mon in self.get_monitor_config() {
+        for mon in self.query_monitor_config() {
             if point.0 >= mon.dimensions().x()
                 && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
                 && point.1 >= mon.dimensions().y()

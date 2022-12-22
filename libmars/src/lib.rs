@@ -1,5 +1,6 @@
 extern crate x11 as x11_crate;
 
+use std::cmp;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -160,6 +161,14 @@ pub trait Dimensioned {
         let center_y = self.y() + (self.h() / 2) as i32;
         return (center_x, center_y);
     }
+
+    fn bottom(&self) -> i32 {
+        return self.y() + self.h() as i32;
+    }
+
+    fn right(&self) -> i32 {
+        return self.x() + self.w() as i32;
+    }
 }
 
 #[derive(Copy,Clone,PartialEq,Eq)]
@@ -184,12 +193,28 @@ impl Dimensions {
 }
 
 impl MonitorConfig {
-    pub fn num(&self) -> u32 {
-        return self.num;
+    pub fn add_inset_top(&mut self, inset: u32) {
+        self.win_area.y = cmp::max(self.win_area.y, self.dims.y + inset as i32);
+        self.win_area.h = cmp::min(self.win_area.h, self.dims.h - inset);
+    }
+
+    pub fn contains_point(&self, point: (i32, i32)) -> bool {
+        return point.0 >= self.dims.x
+            && point.0 < self.dims.x + self.dims.w as i32
+            && point.1 >= self.dims.y
+            && point.1 < self.dims.y + self.dims.h as i32;
     }
 
     pub fn dimensions(&self) -> Dimensions {
         return self.dims;
+    }
+
+    pub fn num(&self) -> u32 {
+        return self.num;
+    }
+
+    pub fn remove_insets(&mut self) {
+        self.win_area = self.dims;
     }
 
     pub fn window_area(&self) -> Dimensions {
