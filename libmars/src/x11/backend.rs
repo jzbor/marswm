@@ -154,10 +154,14 @@ impl X11Backend {
 
             if let Some(mon) = self.monitors.iter_mut().find(|m| m.contains_point(dimensions.center())) {
                 // apply top indent
-                if dimensions.x() == mon.dimensions().x() {
-                    let inset = dimensions.bottom() - mon.dimensions().x();
-                    println!("Adding inset: {}", inset);
+                if dimensions.center().1 < mon.dimensions().center().1 {
+                    let inset = dimensions.bottom() - mon.dimensions().y();
+                    println!("Adding top inset: {}", inset);
                     mon.add_inset_top(inset as u32);
+                } else {
+                    let inset = mon.dimensions().bottom() - dimensions.y();
+                    println!("Adding bottom inset: {}", inset);
+                    mon.add_inset_bottom(inset as u32);
                 }
             }
         }
@@ -350,8 +354,9 @@ impl X11Backend {
                     }
                 },
                 NetCurrentDesktop => {
-                    let workspace = event.data.get_long(0).try_into().unwrap();
-                    wm.switch_workspace(self, workspace);
+                    if let Ok(workspace) = event.data.get_long(0).try_into() {
+                        wm.switch_workspace(self, workspace);
+                    }
                 },
                 NetWMDesktop => {
                     if let Some(client_rc) = Self::client_by_window(wm, event.window) {

@@ -194,8 +194,12 @@ impl Dimensions {
 
 impl MonitorConfig {
     pub fn add_inset_top(&mut self, inset: u32) {
-        self.win_area.y = cmp::max(self.win_area.y, self.dims.y + inset as i32);
-        self.win_area.h = cmp::min(self.win_area.h, self.dims.h - inset);
+        self.win_area.y = cmp::max(self.win_area.y, self.win_area.y + inset as i32);
+        self.win_area.h = cmp::min(self.win_area.h, self.win_area.h - inset);
+    }
+
+    pub fn add_inset_bottom(&mut self, inset: u32) {
+        self.win_area.h = cmp::min(self.win_area.h, self.win_area.h - inset);
     }
 
     pub fn contains_point(&self, point: (i32, i32)) -> bool {
