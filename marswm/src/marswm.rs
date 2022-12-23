@@ -8,7 +8,6 @@ use crate::*;
 use crate::bindings::*;
 use crate::monitor::*;
 use crate::workspace::*;
-use crate::config::*;
 
 
 pub struct MarsWM<C: Client> {
@@ -152,10 +151,20 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         let monitor = self.get_monitor_mut(&client_rc).unwrap();
-        let workspace_idx = monitor.workspaces().enumerate()
-            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i).unwrap();
-        monitor.switch_workspace(backend, workspace_idx);
-        client_rc.borrow().raise();
+
+        // switch workspace
+        let workspace_idx_option = monitor.workspaces().enumerate()
+            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i);
+        if let Some(workspace_idx) = workspace_idx_option {
+            monitor.switch_workspace(backend, workspace_idx);
+        }
+
+        if let Some(workspace) = monitor.workspaces_mut().find(|ws| ws.contains(&client_rc)) {
+            workspace.raise_client(&client_rc);
+        } else {
+            // this might be the case for pinned clients
+            client_rc.borrow().raise();
+        }
         // client_rc.borrow().warp_pointer_to_center();
         self.handle_focus(backend, Some(client_rc));
     }
@@ -166,11 +175,17 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
         if let Some(client) = client_option {
-            self.get_workspace_mut(&client).unwrap().raise_client(&client);
+            if let Some(ws) = self.get_workspace_mut(&client) {
+                ws.raise_client(&client);
+            } else {
+                // this might be the case for pinned windows for example
+                client.borrow().raise();
+            };
+
             match button {
                 1 => {
                     backend.mouse_move(self, client, button);
-                    self.current_workspace_mut(backend).restack();
+                    self.current_monitor_mut(backend).restack_current();
                 },
                 2 => if modifiers & ShiftMask != 0 {
                     client.borrow().close();
@@ -179,7 +194,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                 },
                 3 => {
                     backend.mouse_resize(self, client, button);
-                    self.current_workspace_mut(backend).restack();
+                    self.current_monitor_mut(backend).restack_current();
                 },
                 _ => println!("unknown action"),
             }
@@ -198,7 +213,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         for mon in &mut self.monitors {
-            mon.current_workspace_mut().restack();
+            mon.restack_current();
         }
     }
 
@@ -222,7 +237,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     fn handle_fullscreen(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
         if let Some(mon) = self.get_monitor_mut(&client_rc) {
             client_rc.borrow_mut().set_fullscreen(state, mon.config());
-            self.get_workspace_mut(&client_rc).unwrap().restack();
+            if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
+                mon.restack(i);
+            }
         }
     }
 
@@ -264,7 +281,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
-        client.raise();
         client.center_on_screen(monitor_conf);
 
         // configure look
@@ -291,6 +307,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.handle_focus(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
+        self.current_monitor(backend).restack_current();
+
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
@@ -310,6 +328,12 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         backend.export_active_window(&self.active_client);
         client_rc.borrow().export_workspace(workspace_idx);
+    }
+
+    fn set_client_pinned(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+        if let Some(mon) = self.get_monitor_mut(&client_rc) {
+            mon.set_client_pinned(client_rc, state);
+        }
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
@@ -333,7 +357,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.active_client = None;
         }
 
-        self.current_workspace_mut(backend).restack();
+        self.current_monitor_mut(backend).restack_current();
 
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();

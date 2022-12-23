@@ -26,7 +26,6 @@ pub struct X11Client {
     dont_decorate: bool,
     fullscreen: bool,
     is_dialog: bool,
-    pinned: bool,
     visible: bool,
 
     saved_decorations: Option<(u32, u32, u32)>,
@@ -36,7 +35,7 @@ pub struct X11Client {
 impl X11Client {
     pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> X11Client {
         let attributes = window.x11_attributes(display)
-            .expect("Unable to retrieve attributes for new client");
+            .expect("Unable to retrieve attributes for new client");  // FIXME this should not be fatal
         let x = attributes.x;
         let y = attributes.y;
         let w: u32 = attributes.width.try_into().unwrap();
@@ -81,7 +80,6 @@ impl X11Client {
             dont_decorate: false,
             fullscreen: false,
             is_dialog,
-            pinned: false,
             visible: false,
 
             saved_decorations: None,
@@ -285,6 +283,12 @@ impl Client for X11Client {
         return self.dont_decorate;
     }
 
+    fn export_pinned(&self, state: bool, workspace_idx: Option<usize>) {
+        let idx: u64 = if state { 0xffffffff } else { workspace_idx.expect("Need workspace index to unpin window").try_into().unwrap() };
+        let data = &[idx];
+        self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
+    }
+
     fn export_workspace(&self, workspace_idx: usize) {
         let idx: u64 = workspace_idx.try_into().unwrap();
         let data = &[idx];
@@ -322,10 +326,6 @@ impl Client for X11Client {
 
     fn is_fullscreen(&self) -> bool {
         return self.fullscreen;
-    }
-
-    fn is_pinned(&self) -> bool {
-        return self.pinned;
     }
 
     fn is_visible(&self) -> bool {
@@ -434,10 +434,6 @@ impl Client for X11Client {
         unsafe {
             xlib::XSetWindowBorder(self.display, self.frame, color);
         }
-    }
-
-    fn set_pinned(&mut self, state: bool) {
-        self.pinned = state;
     }
 
     fn show(&mut self) {

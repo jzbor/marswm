@@ -92,7 +92,7 @@ impl<C: Client> Workspace<C> {
         }
     }
 
-    pub fn restack(&mut self) {
+    pub fn restack(&self) {
         self.apply_layout();
         for client in self.floating_clients.iter().rev() {
             client.borrow().raise();
