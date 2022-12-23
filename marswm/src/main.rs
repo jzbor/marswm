@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use libmars::*;
 use libmars::x11::backend::*;
 
+use crate::bindings::default_keybindings;
 use crate::marswm::*;
 use crate::config::*;
 
@@ -52,11 +53,25 @@ trait ClientList<C: Client> {
 
 fn main() {
     if env::args().find(|a| a == "print-default-config").is_some() {
-        println!("{}", toml::to_string(&Configuration::default()).unwrap());
+        let ser = toml::to_string(&Configuration::default());
+        match ser {
+            Ok(ser) => println!("{}", ser),
+            Err(e) => println!("Error: {}", e),
+        }
         return;
     }
 
     let config = read_config();
+
+    if env::args().find(|a| a == "print-default-keybindings").is_some() {
+        let ser = serde_yaml::to_string(&default_keybindings(config.workspaces));
+        match ser {
+            Ok(ser) => println!("{}", ser),
+            Err(e) => println!("Error: {}", e),
+        }
+        return;
+    }
+
     let mut backend = X11Backend::init("marswm").unwrap();
     let mut wm = MarsWM::new(&mut backend, config);
     wm.init(&mut backend);
