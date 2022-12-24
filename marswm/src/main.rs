@@ -72,8 +72,10 @@ fn main() {
         return;
     }
 
+    let keybindings = read_keybindings(config.workspaces);
+
     let mut backend = X11Backend::init("marswm").unwrap();
-    let mut wm = MarsWM::new(&mut backend, config);
+    let mut wm = MarsWM::new(&mut backend, config, keybindings);
     wm.init(&mut backend);
     backend.run(&mut wm);
 }

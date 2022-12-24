@@ -14,16 +14,18 @@ pub struct MarsWM<C: Client> {
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
+    keybindings: Vec<Keybinding>,
 }
 
 impl<C: Client> MarsWM<C> {
-    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration) -> MarsWM<C> {
+    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>) -> MarsWM<C> {
         let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc, &config)).collect();
         return MarsWM {
             config,
             active_client: None,
             clients: Vec::new(),
             monitors,
+            keybindings,
         };
     }
 
@@ -253,8 +255,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
-        default_keybindings(self.config.workspaces).iter()
-            .for_each(|kb| { kb.match_execute(modifiers, key, self, backend, client_option.clone()); });
+        let actions: Vec<BindingAction> = self.keybindings.iter().filter(|kb| kb.matches(modifiers, key))
+            .map(|kb| kb.action()).collect();
+        for action in actions {
+            action.execute(self, backend, client_option.clone());
+        }
     }
 
     fn init(&mut self, backend: &mut B) {
@@ -297,7 +302,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client.bind_button(MODKEY.mask(), 3);
 
         // bind keys
-        for keybinding in default_keybindings(self.config.workspaces) {
+        for keybinding in &self.keybindings {
             client.bind_key(keybinding.modifiers(), keybinding.key());
         }
 

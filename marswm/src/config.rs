@@ -4,9 +4,11 @@ use std::path;
 use serde::{Serialize, Deserialize};
 
 use crate::layouts::LayoutType;
+use crate::bindings::*;
 
 const CONFIG_DIR: &str = "marswm";
 const CONFIG_FILE: &str = "marswm.yaml";
+const KEYBINDINGS_FILE: &str = "keybindings.yaml";
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
@@ -84,7 +86,7 @@ fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, 
     };
 }
 
-pub fn read_config_file<T: for<'a> Deserialize<'a>>(file_name: &str) -> Result<T, String>{
+fn read_config_file<T: for<'a> Deserialize<'a>>(file_name: &str) -> Result<T, String>{
     // check configuration dir as specified in xdg base dir specification
     if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
         let path = path::Path::new(&xdg_config).join(CONFIG_DIR).join(file_name);
@@ -117,6 +119,17 @@ pub fn read_config() -> Configuration {
         Err(msg) => {
             println!("Unable to read configuration: {}", msg);
             Configuration::default()
+        },
+    };
+}
+
+pub fn read_keybindings(nworkspaces: usize) -> Vec<Keybinding> {
+    let result = read_config_file(KEYBINDINGS_FILE);
+    return match result {
+        Ok(config) => config,
+        Err(msg) => {
+            println!("Unable to read key bindings: {}", msg);
+            default_keybindings(nworkspaces)
         },
     };
 }

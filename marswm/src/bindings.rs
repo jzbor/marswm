@@ -50,15 +50,11 @@ pub struct Keybinding {
     action: BindingAction,
 }
 
-impl Keybinding {
-    pub fn new(modifiers: Vec<Modifier>, key_name: &str, action: BindingAction) -> Keybinding {
-        return Keybinding { modifiers, key_name: key_name.to_owned(), action };
-    }
-
-    fn execute<B: Backend<C>, C: Client>(&self, wm: &mut MarsWM<C>, backend: &mut B,
+impl BindingAction {
+    pub fn execute<B: Backend<C>, C: Client>(&self, wm: &mut MarsWM<C>, backend: &mut B,
                                          client_option: Option<Rc<RefCell<C>>>) {
         use BindingAction::*;
-        match &self.action {
+        match self {
             CenterClient => if let Some(client_rc) = client_option {
                 if let Some(mon) = wm.get_monitor(&client_rc) {
                     client_rc.borrow_mut().center_on_screen(mon.config());
@@ -99,11 +95,25 @@ impl Keybinding {
             },
         }
     }
+}
+
+impl Keybinding {
+    pub fn new(modifiers: Vec<Modifier>, key_name: &str, action: BindingAction) -> Keybinding {
+        return Keybinding { modifiers, key_name: key_name.to_owned(), action };
+    }
+
+    pub fn action(&self) -> BindingAction {
+        return self.action.clone();
+    }
+
+    pub fn matches(&self, modifiers: u32, key: u32) -> bool {
+        return modifiers == self.modifiers() && key == self.key();
+    }
 
     pub fn match_execute<B: Backend<C>, C: Client>(&self, modifiers: u32, key: u32, wm: &mut MarsWM<C>,
                                                    backend: &mut B, client_option: Option<Rc<RefCell<C>>>) -> bool {
-        if modifiers == self.modifiers() && key == self.key() {
-            self.execute(wm, backend, client_option);
+        if self.matches(modifiers, key) {
+            self.action.execute(wm, backend, client_option);
             return true;
         }
         return false;
