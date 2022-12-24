@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use crate::layouts::LayoutType;
 
 const CONFIG_DIR: &str = "marswm";
-const CONFIG_FILE: &str = "marswm.toml";
+const CONFIG_FILE: &str = "marswm.yaml";
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
@@ -82,7 +82,7 @@ fn try_read(path: &path::Path) -> Result<Configuration, (bool, String)> {
         Err(e) => return Err((true, e.to_string())),
     };
 
-    match toml::from_slice(&raw) {
+    match serde_yaml::from_slice(&raw) {
         Ok(config) => return Ok(config),
         Err(e) => return Err((true, e.to_string())),
     };

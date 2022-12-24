@@ -53,7 +53,7 @@ trait ClientList<C: Client> {
 
 fn main() {
     if env::args().find(|a| a == "print-default-config").is_some() {
-        let ser = toml::to_string(&Configuration::default());
+        let ser = serde_yaml::to_string(&Configuration::default());
         match ser {
             Ok(ser) => println!("{}", ser),
             Err(e) => println!("Error: {}", e),

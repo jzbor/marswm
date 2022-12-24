@@ -130,7 +130,6 @@ dependencies = [
  "libmars",
  "serde",
  "serde_yaml",
- "toml",
  "x11",
 ]
 
@@ -264,15 +263,6 @@ name = "textwrap"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
-
-[[package]]
-name = "toml"
-version = "0.4.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "758664fc71a3a69038656bee8b6be6477d2a6c315a6b81f7081f591bffa4111f"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "unicode-ident"
