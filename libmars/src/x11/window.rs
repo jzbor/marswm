@@ -15,6 +15,7 @@ pub trait X11Window {
     fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: xlib::Atom);
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
+    fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str>;
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
@@ -83,6 +84,11 @@ impl X11Window for xlib::Window {
                 return Err("Error getting class hint from window".to_owned());
             }
         }
+    }
+
+    fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str> {
+        let result = self.x11_read_property_long(display, WMState.to_xlib_atom(display), WMState.to_xlib_atom(display))?;
+        return Ok(result[0]);
     }
 
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {

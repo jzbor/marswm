@@ -249,6 +249,8 @@ impl X11Backend {
         let boxed_client = Rc::new(RefCell::new(client));
         wm.manage(self, boxed_client.clone());
 
+        // TODO move transient clients to workspace and monitor of their counterpart
+
         // Setting workspace as specified by _NET_WM_DESKTOP
         let workspace_req = {
             match boxed_client.clone().borrow().x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
@@ -630,16 +632,32 @@ impl Backend<X11Client> for X11Backend {
             let mut top_level_windows: *mut xlib::Window = ptr::null_mut();
             let mut num_top_level_windows: u32 = 0;
 
-            match xlib::XQueryTree(self.display, self.root,
+            let windows = match xlib::XQueryTree(self.display, self.root,
                                    &mut returned_root, &mut returned_parent,
                                    &mut top_level_windows, &mut num_top_level_windows) {
-                0 => panic!("Unable to query x window tree"),
-                _ => for i in 0..num_top_level_windows {
-                    // @TODO check for override redirect and viewable status on pre-existing windows
-                    self.manage(wm, *top_level_windows.offset(i.try_into().unwrap()));
-                },
-            }
-            println!("Initially managed {} windows", num_top_level_windows);
+                0 => Err(()),
+                _ => Ok(slice::from_raw_parts(top_level_windows, num_top_level_windows.try_into().unwrap())),
+            }.expect("Unable to query x window tree");
+
+            // closure to check and manage windows
+            let display = self.display;
+            let check_manage_window = |window: &&xlib::Window| {
+                let attributes = match window.x11_attributes(display) {
+                    Ok(attr) => attr,
+                    Err(_) => return false, // unable to get attributes for client (ignoring client)
+                };
+
+                // FIXME also manage windows where state == IconicState
+                return attributes.map_state == xlib::IsViewable;
+            };
+
+            // manage non-transient windows first
+            windows.iter().filter(|w| w.x11_is_transient_for(display).is_none())
+                .filter(check_manage_window).for_each(|w| self.manage(wm, *w));
+            windows.iter().filter(|w| w.x11_is_transient_for(display).is_some())
+                .filter(check_manage_window).for_each(|w| self.manage(wm, *w));
+
+            println!("Initially managed {} windows", windows.len());
 
             xlib::XFree(top_level_windows as *mut c_void);
             xlib::XUngrabServer(self.display);
@@ -691,6 +709,12 @@ impl Backend<X11Client> for X11Backend {
 
         unsafe {
             xlib::XSetInputFocus(self.display, client.window(), xlib::RevertToPointerRoot, xlib::CurrentTime);
+        }
+    }
+
+    fn shutdown(&mut self) {
+        unsafe {
+            xlib::XCloseDisplay(self.display);
         }
     }
 

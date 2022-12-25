@@ -2,6 +2,9 @@ use libmars::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
+use std::process::Command;
+use std::os::unix::process::CommandExt;
+use std::env;
 
 use crate::*;
 use crate::bindings::*;
@@ -27,6 +30,12 @@ impl<C: Client> MarsWM<C> {
             monitors,
             keybindings,
         };
+    }
+
+    pub fn cleanup<B: Backend<C>>(&mut self, backend: &mut B) {
+        for client_rc in self.clients.clone() {
+            self.unmanage(backend, client_rc);
+        }
     }
 
     fn clients_stacked_order(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
@@ -138,6 +147,25 @@ impl<C: Client> MarsWM<C> {
     pub fn get_workspace_mut(&mut self, client_rc: &Rc<RefCell<C>>) -> Option<&mut Workspace<C>> {
         return self.monitors.iter_mut().flat_map(|m| m.workspaces_mut())
             .find(|ws| ws.contains(client_rc));
+    }
+
+    pub fn shutdown<B: Backend<C>>(&mut self, backend: &mut B) {
+        println!("Shutting down");
+        self.cleanup(backend);
+        backend.shutdown();
+    }
+
+    pub fn restart<B: Backend<C>>(&mut self, backend: &mut B) {
+        println!("Restarting");
+        self.cleanup(backend);
+        backend.shutdown();
+
+        let path = env::current_exe().unwrap();
+        let args = env::args();
+
+        let mut command = Command::new(path);
+        let command = command.args(args);
+        command.exec();
     }
 }
 

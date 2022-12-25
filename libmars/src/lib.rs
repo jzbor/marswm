@@ -114,6 +114,8 @@ pub trait Backend<C: Client> {
 
     /// Set client that receives mouse and keyboard inputs
     fn set_input_focus(&self, client_rc: Rc<RefCell<C>>);
+
+    fn shutdown(&mut self);
 }
 
 pub trait Dimensioned {

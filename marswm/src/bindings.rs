@@ -29,6 +29,7 @@ pub enum BindingAction {
     MoveWorkspace(usize),
     PreviousWorkspace,
     PullFront,
+    Restart,
     SetLayout(LayoutType),
     SwitchWorkspace(usize),
     ToggleFloating,
@@ -82,6 +83,7 @@ impl BindingAction {
             PullFront => if let Some(client_rc) = client_option {
                 wm.current_workspace_mut(backend).pull_front(client_rc);
             },
+            Restart => wm.restart(backend),
             SetLayout(layout) => wm.current_workspace_mut(backend).set_layout(*layout),
             SwitchWorkspace(ws) => wm.switch_workspace(backend, *ws),
             ToggleFloating => if let Some(client_rc) = client_option {
@@ -160,6 +162,7 @@ pub fn default_keybindings(nworkspaces: usize) -> Vec<Keybinding> {
         Keybinding::new(vec!(MODKEY), "Tab", PreviousWorkspace),
         Keybinding::new(vec!(MODKEY), "Return", Execute("buttermilk".to_owned())),
         Keybinding::new(vec!(MODKEY), "d", Execute("rofi -show drun".to_owned())),
+        Keybinding::new(vec!(MODKEY, Modifier::Control), "BackSpace", Restart),
     ];
 
     for i in 0..cmp::min(nworkspaces, 9) {
