@@ -1,10 +1,12 @@
 use libmars::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
+use std::path::PathBuf;
 use std::rc::Rc;
-use std::process::Command;
+use std::process;
 use std::os::unix::process::CommandExt;
 use std::env;
+use std::str::FromStr;
 
 use crate::*;
 use crate::bindings::*;
@@ -13,6 +15,7 @@ use crate::workspace::*;
 
 
 pub struct MarsWM<C: Client> {
+    exec_path: PathBuf,
     config: Configuration,
     active_client: Option<Rc<RefCell<C>>>,
     monitors: Vec<Monitor<C>>,
@@ -23,7 +26,11 @@ pub struct MarsWM<C: Client> {
 impl<C: Client> MarsWM<C> {
     pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>) -> MarsWM<C> {
         let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc, &config)).collect();
+
+        // stores exec path to enable reloading after rebuild
+        // might have security implications
         return MarsWM {
+            exec_path: env::current_exe().unwrap(),
             config,
             active_client: None,
             clients: Vec::new(),
@@ -153,6 +160,7 @@ impl<C: Client> MarsWM<C> {
         println!("Shutting down");
         self.cleanup(backend);
         backend.shutdown();
+        process::exit(0);
     }
 
     pub fn restart<B: Backend<C>>(&mut self, backend: &mut B) {
@@ -160,12 +168,15 @@ impl<C: Client> MarsWM<C> {
         self.cleanup(backend);
         backend.shutdown();
 
-        let path = env::current_exe().unwrap();
         let args = env::args();
+        println!("Path: {:?}", self.exec_path);
+        println!("Args: {:?}", args);
 
-        let mut command = Command::new(path);
+        let mut command = process::Command::new(self.exec_path.clone());
         let command = command.args(args);
-        command.exec();
+        let error = command.exec();
+        println!("{}", error);
+        process::exit(1);
     }
 }
 
@@ -298,23 +309,27 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.handle_existing_windows(self);
     }
 
-    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<usize>) {
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
-        let monitor_conf = if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
-            let monitor = self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap();
-            monitor.attach_client(client_rc.clone());
-            monitor.config()
+
+        let monitor = if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
+            self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap()
         } else {
-            self.current_monitor_mut(backend).attach_client(client_rc.clone());
-            self.current_monitor(backend).config()
+            self.current_monitor_mut(backend)
         };
-        // self.current_monitor_mut().attach_client(client_rc.clone());
+        monitor.attach_client(client_rc.clone());
+        let monitor_conf = *monitor.config();
+
+        if let Some(workspace) = workspace_preference {
+            println!("Moving newly managed client {} to workspace {}", client_rc.borrow().name(), workspace);
+            self.move_to_workspace(backend, client_rc.clone(), workspace);
+        }
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
-        client.center_on_screen(monitor_conf);
+        client.center_on_screen(&monitor_conf);
 
         // configure look
         if !client.dont_decorate() {
@@ -335,6 +350,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         drop(client);
+
+        if let Some(workspace) = workspace_preference {
+            println!("Moving newly managed client {} to workspace {}", client_rc.borrow().name(), workspace);
+            self.move_to_workspace(backend, client_rc.clone(), workspace);
+        }
 
         // set client as currently focused
         self.handle_focus(backend, Some(client_rc.clone()));

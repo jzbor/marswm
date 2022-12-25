@@ -246,21 +246,18 @@ impl X11Backend {
 
         println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
 
-        let boxed_client = Rc::new(RefCell::new(client));
-        wm.manage(self, boxed_client.clone());
-
-        // TODO move transient clients to workspace and monitor of their counterpart
-
         // Setting workspace as specified by _NET_WM_DESKTOP
         let workspace_req = {
-            match boxed_client.clone().borrow().x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
-                Ok(data) => Some(data[0]),
+            match client.x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
+                Ok(data) => Some(data[0].try_into().unwrap()),
                 Err(_msg) => None,
             }
         };
-        if let Some(workspace) = workspace_req {
-            wm.move_to_workspace(self, boxed_client, workspace.try_into().unwrap())
-        }
+
+        let boxed_client = Rc::new(RefCell::new(client));
+        wm.manage(self, boxed_client.clone(), workspace_req);
+
+        // TODO move transient clients to workspace and monitor of their counterpart
     }
 
     fn mouse_action(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>,
@@ -342,7 +339,7 @@ impl X11Backend {
     }
 
     fn on_client_message(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XClientMessageEvent) {
-        print_event!(wm, event);
+        //print_event!(wm, event);
         if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
             match atom {
                 NetActiveWindow => {
@@ -398,7 +395,7 @@ impl X11Backend {
     }
 
     fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XDestroyWindowEvent) {
-        print_event!(wm, event);
+        //print_event!(wm, event);
 
         // unmanage dock window
         if self.dock_windows.contains(&event.window) {
@@ -476,7 +473,7 @@ impl X11Backend {
     }
 
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
-        print_event!(wm, event);
+        //print_event!(wm, event);
         // unmanage dock window
         if self.dock_windows.contains(&event.window) {
             let index = self.dock_windows.iter().position(|w| *w == event.window).unwrap();
@@ -510,7 +507,7 @@ impl X11Backend {
     }
 
     fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
-        print_event!(wm, event);
+        //print_event!(wm, event);
         let already_managed = wm.clients().find(|c| c.borrow().window() == event.window).is_some();
         if !already_managed {
             self.manage(wm, event.window);
@@ -518,7 +515,7 @@ impl X11Backend {
     }
 
     fn on_map_notify(&mut self, wm: &mut WM, event: xlib::XMapEvent) {
-        print_event!(wm, event);
+        //print_event!(wm, event);
     }
 
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
