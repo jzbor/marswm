@@ -141,6 +141,7 @@ impl<C: Client> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         if !client_rc.borrow().is_dialog() {
             self.tiled_clients.push_front(client_rc.clone());
+            self.restack();
         } else {
             self.floating_clients.push_front(client_rc);
         }
@@ -154,6 +155,7 @@ impl<C: Client> ClientList<C> for Workspace<C> {
         let index_option = self.tiled_clients.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
             self.tiled_clients.remove(index);
+            self.restack();
         }
 
         let index_option = self.floating_clients.iter().position(|c| c == client_rc);

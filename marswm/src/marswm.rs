@@ -251,10 +251,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         } else {
             panic!("Monitor {} not found", monitor);
         }
-
-        for mon in &mut self.monitors {
-            mon.restack_current();
-        }
     }
 
     fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>) {
@@ -360,8 +356,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.handle_focus(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
-        self.current_monitor(backend).restack_current();
-
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
@@ -409,8 +403,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         if Some(client_rc) == self.active_client {
             self.active_client = None;
         }
-
-        self.current_monitor_mut(backend).restack_current();
 
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();

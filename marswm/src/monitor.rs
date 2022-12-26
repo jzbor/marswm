@@ -59,22 +59,17 @@ impl<C: Client> Monitor<C> {
             return;
         }
 
-        let mut restack_vec = Vec::new();
-        for (i, ws) in &mut self.workspaces.iter_mut().enumerate() {
+        for ws in &mut self.workspaces.iter_mut() {
             if ws.contains(&client_rc) {
                 ws.detach_client(&client_rc);
-                // note all workspaces that need restacking
-                restack_vec.push(i);
             }
         }
-        restack_vec.iter().for_each(|i| self.restack(*i));
 
         if workspace_idx != self.cur_workspace {
             client_rc.borrow_mut().hide();
         }
 
         self.workspaces[workspace_idx].attach_client(client_rc);
-        self.restack(workspace_idx);
     }
 
     pub fn num(&self) -> u32 {
@@ -99,6 +94,7 @@ impl<C: Client> Monitor<C> {
             }
 
             client_rc.borrow_mut().export_pinned(state, None);
+            client_rc.borrow().raise();
             self.pinned_clients.push(client_rc);
         } else {
             let index_option = self.pinned_clients.iter().position(|c| c == &client_rc);
