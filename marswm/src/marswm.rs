@@ -354,6 +354,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         // set client as currently focused
         self.handle_focus(backend, Some(client_rc.clone()));
+        self.current_monitor_mut(backend).restack_current();
         client_rc.borrow_mut().warp_pointer_to_center();
 
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
