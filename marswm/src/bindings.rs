@@ -28,7 +28,7 @@ pub enum BindingAction {
     IncNMain,
     MoveWorkspace(usize),
     PreviousWorkspace,
-    PullFront,
+    MoveMain,
     Restart,
     SetLayout(LayoutType),
     SwitchWorkspace(usize),
@@ -80,8 +80,8 @@ impl BindingAction {
                 wm.move_to_workspace(backend, client_rc, *ws);
             },
             PreviousWorkspace => wm.current_monitor_mut(backend).switch_prev_workspace(backend),
-            PullFront => if let Some(client_rc) = client_option {
-                wm.current_workspace_mut(backend).pull_front(client_rc);
+            MoveMain => if let Some(client_rc) = client_option {
+                wm.current_workspace_mut(backend).move_main(client_rc);
             },
             Restart => wm.restart(backend),
             SetLayout(layout) => wm.current_workspace_mut(backend).set_layout(*layout),
@@ -149,7 +149,7 @@ pub fn default_keybindings(nworkspaces: usize) -> Vec<Keybinding> {
         Keybinding::new(vec!(MODKEY), "t", SetLayout(LayoutType::Stack)),
         Keybinding::new(vec!(MODKEY), "c", SetLayout(LayoutType::Deck)),
         Keybinding::new(vec!(MODKEY), "m", SetLayout(LayoutType::Monocle)),
-        Keybinding::new(vec!(MODKEY), "BackSpace", PullFront),
+        Keybinding::new(vec!(MODKEY), "BackSpace", MoveMain),
         Keybinding::new(vec!(MODKEY), "a", IncNMain),
         Keybinding::new(vec!(MODKEY), "x", DecNMain),
         Keybinding::new(vec!(MODKEY), "j", CycleClient(1)),

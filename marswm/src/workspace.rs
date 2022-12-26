@@ -63,14 +63,19 @@ impl<C: Client> Workspace<C> {
         return self.name;
     }
 
-    pub fn pull_front(&mut self, client_rc: Rc<RefCell<C>>) {
+    pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {
+        let nmain = self.layout_config.nmain.try_into().unwrap();
         let mut index_option = None;
         if let Some(index) = self.tiled_clients.iter().position(|c| c == &client_rc) {
             index_option = Some(index);
         }
         if let Some(index) = index_option {
             self.tiled_clients.remove(index);
-            self.tiled_clients.push_front(client_rc);
+            if index < nmain {
+                self.tiled_clients.insert(nmain, client_rc);
+            } else {
+                self.tiled_clients.push_front(client_rc);
+            }
             self.apply_layout();
         }
     }
