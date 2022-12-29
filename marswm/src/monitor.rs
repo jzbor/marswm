@@ -9,21 +9,21 @@ use crate::config::Configuration;
 pub struct Monitor<C: Client> {
     config: MonitorConfig,
     workspaces: Vec<Workspace<C>>,
-    cur_workspace: usize,
-    prev_workspace: usize,
+    cur_workspace: u32,
+    prev_workspace: u32,
     pinned_clients: Vec<Rc<RefCell<C>>>,
 }
 
 impl<C: Client> Monitor<C> {
     pub fn new(monitor_config: MonitorConfig, config: &Configuration) -> Monitor<C> {
         let pinned_clients = Vec::new();
-        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces)
+        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces as usize)
             .enumerate()
             .map(|(i, name)| Workspace::new(i, name, monitor_config.window_area(),
                                             config.layout, config.default_layout))
             .collect();
 
-        assert!(workspaces.len() == config.workspaces);
+        assert!(workspaces.len() == config.workspaces as usize);
 
         return Monitor {
             config: monitor_config,
@@ -38,24 +38,20 @@ impl<C: Client> Monitor<C> {
         return &self.config;
     }
 
-    pub fn current_workspace_idx(&self) -> usize {
+    pub fn current_workspace_idx(&self) -> u32 {
         return self.cur_workspace;
     }
 
     pub fn current_workspace(&self) -> &Workspace<C> {
-        return &self.workspaces[self.cur_workspace];
+        return &self.workspaces[self.cur_workspace as usize];
     }
 
     pub fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
-        return &mut self.workspaces[self.cur_workspace];
+        return &mut self.workspaces[self.cur_workspace as usize];
     }
 
-    pub fn dimensions(&self) -> Dimensions {
-        return self.config.dimensions();
-    }
-
-    pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
-        if workspace_idx >= self.workspaces.len() {
+    pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
+        if workspace_idx >= self.workspace_count() {
             return;
         }
 
@@ -69,7 +65,7 @@ impl<C: Client> Monitor<C> {
             client_rc.borrow_mut().hide();
         }
 
-        self.workspaces[workspace_idx].attach_client(client_rc);
+        self.workspaces[workspace_idx as usize].attach_client(client_rc);
     }
 
     pub fn num(&self) -> u32 {
@@ -80,8 +76,8 @@ impl<C: Client> Monitor<C> {
         self.restack(self.cur_workspace);
     }
 
-    pub fn restack(&self, workspace_idx: usize) {
-        self.workspaces[workspace_idx].restack();
+    pub fn restack(&self, workspace_idx: u32) {
+        self.workspaces[workspace_idx as usize].restack();
         for client_rc in &self.pinned_clients {
             client_rc.borrow().raise();
         }
@@ -108,22 +104,22 @@ impl<C: Client> Monitor<C> {
         }
     }
 
-    pub fn workspace_count(&self) -> usize {
-        return self.workspaces.len();
+    pub fn workspace_count(&self) -> u32 {
+        return self.workspaces.len() as u32;
     }
 
     pub fn switch_prev_workspace(&mut self, backend: &impl Backend<C>) {
         self.switch_workspace(backend, self.prev_workspace);
     }
 
-    pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: usize) {
+    pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
             return;
         }
 
-        self.workspaces[self.cur_workspace].clients()
+        self.workspaces[self.cur_workspace as usize].clients()
             .for_each(|c| c.borrow_mut().hide());
-        self.workspaces[workspace_idx].clients().for_each(|c| c.borrow_mut().show());
+        self.workspaces[workspace_idx as usize].clients().for_each(|c| c.borrow_mut().show());
         self.prev_workspace = self.cur_workspace;
         self.cur_workspace = workspace_idx;
         backend.export_current_workspace(workspace_idx);
@@ -152,7 +148,7 @@ impl<C: Client> Monitor<C> {
 impl<C: Client> ClientList<C> for Monitor<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         client_rc.borrow().export_workspace(self.cur_workspace);
-        self.workspaces[self.cur_workspace].attach_client(client_rc);
+        self.workspaces[self.cur_workspace as usize].attach_client(client_rc);
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {

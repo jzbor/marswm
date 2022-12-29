@@ -46,10 +46,6 @@ impl From<xinerama::XineramaScreenInfo> for MonitorConfig {
 }
 
 
-fn button_mask(button: u32) -> u32 {
-    return 1 << (7 + button);
-}
-
 pub fn get_keysym(name: &str) -> xlib::KeySym {
     unsafe {
         let cstring = CString::new(name).unwrap();

@@ -33,7 +33,7 @@ macro_rules! enum_with_values {
 
 pub trait WindowManager<B: Backend<C>, C: Client> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>>;
-    fn active_workspace(&self, backend: &mut B) -> usize;
+    fn active_workspace(&self, backend: &mut B) -> u32;
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
@@ -46,10 +46,10 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn handle_tile_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_unfocus(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn init(&mut self, backend: &mut B);
-    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<usize>);
-    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize);
+    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
+    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
     fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
-    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize);
+    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>);
 }
@@ -60,9 +60,9 @@ pub trait Client: Eq + Dimensioned{
     fn center_on_screen(&mut self, monitor_conf: &MonitorConfig);
     fn close(&self);
     fn dont_decorate(&self) -> bool;
-    fn export_pinned(&self, state: bool, workspace_idx: Option<usize>);
+    fn export_pinned(&self, state: bool, workspace_idx: Option<u32>);
     fn export_tiled(&self, state: bool);
-    fn export_workspace(&self, workspace_idx: usize);
+    fn export_workspace(&self, workspace_idx: u32);
     fn hide(&mut self);
     fn is_dialog(&self) -> bool;
     fn is_fullscreen(&self) -> bool;
@@ -90,7 +90,7 @@ pub trait Backend<C: Client> {
     fn export_client_list<'a>(&self, clients: Vec<&Rc<RefCell<C>>>, clients_stacked: Vec<&Rc<RefCell<C>>>);
 
     /// Make currently active workspace available to clients
-    fn export_current_workspace(&self, workspace_idx: usize);
+    fn export_current_workspace(&self, workspace_idx: u32);
 
     /// Make information about workspaces available to clients
     fn export_workspaces(&self, workspaces: Vec<String>);

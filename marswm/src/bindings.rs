@@ -26,12 +26,12 @@ pub enum BindingAction {
     DecNMain,
     Execute(String),
     IncNMain,
-    MoveWorkspace(usize),
+    MoveWorkspace(u32),
     PreviousWorkspace,
     MoveMain,
     Restart,
     SetLayout(LayoutType),
-    SwitchWorkspace(usize),
+    SwitchWorkspace(u32),
     ToggleFloating,
     ToggleFullscreen,
 }
@@ -112,15 +112,6 @@ impl Keybinding {
         return modifiers == self.modifiers() && key == self.key();
     }
 
-    pub fn match_execute<B: Backend<C>, C: Client>(&self, modifiers: u32, key: u32, wm: &mut MarsWM<C>,
-                                                   backend: &mut B, client_option: Option<Rc<RefCell<C>>>) -> bool {
-        if self.matches(modifiers, key) {
-            self.action.execute(wm, backend, client_option);
-            return true;
-        }
-        return false;
-    }
-
     pub fn modifiers(&self) -> u32 {
         return self.modifiers.iter().fold(0, |a, b| a | b.mask());
     }
@@ -141,7 +132,7 @@ impl Modifier {
     }
 }
 
-pub fn default_keybindings(nworkspaces: usize) -> Vec<Keybinding> {
+pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
     use BindingAction::*;
     let mut bindings = vec![
         Keybinding::new(vec!(MODKEY), "Delete", CloseClient),

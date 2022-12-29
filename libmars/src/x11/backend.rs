@@ -14,6 +14,7 @@ use crate::x11::client::*;
 use crate::x11::window::*;
 
 
+#[allow(unused_macros)]
 macro_rules! print_event {
     ($wm:expr, $event:expr) => {
         #[cfg(debug_assertions)]
@@ -364,7 +365,7 @@ impl X11Backend {
                         let workspace = event.data.get_long(0);
                         println!("Changing workspace for {} to {:x}", client_rc.borrow().name(), workspace);
                         wm.set_client_pinned(self, client_rc.clone(), workspace == -1);
-                        wm.move_to_workspace(self, client_rc, workspace as usize);
+                        wm.move_to_workspace(self, client_rc, workspace.try_into().unwrap());
                     }
                 },
                 NetWMState => {
@@ -468,7 +469,7 @@ impl X11Backend {
         wm.handle_key(self, modifiers, key, client_opt)
     }
 
-    fn on_leave_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XCrossingEvent) {
+    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<X11Backend,X11Client>, _event: xlib::XCrossingEvent) {
         //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
@@ -526,7 +527,7 @@ impl X11Backend {
         }
     }
 
-    fn on_map_notify(&mut self, wm: &mut WM, event: xlib::XMapEvent) {
+    fn on_map_notify(&mut self, _wm: &mut WM, _event: xlib::XMapEvent) {
         //print_event!(wm, event);
     }
 
@@ -611,8 +612,8 @@ impl Backend<X11Client> for X11Backend {
 
     }
 
-    fn export_current_workspace(&self, workspace_idx: usize) {
-        let idx: u64 = workspace_idx.try_into().unwrap();
+    fn export_current_workspace(&self, workspace_idx: u32) {
+        let idx: u64 = workspace_idx.into();
         let data = &[idx];
         self.root.x11_replace_property_long(self.display, NetCurrentDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
@@ -738,6 +739,7 @@ impl Backend<X11Client> for X11Backend {
     }
 }
 
+#[allow(dead_code)]
 fn event_type<T>(_: &T) -> &str {
     return std::any::type_name::<T>();
 }

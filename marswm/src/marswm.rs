@@ -6,7 +6,6 @@ use std::rc::Rc;
 use std::process;
 use std::os::unix::process::CommandExt;
 use std::env;
-use std::str::FromStr;
 
 use crate::*;
 use crate::bindings::*;
@@ -106,7 +105,7 @@ impl<C: Client> MarsWM<C> {
     pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
-        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as usize % self.config.workspaces;
+        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as u32 % self.config.workspaces;
         let monitor = self.current_monitor_mut(backend);
         monitor.switch_workspace(backend, new_workspace_idx);
     }
@@ -192,7 +191,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         return self.active_client.clone();
     }
 
-    fn active_workspace(&self, backend: &mut B) -> usize {
+    fn active_workspace(&self, backend: &mut B) -> u32 {
         return self.current_monitor(backend).current_workspace_idx();
     }
 
@@ -201,7 +200,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         // switch workspace
         let workspace_idx_option = monitor.workspaces().enumerate()
-            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i);
+            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i as u32);
         if let Some(workspace_idx) = workspace_idx_option {
             monitor.switch_workspace(backend, workspace_idx);
         }
@@ -281,7 +280,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         if let Some(mon) = self.get_monitor_mut(&client_rc) {
             client_rc.borrow_mut().set_fullscreen(state, mon.config());
             if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
-                mon.restack(i);
+                mon.restack(i as u32);
             }
         }
     }
@@ -291,7 +290,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.handle_fullscreen(backend, client_rc, !old_state)
     }
 
-    fn handle_tile(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+    fn handle_tile(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
             ws.set_floating(client_rc, !state);
         }
@@ -323,7 +322,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.handle_existing_windows(self);
     }
 
-    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<usize>) {
+    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>) {
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
@@ -380,7 +379,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_client_list(clients, clients_stacked);
     }
 
-    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: usize) {
+    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
         let mon = self.get_monitor_mut(&client_rc).unwrap();
         if workspace_idx >= mon.workspace_count() {
             return;
@@ -402,7 +401,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: usize) {
+    fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
         self.current_monitor_mut(backend).switch_workspace(backend, workspace_idx);
     }
 

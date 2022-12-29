@@ -13,7 +13,7 @@ const KEYBINDINGS_FILE: &str = "keybindings.yaml";
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct Configuration {
-    pub workspaces: usize,
+    pub workspaces: u32,
     pub default_layout: LayoutType,
     pub layout: LayoutConfiguration,
     pub theming: ThemingConfiguration,
@@ -123,7 +123,7 @@ pub fn read_config() -> Configuration {
     };
 }
 
-pub fn read_keybindings(nworkspaces: usize) -> Vec<Keybinding> {
+pub fn read_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
     let result = read_config_file(KEYBINDINGS_FILE);
     return match result {
         Ok(config) => config,

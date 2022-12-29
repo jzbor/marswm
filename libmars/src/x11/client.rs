@@ -283,8 +283,8 @@ impl Client for X11Client {
         return self.dont_decorate;
     }
 
-    fn export_pinned(&self, state: bool, workspace_idx: Option<usize>) {
-        let idx: u64 = if state { 0xffffffff } else { workspace_idx.expect("Need workspace index to unpin window").try_into().unwrap() };
+    fn export_pinned(&self, state: bool, workspace_idx: Option<u32>) {
+        let idx: u64 = if state { 0xffffffff } else { workspace_idx.expect("Need workspace index to unpin window").into() };
         let data = &[idx];
         self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
@@ -298,8 +298,8 @@ impl Client for X11Client {
         }
     }
 
-    fn export_workspace(&self, workspace_idx: usize) {
-        let idx: u64 = workspace_idx.try_into().unwrap();
+    fn export_workspace(&self, workspace_idx: u32) {
+        let idx: u64 = workspace_idx.into();
         let data = &[idx];
         self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
@@ -464,7 +464,8 @@ impl Client for X11Client {
         unsafe {
             // let (x, y) = self.center();
             let (x, y) = ((self.w / 2) as i32, (self.h / 2) as i32);
-            let result = xlib::XWarpPointer(self.display, 0, self.frame, 0, 0, 0, 0, x, y);
+            // FIXME handle return (return result)
+            xlib::XWarpPointer(self.display, 0, self.frame, 0, 0, 0, 0, x, y);
         }
     }
 }
