@@ -32,20 +32,6 @@ macro_rules! print_event {
     }
 }
 
-#[allow(unused_macros)]
-macro_rules! debug_occurences {
-    ($wm:expr, $client:expr) => {
-        let window = $client.borrow().window();
-        let frame = $client.borrow().frame();
-        println!("Number of occurences in client list: {} / {} / {}",
-                 $wm.clients().filter(|c| *c == &$client).count(),
-                 $wm.clients().filter(|c| c.borrow().window() == window).count(),
-                 $wm.clients().filter(|c| c.borrow().frame() == frame).count());
-    }
-}
-
-
-
 type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
 pub struct X11Backend {

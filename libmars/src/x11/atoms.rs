@@ -6,12 +6,6 @@ use std::ffi::CString;
 
 use crate::*;
 
-#[macro_export]
-macro_rules! xatom {
-    ($atom:expr, $display:expr) => { $atom.to_xlib_atom(display) }
-}
-
-
 enum_with_values! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     vis pub enum X11Atom {
