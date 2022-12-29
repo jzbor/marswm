@@ -37,7 +37,9 @@ impl X11Window for xlib::Window {
             Err(_) => Vec::new(),
         };
 
-        states.push(state);
+        if !states.contains(&state) {
+            states.push(state);
+        }
         self.x11_replace_property_long(display, NetWMState.to_xlib_atom(display), xlib::XA_ATOM, &states);
     }
 

@@ -40,6 +40,9 @@ pub enum Command {
     SetFullscreen,
     ToggleFullscreen,
     UnsetFullscreen,
+    SetTiled,
+    ToggleTiled,
+    UnsetTiled,
     SwitchDesktop,
 }
 
@@ -61,6 +64,9 @@ impl Command {
             Command::SetFullscreen => Self::fullscreen_window(display, window, MODE_SET),
             Command::ToggleFullscreen => Self::fullscreen_window(display, window, MODE_TOGGLE),
             Command::UnsetFullscreen => Self::fullscreen_window(display, window, MODE_UNSET),
+            Command::SetTiled => Self::tile_window(display, window, MODE_SET),
+            Command::ToggleTiled => Self::tile_window(display, window, MODE_TOGGLE),
+            Command::UnsetTiled => Self::tile_window(display, window, MODE_UNSET),
             Command::SwitchDesktop => Self::switch_desktop(display, desktop),
         }
     }
@@ -127,6 +133,15 @@ impl Command {
         let mut data = xlib::ClientMessageData::new();
         data.set_long(0, desktop);
         send_client_message(display, NetCurrentDesktop, 0, data);
+        return Ok(());
+    }
+
+    fn tile_window(display: *mut xlib::Display, window: xlib::Window, mode: u64) -> Result<(), &'static str> {
+        require_ewmh_atom(display, MarsWMStateTiled)?;
+        let mut data = xlib::ClientMessageData::new();
+        data.set_long(0, mode as i64);
+        data.set_long(1, MarsWMStateTiled.to_xlib_atom(display) as i64);
+        send_client_message(display, NetWMState, window, data);
         return Ok(());
     }
 

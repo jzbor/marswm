@@ -113,10 +113,12 @@ impl<C: Client> Workspace<C> {
         if state && self.tiled_clients.contains(&client_rc) {
             let index = self.tiled_clients.iter().position(|c| c == &client_rc).unwrap();
             let client_rc = self.tiled_clients.remove(index).unwrap();
+            client_rc.borrow().export_tiled(false);
             self.floating_clients.push_front(client_rc);
         } else if !state && self.floating_clients.contains(&client_rc) {
             let index = self.floating_clients.iter().position(|c| c == &client_rc).unwrap();
             let client_rc = self.floating_clients.remove(index).unwrap();
+            client_rc.borrow().export_tiled(true);
             self.tiled_clients.push_front(client_rc);
         }
         self.restack();
@@ -140,9 +142,11 @@ impl<C: Client> Workspace<C> {
 impl<C: Client> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         if !client_rc.borrow().is_dialog() {
+            client_rc.borrow().export_tiled(true);
             self.tiled_clients.push_front(client_rc.clone());
             self.restack();
         } else {
+            client_rc.borrow().export_tiled(false);
             self.floating_clients.push_front(client_rc);
         }
     }

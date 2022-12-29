@@ -138,6 +138,13 @@ impl<C: Client> MarsWM<C> {
         return pos;
     }
 
+    pub fn is_tiled(&self, client_rc: &Rc<RefCell<C>>) -> bool {
+        let mut tiled_clients = self.monitors.iter()
+            .flat_map(|m| m.workspaces())
+            .flat_map(|ws| ws.tiled_clients());
+        return tiled_clients.find(|c| *c == client_rc).is_some();
+    }
+
     pub fn get_monitor(&self, client_rc: &Rc<RefCell<C>>) -> Option<&Monitor<C>> {
         return self.monitors.iter().find(|m| m.contains(client_rc));
     }
@@ -282,6 +289,17 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     fn handle_fullscreen_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
         let old_state = client_rc.borrow().is_fullscreen();
         self.handle_fullscreen(backend, client_rc, !old_state)
+    }
+
+    fn handle_tile(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+        if let Some(ws) = self.get_workspace_mut(&client_rc) {
+            ws.set_floating(client_rc, !state);
+        }
+    }
+
+    fn handle_tile_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        let is_tiled = self.is_tiled(&client_rc);
+        self.handle_tile(backend, client_rc, !is_tiled);
     }
 
     fn handle_unfocus(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {

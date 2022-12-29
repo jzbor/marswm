@@ -58,7 +58,7 @@ pub struct X11Backend {
 }
 
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 18] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 19] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -77,6 +77,8 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 18] = & [
     NetWMWindowTypeDesktop,
     NetWMWindowTypeDialog,
     NetWMWindowTypeMenu,
+
+    MarsWMStateTiled,
 ];
 
 
@@ -376,6 +378,16 @@ impl X11Backend {
                                 wm.handle_fullscreen(self, client_rc, false);
                             } else if mode == 2 {
                                 wm.handle_fullscreen_toggle(self, client_rc);
+                            }
+                        } else if event.data.get_long(1) as u64 == MarsWMStateTiled.to_xlib_atom(self.display)
+                                || event.data.get_long(2) as u64 == MarsWMStateTiled.to_xlib_atom(self.display) {
+                            let mode = event.data.get_long(0) as u64;
+                            if mode == 1 {
+                                wm.handle_tile(self, client_rc, true);
+                            } else if mode == 0 {
+                                wm.handle_tile(self, client_rc, false);
+                            } else if mode == 2 {
+                                wm.handle_tile_toggle(self, client_rc);
                             }
                         }
                     }

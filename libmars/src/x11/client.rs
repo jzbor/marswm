@@ -289,6 +289,15 @@ impl Client for X11Client {
         self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
 
+    fn export_tiled(&self, state: bool) {
+        let xatom = MarsWMStateTiled.to_xlib_atom(self.display);
+        if state {
+            self.x11_net_wm_state_add(self.display, xatom);
+        } else {
+            self.x11_net_wm_state_remove(self.display, xatom);
+        }
+    }
+
     fn export_workspace(&self, workspace_idx: usize) {
         let idx: u64 = workspace_idx.try_into().unwrap();
         let data = &[idx];

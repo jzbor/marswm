@@ -42,6 +42,8 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn handle_fullscreen(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
     fn handle_fullscreen_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
+    fn handle_tile(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
+    fn handle_tile_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_unfocus(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<usize>);
@@ -59,6 +61,7 @@ pub trait Client: Eq + Dimensioned{
     fn close(&self);
     fn dont_decorate(&self) -> bool;
     fn export_pinned(&self, state: bool, workspace_idx: Option<usize>);
+    fn export_tiled(&self, state: bool);
     fn export_workspace(&self, workspace_idx: usize);
     fn hide(&mut self);
     fn is_dialog(&self) -> bool;

@@ -7,6 +7,7 @@ use crate::*;
 fn menu_input() -> String {
     let mut string = String::new();
     string.push_str("x Close	close\n");
+    string.push_str("% Tile	tile\n");
     string.push_str("+ Fullscreen	fullscreen\n");
     string.push_str("' Pin	pin\n");
     string.push_str("* Unpin	unpin\n");
@@ -39,6 +40,7 @@ pub fn display_menu() -> Result<Command, String> {
 
     return match output.trim() {
         "close" => Ok(Command::Close),
+        "tile" => Ok(Command::ToggleTiled),
         "fullscreen" => Ok(Command::ToggleFullscreen),
         "pin" => Ok(Command::Pin),
         "unpin" => Ok(Command::Unpin),

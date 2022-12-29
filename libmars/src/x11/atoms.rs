@@ -15,11 +15,13 @@ macro_rules! xatom {
 enum_with_values! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     vis pub enum X11Atom {
+        // ICCCM
         UTF8String,
         WMDeleteWindow,
         WMProtocols,
         WMState,
 
+        // EWMH
         NetActiveWindow,
         NetClientList,
         NetClientListStacking,
@@ -39,8 +41,12 @@ enum_with_values! {
         NetWMWindowTypeDialog,
         NetWMWindowTypeMenu,
 
-        MotifWMHints
+        // Motif
+        MotifWMHints,
+
         // TODO add custom hints for pinned, tiled
+        // MARS (custom)
+        MarsWMStateTiled
     }
 }
 
@@ -72,6 +78,8 @@ impl Display for X11Atom {
             X11Atom::NetWMWindowTypeMenu => "_NET_WM_WINDOW_TYPE_MENU",
 
             X11Atom::MotifWMHints => "_MOTIF_WM_HINTS",
+
+            X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
         };
         return write!(f, "{}", string);
     }
