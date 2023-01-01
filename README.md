@@ -2,7 +2,7 @@
 
 A rusty successor to [moonwm](https://github.com/jzbor/moonwm) - my attempt at implementing a window manager with its own library.
 
-*DISCLAIMER: This is still in development. The library API as well as the window manager itself might be subject to frequent changes. Neither can be considered stable yet.*
+*DISCLAIMER: Although already usable this is still in development. The library API as well as the window manager itself might be subject to frequent changes.*
 
 ## The Components
 
@@ -19,6 +19,7 @@ Features:
 ### libmars
 
 `libmars` aims expose xlib's ugly sides through a nice rusty interface that makes it easier to implement custom window managers.
+It is still not very mature and mainly targeted to suit `marswm`'s needs, but it should be great for writing simple, personal window managers once the API is somewhat stable and documented.
 Although not currently planned a wayland backend (as well as other backends) would be possible to implement due to the libraries modular concept.
 
 ### mars-relay
