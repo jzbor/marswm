@@ -284,7 +284,7 @@ impl X11Backend {
                         let new_center = client_rc.borrow().center();
                         if let Some(new_mon) = self.point_to_monitor(new_center).clone() {
                             if old_mon != new_mon {
-                                wm.handle_client_switches_monitor(client_rc.clone(), new_mon);
+                                wm.client_switches_monitor(client_rc.clone(), new_mon);
                             }
                         }
                     }
@@ -360,21 +360,21 @@ impl X11Backend {
                                 || event.data.get_long(2) as u64 == NetWMStateFullscreen.to_xlib_atom(self.display) {
                             let mode = event.data.get_long(0) as u64;
                             if mode == 1 {
-                                wm.handle_fullscreen(self, client_rc, true);
+                                wm.fullscreen_client(self, client_rc, true);
                             } else if mode == 0 {
-                                wm.handle_fullscreen(self, client_rc, false);
+                                wm.fullscreen_client(self, client_rc, false);
                             } else if mode == 2 {
-                                wm.handle_fullscreen_toggle(self, client_rc);
+                                wm.toggle_fullscreen_client(self, client_rc);
                             }
                         } else if event.data.get_long(1) as u64 == MarsWMStateTiled.to_xlib_atom(self.display)
                                 || event.data.get_long(2) as u64 == MarsWMStateTiled.to_xlib_atom(self.display) {
                             let mode = event.data.get_long(0) as u64;
                             if mode == 1 {
-                                wm.handle_tile(self, client_rc, true);
+                                wm.tile_client(self, client_rc, true);
                             } else if mode == 0 {
-                                wm.handle_tile(self, client_rc, false);
+                                wm.tile_client(self, client_rc, false);
                             } else if mode == 2 {
-                                wm.handle_tile_toggle(self, client_rc);
+                                wm.toggle_tile_client(self, client_rc);
                             }
                         }
                     }
@@ -435,9 +435,9 @@ impl X11Backend {
 
         if let Some(client_rc) = client_option {
             if let Some(last_active_client) = &self.last_active {
-                wm.handle_unfocus(self, last_active_client.clone());
+                wm.unfocus_client(self, last_active_client.clone());
             }
-            wm.handle_focus(self, Some(client_rc.clone()));
+            wm.focus_client(self, Some(client_rc.clone()));
             self.last_active = Some(client_rc);
         }
     }

@@ -212,11 +212,49 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             client_rc.borrow().raise();
         }
         // client_rc.borrow().warp_pointer_to_center();
-        self.handle_focus(backend, Some(client_rc));
+        self.focus_client(backend, Some(client_rc));
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return Box::new(self.clients.iter());
+    }
+
+    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32) {
+        println!("Client {} switched monitor to {}", client_rc.borrow().name(), monitor);
+        for mon in &mut self.monitors {
+            mon.detach_client(&client_rc)
+        }
+        if let Some(monitor) = self.monitors.iter_mut().find(|m| m.num() == monitor) {
+            monitor.attach_client(client_rc);
+        } else {
+            panic!("Monitor {} not found", monitor);
+        }
+    }
+
+    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>) {
+        if let Some(client_rc) = client_option {
+            // if let Some(focused_rc) = &self.active_client {
+            //     self.decorate_inactive(focused_rc.clone());
+            // }
+
+            self.decorate_active(client_rc.clone());
+            backend.set_input_focus(client_rc.clone());
+
+            self.active_client = Some(client_rc);
+        } else {
+            self.active_client = None;
+        }
+
+        backend.export_active_window(&self.active_client);
+    }
+
+    fn fullscreen_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+        if let Some(mon) = self.get_monitor_mut(&client_rc) {
+            client_rc.borrow_mut().set_fullscreen(state, mon.config());
+            if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
+                mon.restack(i as u32);
+            }
+        }
     }
 
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
@@ -245,65 +283,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                 _ => println!("unknown action"),
             }
         }
-    }
-
-    fn handle_client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32) {
-        println!("Client {} switched monitor to {}", client_rc.borrow().name(), monitor);
-        for mon in &mut self.monitors {
-            mon.detach_client(&client_rc)
-        }
-        if let Some(monitor) = self.monitors.iter_mut().find(|m| m.num() == monitor) {
-            monitor.attach_client(client_rc);
-        } else {
-            panic!("Monitor {} not found", monitor);
-        }
-    }
-
-    fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>) {
-        if let Some(client_rc) = client_option {
-            // if let Some(focused_rc) = &self.active_client {
-            //     self.decorate_inactive(focused_rc.clone());
-            // }
-
-            self.decorate_active(client_rc.clone());
-            backend.set_input_focus(client_rc.clone());
-
-            self.active_client = Some(client_rc);
-        } else {
-            self.active_client = None;
-        }
-
-        backend.export_active_window(&self.active_client);
-    }
-
-    fn handle_fullscreen(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
-        if let Some(mon) = self.get_monitor_mut(&client_rc) {
-            client_rc.borrow_mut().set_fullscreen(state, mon.config());
-            if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
-                mon.restack(i as u32);
-            }
-        }
-    }
-
-    fn handle_fullscreen_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        let old_state = client_rc.borrow().is_fullscreen();
-        self.handle_fullscreen(backend, client_rc, !old_state)
-    }
-
-    fn handle_tile(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
-        if let Some(ws) = self.get_workspace_mut(&client_rc) {
-            ws.set_floating(client_rc, !state);
-        }
-    }
-
-    fn handle_tile_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        let is_tiled = self.is_tiled(&client_rc);
-        self.handle_tile(backend, client_rc, !is_tiled);
-    }
-
-    fn handle_unfocus(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
-        self.decorate_inactive(client_rc);
-        self.active_client = None;
     }
 
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
@@ -370,7 +349,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         // set client as currently focused
-        self.handle_focus(backend, Some(client_rc.clone()));
+        self.focus_client(backend, Some(client_rc.clone()));
         self.current_monitor_mut(backend).restack_current();
         client_rc.borrow_mut().warp_pointer_to_center();
 
@@ -401,8 +380,29 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
+    fn tile_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+        if let Some(ws) = self.get_workspace_mut(&client_rc) {
+            ws.set_floating(client_rc, !state);
+        }
+    }
+
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
         self.current_monitor_mut(backend).switch_workspace(backend, workspace_idx);
+    }
+
+    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        let old_state = client_rc.borrow().is_fullscreen();
+        self.fullscreen_client(backend, client_rc, !old_state)
+    }
+
+    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        let is_tiled = self.is_tiled(&client_rc);
+        self.tile_client(backend, client_rc, !is_tiled);
+    }
+
+    fn unfocus_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
+        self.decorate_inactive(client_rc);
+        self.active_client = None;
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {

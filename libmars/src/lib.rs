@@ -13,21 +13,21 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn active_client(&self) -> Option<Rc<RefCell<C>>>;
     fn active_workspace(&self, backend: &mut B) -> u32;
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
+    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
+    fn fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
-    fn handle_client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32);
-    fn handle_focus(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
-    fn handle_fullscreen(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
-    fn handle_fullscreen_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
-    fn handle_tile(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
-    fn handle_tile_toggle(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn handle_unfocus(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
     fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32);
+    fn tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
+    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn unfocus_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>);
 }

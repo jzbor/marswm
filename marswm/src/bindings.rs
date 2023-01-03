@@ -93,7 +93,7 @@ impl BindingAction {
                 }
             },
             ToggleFullscreen => if let Some(client_rc) = client_option {
-                wm.handle_fullscreen_toggle(backend, client_rc);
+                wm.toggle_fullscreen_client(backend, client_rc);
             },
         }
     }
