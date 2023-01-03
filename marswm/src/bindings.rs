@@ -145,6 +145,7 @@ pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
         Keybinding::new(vec!(DEFAULT_MODKEY), "Delete", CloseClient),
         Keybinding::new(vec!(DEFAULT_MODKEY), "n", CycleLayout),
         Keybinding::new(vec!(DEFAULT_MODKEY), "t", SetLayout(LayoutType::Stack)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "t", SetLayout(LayoutType::BottomStack)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "c", SetLayout(LayoutType::Deck)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "m", SetLayout(LayoutType::Monocle)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "BackSpace", MoveMain),

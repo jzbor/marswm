@@ -13,6 +13,7 @@ enum_with_values! {
     vis pub enum LayoutType {
         Floating,
         Stack,
+        BottomStack,
         Monocle,
         Deck
     }
@@ -40,6 +41,12 @@ impl<C: Client> Layout<C> {
                 _label: "stacking",
                 apply: apply_layout_stack,
             },
+            LayoutType::BottomStack => Layout {
+                _layout_type: layout_type,
+                _symbol: "[]_",
+                _label: "bottom-stacking",
+                apply: apply_layout_bottom_stack,
+            },
             LayoutType::Monocle => Layout {
                 _layout_type: layout_type,
                 _symbol: "[M]",
@@ -58,6 +65,19 @@ impl<C: Client> Layout<C> {
     pub fn apply_layout(&self, win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
         (self.apply)(win_area, clients, config);
     }
+}
+
+fn apply_layout_bottom_stack<C: Client>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+    let nclients: u32 = clients.len().try_into().unwrap();
+    let mut clients = clients.iter();
+    let main_clients = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
+    let stack_clients = clients.collect();
+
+    let (main_area, stack_area) = layout_dimensions_vertical(win_area, config.main_ratio,
+                                                   config.gap_width, config.nmain, nclients);
+
+    stack_clients_horizontally(main_area, main_clients, config.gap_width);
+    stack_clients_horizontally(stack_area, stack_clients, config.gap_width);
 }
 
 fn apply_layout_stack<C: Client>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
@@ -127,6 +147,61 @@ fn layout_dimensions_horizontal(win_area: Dimensions, main_ratio: f32, gap_width
         }
     };
     return (main_area, stack_area);
+}
+
+fn layout_dimensions_vertical(win_area: Dimensions, main_ratio: f32, gap_width: u32, nmain: u32, nclients: u32) -> (Dimensions, Dimensions) {
+    let main_height: u32 = (win_area.h() as f32 * main_ratio) as u32;
+
+    let (main_area, stack_area) = {
+        if nmain == 0 {  // all windows in stack area
+            let main_area = Dimensions::new(0, 0, 0, 0);
+            let stack_x = win_area.x() + gap_width as i32;
+            let stack_y = win_area.y() + gap_width as i32;
+            let stack_w = win_area.w() - 2 * gap_width;
+            let stack_h = win_area.h() - 2 * gap_width;
+            let stack_area = Dimensions::new(stack_x, stack_y, stack_w, stack_h);
+            (main_area, stack_area)
+        } else if nclients <= nmain {  // no windows in stack area
+            let stack_area = Dimensions::new(0, 0, 0, 0);
+            let main_x = win_area.x() + gap_width as i32;
+            let main_y = win_area.y() + gap_width as i32;
+            let main_w = win_area.w() - 2 * gap_width;
+            let main_h = win_area.h() - 2 * gap_width;
+            let main_area = Dimensions::new(main_x, main_y, main_w, main_h);
+            (main_area, stack_area)
+        } else {
+            let main_x = win_area.x() + gap_width as i32;
+            let main_y = win_area.y() + gap_width as i32;
+            let main_w = win_area.w() - 2 * gap_width;
+            let main_h = main_height - 2 * gap_width;
+            let main_area = Dimensions::new(main_x, main_y, main_w, main_h);
+
+            let stack_x = win_area.x() + gap_width as i32;
+            let stack_y = win_area.y() + main_height as i32;
+            let stack_w = win_area.w() - 2 * gap_width;
+            let stack_h = win_area.h() - main_height - gap_width;  // center gap already included
+            let stack_area = Dimensions::new(stack_x, stack_y, stack_w, stack_h);
+            (main_area, stack_area)
+        }
+    };
+    return (main_area, stack_area);
+}
+
+fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client>>>, gap_width: u32) {
+    let nclients: u32 = clients.len().try_into().unwrap();
+    if nclients == 0 {
+        return;
+    }
+
+    let width = (area.w() - ((nclients - 1) * gap_width)) / nclients;
+    let height = area.h();
+    for (i, client_rc) in clients.iter().enumerate() {
+        if !client_rc.borrow().is_fullscreen() {
+            let x: i32 = area.x() + (i as i32 * (width + gap_width) as i32);
+            let y: i32 = area.y();
+            client_rc.borrow_mut().move_resize(x, y, width, height);
+        }
+    }
 }
 
 fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client>>>, gap_width: u32) {
