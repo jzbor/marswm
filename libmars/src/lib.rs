@@ -50,13 +50,14 @@ pub trait Client: Eq + Dimensioned{
     fn raise(&self);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: u32);
-    fn set_fullscreen(&mut self, state: bool, monitor_conf: &MonitorConfig);
+    fn set_fullscreen(&mut self, monitor_conf: &MonitorConfig);
     fn set_height(&mut self, height: u32);
     fn set_inner_bw(&mut self, bw: u32);
     fn set_inner_color(&mut self, color: u64);
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
     fn show(&mut self);
+    fn unset_fullscreen(&mut self);
     fn warp_pointer_to_center(&self);
 }
 

@@ -98,8 +98,25 @@ impl<C: Client> Workspace<C> {
     }
 
     pub fn restack(&self) {
+        let mut fullscreen_client = None;
+        for client_rc in self.clients() {
+            let mut client = client_rc.borrow_mut();
+            if client.is_fullscreen() {
+                if fullscreen_client.is_none() {
+                    fullscreen_client = Some(client_rc);
+                } else {
+                    client.unset_fullscreen();
+                }
+            }
+        }
+
         self.apply_layout();
+
         for client in self.floating_clients.iter().rev() {
+            client.borrow().raise();
+        }
+
+        if let Some(client) = fullscreen_client {
             client.borrow().raise();
         }
     }

@@ -250,7 +250,12 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn fullscreen_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
         if let Some(mon) = self.get_monitor_mut(&client_rc) {
-            client_rc.borrow_mut().set_fullscreen(state, mon.config());
+            if state {
+                client_rc.borrow_mut().set_fullscreen(mon.config());
+            } else {
+                client_rc.borrow_mut().unset_fullscreen();
+            }
+
             if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
                 mon.restack(i as u32);
             }

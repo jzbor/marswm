@@ -390,25 +390,15 @@ impl Client for X11Client {
         self.move_resize(self.x - diff, self.y - diff, (self.w as i32 + 2 * diff) as u32, (self.h as i32 + 2 * diff) as u32);
     }
 
-    fn set_fullscreen(&mut self, state: bool, monitor_conf: &MonitorConfig) {
+    fn set_fullscreen(&mut self, monitor_conf: &MonitorConfig) {
         let dimensions = monitor_conf.dimensions();
-        if state {
-            self.saved_dimensions = Some(self.dimensions());
-            self.fullscreen = true;
-            let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
-            self.x11_net_wm_state_add(self.display, xatom);
-            self.remove_decoration();
-            self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
-            self.raise();
-        } else {
-            if let Some(dimensions) = self.saved_dimensions {
-                self.fullscreen = false;
-                let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
-                self.x11_net_wm_state_remove(self.display, xatom);
-                self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
-                self.restore_decoration();
-            }
-        }
+        self.saved_dimensions = Some(self.dimensions());
+        self.fullscreen = true;
+        let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
+        self.x11_net_wm_state_add(self.display, xatom);
+        self.remove_decoration();
+        self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+        self.raise();
     }
 
     fn set_height(&mut self, height: u32) {
@@ -458,6 +448,17 @@ impl Client for X11Client {
         }
 
         self.visible = true;
+    }
+
+    fn unset_fullscreen(&mut self) {
+        if let Some(dimensions) = self.saved_dimensions {
+            self.fullscreen = false;
+            let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
+            self.x11_net_wm_state_remove(self.display, xatom);
+            self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+            self.restore_decoration();
+            self.saved_dimensions = None;
+        }
     }
 
     fn warp_pointer_to_center(&self) {
