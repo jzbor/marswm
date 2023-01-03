@@ -351,7 +351,9 @@ impl X11Backend {
                         let workspace = event.data.get_long(0);
                         println!("Changing workspace for {} to {:x}", client_rc.borrow().name(), workspace);
                         wm.set_client_pinned(self, client_rc.clone(), workspace == -1);
-                        wm.move_to_workspace(self, client_rc, workspace.try_into().unwrap());
+                        if workspace != -1 {
+                            wm.move_to_workspace(self, client_rc, workspace.try_into().unwrap());
+                        }
                     }
                 },
                 NetWMState => {
