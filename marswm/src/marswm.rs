@@ -331,10 +331,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
 
         // bind buttons
-        client.bind_button(MODKEY.mask(), 1);
-        client.bind_button(MODKEY.mask(), 2);
-        client.bind_button(MODKEY.mask() | Modifier::Shift.mask(), 2);
-        client.bind_button(MODKEY.mask(), 3);
+        client.bind_button(DEFAULT_MODKEY.mask(), 1);
+        client.bind_button(DEFAULT_MODKEY.mask(), 2);
+        client.bind_button(DEFAULT_MODKEY.mask() | Modifier::Shift.mask(), 2);
+        client.bind_button(DEFAULT_MODKEY.mask(), 3);
 
         // bind keys
         for keybinding in &self.keybindings {
