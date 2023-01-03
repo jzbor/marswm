@@ -20,9 +20,6 @@ enum_with_values! {
 }
 
 pub struct Layout<C: Client> {
-    _layout_type: LayoutType,
-    _symbol: &'static str,
-    _label: &'static str,
     apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, &LayoutConfiguration),
 }
 
@@ -30,33 +27,18 @@ impl<C: Client> Layout<C> {
     pub fn get(layout_type: LayoutType) -> Layout<C> {
         return match layout_type {
             LayoutType::Floating => Layout {
-                _layout_type: layout_type,
-                _symbol: "<><",
-                _label: "floating",
                 apply: |_, _, _| {},
             },
             LayoutType::Stack => Layout {
-                _layout_type: layout_type,
-                _symbol: "[]=",
-                _label: "stacking",
                 apply: apply_layout_stack,
             },
             LayoutType::BottomStack => Layout {
-                _layout_type: layout_type,
-                _symbol: "[]_",
-                _label: "bottom-stacking",
                 apply: apply_layout_bottom_stack,
             },
             LayoutType::Monocle => Layout {
-                _layout_type: layout_type,
-                _symbol: "[M]",
-                _label: "monocle",
                 apply: apply_layout_monocle,
             },
             LayoutType::Deck => Layout {
-                _layout_type: layout_type,
-                _symbol: "[]D",
-                _label: "deck",
                 apply: apply_layout_deck,
             },
         }
