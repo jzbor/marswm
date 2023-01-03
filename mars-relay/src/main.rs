@@ -83,7 +83,7 @@ impl Command {
     fn menu(display: *mut xlib::Display, window: xlib::Window) -> Result<(), &'static str> {
         let command = match display_menu() {
             Ok(cmd) => cmd,
-            Err(e) => { println!("Error: {}", e); return Err("unable to display menu"); },
+            Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu"); },
         };
         return command.execute(display, window, None);
     }
@@ -179,7 +179,7 @@ fn require_ewmh_atom(display: *mut xlib::Display, atom: X11Atom) -> Result<(), &
     if supported.contains(&xatom) {
         return Ok(());
     } else {
-        println!("Required atom: {} / {}", atom, xatom);
+        eprintln!("Required atom: {} / {}", atom, xatom);
         return Err("Required atom not supported");
     }
 }
@@ -225,14 +225,14 @@ fn main() {
         None => match active_window(display) {
             Ok(window) => window,
             Err(msg) => {
-                println!("Unable to get active window: {}", msg);
+                eprintln!("Unable to get active window: {}", msg);
                 std::process::exit(1);
             },
         },
     };
     let desktop = args.desktop;
     if let Err(msg) = command.execute(display, window, desktop) {
-        println!("Error: {}", msg);
+        eprintln!("Error: {}", msg);
         std::process::exit(1);
     }
 }

@@ -19,14 +19,14 @@ macro_rules! print_event {
     ($wm:expr, $event:expr) => {
         #[cfg(debug_assertions)]
         if let Some(client) = $wm.clients().find(|c| c.borrow().window() == $event.window) {
-            println!("Received {} for window 0x{:x} (window of {})", event_type(&$event), $event.window, client.borrow().name());
+            eprintln!("Received {} for window 0x{:x} (window of {})", event_type(&$event), $event.window, client.borrow().name());
         } else if let Some(client) = $wm.clients().find(|c| c.borrow().frame() == $event.window) {
-            println!("Received {} for window 0x{:x} (frame of {})", event_type(&$event), $event.window, client.borrow().name());
+            eprintln!("Received {} for window 0x{:x} (frame of {})", event_type(&$event), $event.window, client.borrow().name());
         } else {
-            println!("Received {} for window 0x{:x} (not a client)", event_type(&$event), $event.window);
+            eprintln!("Received {} for window 0x{:x} (not a client)", event_type(&$event), $event.window);
         }
         #[cfg(debug_assertions)]
-        println!("\t{:?}", $event);
+        eprintln!("\t{:?}", $event);
         #[cfg(not(debug_assertions))]
         let (_, _) = (&$wm, &$event);
     }
@@ -133,8 +133,6 @@ impl X11Backend {
     fn apply_dock_insets(&mut self) {
         self.monitors.iter_mut().for_each(|m| m.remove_insets());
 
-        println!("Applying insets for {} docks", self.dock_windows.len());
-
         for dock in &self.dock_windows {
             let dimensions = match dock.x11_dimensions(self.display) {
                 Ok(dimensions) => dimensions,
@@ -145,11 +143,9 @@ impl X11Backend {
                 // apply top indent
                 if dimensions.center().1 < mon.dimensions().center().1 {
                     let inset = dimensions.bottom() - mon.dimensions().y();
-                    println!("Adding top inset: {}", inset);
                     mon.add_inset_top(inset as u32);
                 } else {
                     let inset = mon.dimensions().bottom() - dimensions.y();
-                    println!("Adding bottom inset: {}", inset);
                     mon.add_inset_bottom(inset as u32);
                 }
             }
@@ -233,7 +229,7 @@ impl X11Backend {
         client.apply_size_hints();
         client.apply_motif_hints();
 
-        println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
+        // println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
 
         // Setting workspace as specified by _NET_WM_DESKTOP
         let workspace_req = {
@@ -349,7 +345,6 @@ impl X11Backend {
                 NetWMDesktop => {
                     if let Some(client_rc) = Self::client_by_window(wm, event.window) {
                         let workspace = event.data.get_long(0);
-                        println!("Changing workspace for {} to {:x}", client_rc.borrow().name(), workspace);
                         wm.set_client_pinned(self, client_rc.clone(), workspace == -1);
                         if workspace != -1 {
                             wm.move_to_workspace(self, client_rc, workspace.try_into().unwrap());
@@ -526,7 +521,7 @@ impl X11Backend {
     }
 
     fn unmanage(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
-        println!("Closing client: {}", client_rc.borrow().name());
+        // eprintln!("Closing client: {}", client_rc.borrow().name());
 
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());

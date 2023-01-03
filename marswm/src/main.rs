@@ -62,7 +62,7 @@ fn main() {
         let ser = serde_yaml::to_string(&Configuration::default());
         match ser {
             Ok(ser) => println!("{}", ser),
-            Err(e) => println!("Error: {}", e),
+            Err(e) => eprintln!("Error: {}", e),
         }
         return;
     }
@@ -73,7 +73,7 @@ fn main() {
         let ser = serde_yaml::to_string(&default_keybindings(config.workspaces));
         match ser {
             Ok(ser) => println!("{}", ser),
-            Err(e) => println!("Error: {}", e),
+            Err(e) => eprintln!("Error: {}", e),
         }
         return;
     }

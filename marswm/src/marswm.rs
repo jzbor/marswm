@@ -175,13 +175,13 @@ impl<C: Client> MarsWM<C> {
         backend.shutdown();
 
         let args = env::args();
-        println!("Path: {:?}", self.exec_path);
-        println!("Args: {:?}", args);
+        eprintln!("Path: {:?}", self.exec_path);
+        eprintln!("Args: {:?}", args);
 
         let mut command = process::Command::new(self.exec_path.clone());
         let command = command.args(args);
         let error = command.exec();
-        println!("{}", error);
+        eprintln!("{}", error);
         process::exit(1);
     }
 }
@@ -220,7 +220,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32) {
-        println!("Client {} switched monitor to {}", client_rc.borrow().name(), monitor);
         for mon in &mut self.monitors {
             mon.detach_client(&client_rc)
         }
@@ -285,7 +284,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                     backend.mouse_resize(self, client, button);
                     self.current_monitor_mut(backend).restack_current();
                 },
-                _ => println!("unknown action"),
+                _ => (),
             }
         }
     }
@@ -320,7 +319,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         let monitor_conf = *monitor.config();
 
         if let Some(workspace) = workspace_preference {
-            println!("Moving newly managed client {} to workspace {}", client_rc.borrow().name(), workspace);
             self.move_to_workspace(backend, client_rc.clone(), workspace);
         }
 
@@ -349,7 +347,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         drop(client);
 
         if let Some(workspace) = workspace_preference {
-            println!("Moving newly managed client {} to workspace {}", client_rc.borrow().name(), workspace);
             self.move_to_workspace(backend, client_rc.clone(), workspace);
         }
 
