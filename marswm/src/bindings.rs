@@ -11,11 +11,11 @@ use libmars::x11::get_keysym;
 use crate::*;
 use crate::layouts::*;
 
-pub const MODKEY: Modifier = Modifier::Mod4;
+pub const DEFAULT_MODKEY: Modifier = Modifier::Mod4;
 
 #[derive(Serialize,Deserialize,Clone,Debug,PartialEq,Eq)]
 #[serde(rename_all = "kebab-case")]
-// #[serde(tag = "type", content = "arg")]
+// #[serde(tag = "action", content = "arg")]
 // #[serde(tag = "type")]
 pub enum BindingAction {
     CenterClient,
@@ -46,8 +46,15 @@ pub enum Modifier {
 
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
 pub struct Keybinding {
+    /// list of modifiers that apply to this binding
     modifiers: Vec<Modifier>,
+
+    /// key name (as found in
+    /// [keysymdef.h](https://cgit.freedesktop.org/xorg/proto/x11proto/tree/keysymdef.h) without
+    /// the leading "XK_")
     key_name: String,
+
+    /// action to execute on key press
     action: BindingAction,
 }
 
@@ -135,31 +142,31 @@ impl Modifier {
 pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
     use BindingAction::*;
     let mut bindings = vec![
-        Keybinding::new(vec!(MODKEY), "Delete", CloseClient),
-        Keybinding::new(vec!(MODKEY), "n", CycleLayout),
-        Keybinding::new(vec!(MODKEY), "t", SetLayout(LayoutType::Stack)),
-        Keybinding::new(vec!(MODKEY), "c", SetLayout(LayoutType::Deck)),
-        Keybinding::new(vec!(MODKEY), "m", SetLayout(LayoutType::Monocle)),
-        Keybinding::new(vec!(MODKEY), "BackSpace", MoveMain),
-        Keybinding::new(vec!(MODKEY), "a", IncNMain),
-        Keybinding::new(vec!(MODKEY), "x", DecNMain),
-        Keybinding::new(vec!(MODKEY), "j", CycleClient(1)),
-        Keybinding::new(vec!(MODKEY), "k", CycleClient(-1)),
-        Keybinding::new(vec!(MODKEY), "period", CycleWorkspace(1)),
-        Keybinding::new(vec!(MODKEY), "comma", CycleWorkspace(-1)),
-        Keybinding::new(vec!(MODKEY), "f", ToggleFullscreen),
-        Keybinding::new(vec!(MODKEY, Modifier::Shift), "f", ToggleFloating),
-        Keybinding::new(vec!(MODKEY), "z", CenterClient),
-        Keybinding::new(vec!(MODKEY), "Tab", PreviousWorkspace),
-        Keybinding::new(vec!(MODKEY), "Return", Execute("buttermilk".to_owned())),
-        Keybinding::new(vec!(MODKEY), "d", Execute("rofi -show drun".to_owned())),
-        Keybinding::new(vec!(MODKEY, Modifier::Control), "BackSpace", Restart),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Delete", CloseClient),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "n", CycleLayout),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "t", SetLayout(LayoutType::Stack)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "c", SetLayout(LayoutType::Deck)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "m", SetLayout(LayoutType::Monocle)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "BackSpace", MoveMain),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "a", IncNMain),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "x", DecNMain),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "j", CycleClient(1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "k", CycleClient(-1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "period", CycleWorkspace(1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "comma", CycleWorkspace(-1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "f", ToggleFullscreen),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "f", ToggleFloating),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "z", CenterClient),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Tab", PreviousWorkspace),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Return", Execute("buttermilk".to_owned())),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "d", Execute("rofi -show drun".to_owned())),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "BackSpace", Restart),
     ];
 
     for i in 0..cmp::min(nworkspaces, 9) {
         let key_name = format!("{}", i + 1);
-        bindings.push(Keybinding::new(vec!(MODKEY), &key_name, SwitchWorkspace(i)));
-        bindings.push(Keybinding::new(vec!(MODKEY, Modifier::Shift), &key_name, MoveWorkspace(i)));
+        bindings.push(Keybinding::new(vec!(DEFAULT_MODKEY), &key_name, SwitchWorkspace(i)));
+        bindings.push(Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), &key_name, MoveWorkspace(i)));
     }
 
     return bindings;

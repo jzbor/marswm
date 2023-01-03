@@ -13,28 +13,51 @@ const KEYBINDINGS_FILE: &str = "keybindings.yaml";
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct Configuration {
+    /// number of workspaces for each monitor
     pub workspaces: u32,
+
+    /// default layout for each workspace
     pub default_layout: LayoutType,
+
+    /// layout configuration
     pub layout: LayoutConfiguration,
+
+    /// theming configuration
     pub theming: ThemingConfiguration,
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct LayoutConfiguration {
+    /// width of the gap between windows in a tiled layout
     pub gap_width: u32,
+
+    /// ratio of main area vs stack area in a tiled layout
     pub main_ratio: f32,
+
+    /// number of windows in the main area
     pub nmain: u32,
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct ThemingConfiguration {
+    /// primary highlight color
     pub primary_color: u64,
+
+    /// secondary highlight color
     pub secondary_color: u64,
+
+    /// default color
     pub background_color: u64,
+
+    /// width of the frame that client windows are reparented to
     pub frame_width: u32,
+
+    /// width of the border around the inner window
     pub inner_border_width: u32,
+
+    /// width of the border around the frame
     pub outer_border_width: u32,
 }
 
