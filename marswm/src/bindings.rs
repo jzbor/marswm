@@ -25,6 +25,7 @@ pub enum BindingAction {
     CycleWorkspace(i32),
     DecNMain,
     Execute(String),
+    Exit,
     IncNMain,
     MoveWorkspace(u32),
     PreviousWorkspace,
@@ -81,6 +82,9 @@ impl BindingAction {
                         let _ignored = handle.wait();
                     });
                 }
+            },
+            Exit => {
+                wm.exit(backend);
             },
             IncNMain => wm.current_workspace_mut(backend).inc_nmain(),
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {

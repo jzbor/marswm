@@ -162,7 +162,7 @@ impl<C: Client> MarsWM<C> {
             .find(|ws| ws.contains(client_rc));
     }
 
-    pub fn shutdown<B: Backend<C>>(&mut self, backend: &mut B) {
+    pub fn exit<B: Backend<C>>(&mut self, backend: &mut B) {
         println!("Shutting down");
         self.cleanup(backend);
         backend.shutdown();
