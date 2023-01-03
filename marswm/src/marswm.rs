@@ -256,8 +256,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
                 client_rc.borrow_mut().unset_fullscreen();
             }
 
-            if let Some((i, _)) = mon.workspaces().enumerate().find(|(_, ws)| ws.contains(&client_rc)) {
-                mon.restack(i as u32);
+            if let Some(ws) = self.get_workspace(&client_rc) {
+                ws.restack();
             }
         }
     }
@@ -380,8 +380,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn set_client_pinned(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
-        if let Some(mon) = self.get_monitor_mut(&client_rc) {
-            mon.set_client_pinned(client_rc, state);
+        if let Some(ws) = self.get_workspace_mut(&client_rc) {
+            ws.set_pinned(client_rc, state);
         }
     }
 

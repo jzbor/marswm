@@ -11,6 +11,7 @@ use crate::config::LayoutConfiguration;
 pub struct Workspace<C: Client> {
     name: &'static str,
     floating_clients: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
+    pinned_clients: Vec<Rc<RefCell<C>>>, // sorted by stacking order
     tiled_clients: VecDeque<Rc<RefCell<C>>>, // sorted by user
     win_area: Dimensions,
     cur_layout: LayoutType,
@@ -29,6 +30,7 @@ impl<C: Client> Workspace<C> {
         return Workspace {
             name,
             floating_clients: VecDeque::new(),
+            pinned_clients: Vec::new(),
             tiled_clients: VecDeque::new(),
             win_area,
             cur_layout: layout,
@@ -77,6 +79,33 @@ impl<C: Client> Workspace<C> {
             }
             self.apply_layout();
         }
+    }
+
+    pub fn pull_pinned(&mut self) -> Vec<Rc<RefCell<C>>> {
+        let mut vec = Vec::new();
+        while let Some(client) = self.pinned_clients.pop() {
+            // pull client from tiled clients
+            let index_option = self.tiled_clients.iter().position(|c| c == &client);
+            if let Some(index) = index_option {
+                self.tiled_clients.remove(index);
+            }
+
+            // pull client from floating clients
+            let index_option = self.floating_clients.iter().position(|c| c == &client);
+            if let Some(index) = index_option {
+                self.floating_clients.remove(index);
+            }
+
+            vec.push(client);
+        }
+        self.restack();
+        return vec;
+    }
+
+    pub fn push_pinned(&mut self, clients: Vec<Rc<RefCell<C>>>) {
+        self.floating_clients.extend(clients.iter().cloned());
+        self.pinned_clients.extend(clients);
+        self.restack();
     }
 
     pub fn raise_client(&mut self, client_rc: &Rc<RefCell<C>>) {
@@ -140,6 +169,19 @@ impl<C: Client> Workspace<C> {
         self.restack();
     }
 
+    pub fn set_pinned(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
+        if state {
+            if !self.pinned_clients.contains(&client_rc) {
+                self.pinned_clients.push(client_rc);
+            }
+        } else {
+            let index_option = self.pinned_clients.iter().position(|c| c == &client_rc);
+            if let Some(index) = index_option {
+                self.pinned_clients.remove(index);
+            }
+        }
+    }
+
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return Box::new(self.tiled_clients.iter());
     }
@@ -172,15 +214,23 @@ impl<C: Client> ClientList<C> for Workspace<C> {
     }
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
+        // detach from tiled clients (restack necessary)
         let index_option = self.tiled_clients.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
             self.tiled_clients.remove(index);
             self.restack();
         }
 
+        // detach from floating clients
         let index_option = self.floating_clients.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
             self.floating_clients.remove(index);
+        }
+
+        // detach from pinned list
+        let index_option = self.pinned_clients.iter().position(|c| c == client_rc);
+        if let Some(index) = index_option {
+            self.pinned_clients.remove(index);
         }
     }
 }

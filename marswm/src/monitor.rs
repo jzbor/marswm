@@ -11,12 +11,10 @@ pub struct Monitor<C: Client> {
     workspaces: Vec<Workspace<C>>,
     cur_workspace: u32,
     prev_workspace: u32,
-    pinned_clients: Vec<Rc<RefCell<C>>>,
 }
 
 impl<C: Client> Monitor<C> {
     pub fn new(monitor_config: MonitorConfig, config: &Configuration) -> Monitor<C> {
-        let pinned_clients = Vec::new();
         let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces as usize)
             .map(|name| Workspace::new(name, monitor_config.window_area(),
                                             config.layout, config.default_layout))
@@ -29,7 +27,6 @@ impl<C: Client> Monitor<C> {
             workspaces,
             cur_workspace: 0,
             prev_workspace: 0,
-            pinned_clients
         };
     }
 
@@ -72,35 +69,7 @@ impl<C: Client> Monitor<C> {
     }
 
     pub fn restack_current(&self) {
-        self.restack(self.cur_workspace);
-    }
-
-    pub fn restack(&self, workspace_idx: u32) {
-        self.workspaces[workspace_idx as usize].restack();
-        for client_rc in &self.pinned_clients {
-            client_rc.borrow().raise();
-        }
-    }
-
-    pub fn set_client_pinned(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
-        if state {
-            for ws in self.workspaces_mut() {
-                ws.detach_client(&client_rc);
-            }
-
-            client_rc.borrow_mut().export_pinned(state, None);
-            client_rc.borrow().raise();
-            self.pinned_clients.push(client_rc);
-        } else {
-            let index_option = self.pinned_clients.iter().position(|c| c == &client_rc);
-            if let Some(index) = index_option {
-                self.pinned_clients.remove(index);
-                let workspace = self.current_workspace_idx();
-
-                client_rc.borrow_mut().export_pinned(state, Some(workspace));
-                self.current_workspace_mut().attach_client(client_rc);
-            }
-        }
+        self.workspaces[self.cur_workspace as usize].restack();
     }
 
     pub fn workspace_count(&self) -> u32 {
@@ -116,9 +85,17 @@ impl<C: Client> Monitor<C> {
             return;
         }
 
+        // transfer pinned clients
+        let pinned_clients = self.workspaces[self.cur_workspace as usize].pull_pinned();
+        pinned_clients.iter().for_each(|c| c.borrow().export_workspace(workspace_idx));
+        self.workspaces[workspace_idx as usize].push_pinned(pinned_clients);
+
+        // show and hide clients accordingly
         self.workspaces[self.cur_workspace as usize].clients()
             .for_each(|c| c.borrow_mut().hide());
         self.workspaces[workspace_idx as usize].clients().for_each(|c| c.borrow_mut().show());
+
+        // set new workspace index
         self.prev_workspace = self.cur_workspace;
         self.cur_workspace = workspace_idx;
         backend.export_current_workspace(workspace_idx);
@@ -151,18 +128,12 @@ impl<C: Client> ClientList<C> for Monitor<C> {
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.workspaces.iter().map(|ws| ws.clients()).flatten()
-                        .chain(self.pinned_clients.iter()));
+        return Box::new(self.workspaces.iter().flat_map(|ws| ws.clients()));
     }
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
         for ws in &mut self.workspaces {
             ws.detach_client(client_rc);
-        }
-
-        let index_option = self.pinned_clients.iter().position(|c| c == client_rc);
-        if let Some(index) = index_option {
-            self.pinned_clients.remove(index);
         }
     }
 }
