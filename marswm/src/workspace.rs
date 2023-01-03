@@ -9,7 +9,6 @@ use crate::config::LayoutConfiguration;
 
 #[derive(PartialEq)]
 pub struct Workspace<C: Client> {
-    _num: usize,
     name: &'static str,
     floating_clients: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
     tiled_clients: VecDeque<Rc<RefCell<C>>>, // sorted by user
@@ -25,10 +24,10 @@ pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
 
 
 impl<C: Client> Workspace<C> {
-    pub fn new(_num: usize, name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration,
+    pub fn new(name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration,
                layout: LayoutType) -> Workspace<C> {
         return Workspace {
-            _num, name,
+            name,
             floating_clients: VecDeque::new(),
             tiled_clients: VecDeque::new(),
             win_area,

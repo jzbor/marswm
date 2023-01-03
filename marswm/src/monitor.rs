@@ -18,8 +18,7 @@ impl<C: Client> Monitor<C> {
     pub fn new(monitor_config: MonitorConfig, config: &Configuration) -> Monitor<C> {
         let pinned_clients = Vec::new();
         let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces as usize)
-            .enumerate()
-            .map(|(i, name)| Workspace::new(i, name, monitor_config.window_area(),
+            .map(|name| Workspace::new(name, monitor_config.window_area(),
                                             config.layout, config.default_layout))
             .collect();
 
