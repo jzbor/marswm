@@ -4,6 +4,8 @@ use std::thread;
 
 use crate::*;
 
+const MENU_PROGRAM: &'static str = "xmenu";
+
 fn menu_input() -> String {
     let mut string = String::new();
     string.push_str("x Close	close\n");
@@ -16,11 +18,11 @@ fn menu_input() -> String {
 }
 
 pub fn display_menu() -> Result<Command, String> {
-    let mut child = process::Command::new("xmenu")
+    let mut child = process::Command::new(MENU_PROGRAM)
         .stdin(process::Stdio::piped())
         .stdout(process::Stdio::piped())
         .spawn()
-        .map_err(|e| e.to_string())?;
+        .map_err(|_| format!("Please make sure `{}` is installed properly", MENU_PROGRAM))?;
 
     let mut stdin = match child.stdin.take() {
         Some(stdin) => stdin,
