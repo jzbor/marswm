@@ -234,7 +234,18 @@ impl X11Backend {
         // Setting workspace as specified by _NET_WM_DESKTOP
         let workspace_req = {
             match client.x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
-                Ok(data) => Some(data[0].try_into().unwrap()),
+                // FIXME handle -1 as value for all desktops
+                Ok(data) => {
+                    if data[0] == u64::MAX {
+                        // TODO pin client
+                        None
+                    } else if data[0] >= u32::MAX.into() {
+                        // value to big
+                        None
+                    } else {
+                        Some(data[0] as u32)
+                    }
+                },
                 Err(_msg) => None,
             }
         };
@@ -251,7 +262,7 @@ impl X11Backend {
         unsafe {
             // grab pointer
             let cursor = xlib::XCreateFontCursor(self.display, cursor_type);
-            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK.try_into().unwrap(),
+            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK as u32,
                     xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
             if success != xlib::GrabSuccess {
                 xlib::XFreeCursor(self.display, cursor);
@@ -310,11 +321,10 @@ impl X11Backend {
         let dest_w = orig_client_size.0 as i32 + delta.0;
         let dest_h = orig_client_size.1 as i32 + delta.1;
         let pos = client_rc.borrow().pos();
-        let dest_w: u32 = if dest_w < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_w.try_into().unwrap() };
-        let dest_h: u32 = if dest_h < WINDOW_MIN_SIZE.try_into().unwrap() { WINDOW_MIN_SIZE } else { dest_h.try_into().unwrap() };
+        let dest_w: u32 = if dest_w < WINDOW_MIN_SIZE as i32 { WINDOW_MIN_SIZE } else { dest_w as u32 };
+        let dest_h: u32 = if dest_h < WINDOW_MIN_SIZE as i32 { WINDOW_MIN_SIZE } else { dest_h as u32 };
         client_rc.borrow_mut().move_resize(pos.0, pos.1, dest_w, dest_h);
     }
-
 
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XButtonEvent) {
         //print_event!(wm, event);
@@ -347,7 +357,7 @@ impl X11Backend {
                         let workspace = event.data.get_long(0);
                         wm.set_client_pinned(self, client_rc.clone(), workspace == -1);
                         if workspace != -1 {
-                            wm.move_to_workspace(self, client_rc, workspace.try_into().unwrap());
+                            wm.move_to_workspace(self, client_rc, workspace as u32);
                         }
                     }
                 },
@@ -394,8 +404,7 @@ impl X11Backend {
         //print_event!(wm, event);
 
         // unmanage dock window
-        if self.dock_windows.contains(&event.window) {
-            let index = self.dock_windows.iter().position(|w| *w == event.window).unwrap();
+        if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
             self.dock_windows.swap_remove(index);
             self.apply_dock_insets();
             wm.update_monitor_config(self.monitors.clone());
@@ -471,8 +480,7 @@ impl X11Backend {
     fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XUnmapEvent) {
         //print_event!(wm, event);
         // unmanage dock window
-        if self.dock_windows.contains(&event.window) {
-            let index = self.dock_windows.iter().position(|w| *w == event.window).unwrap();
+        if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
             self.dock_windows.swap_remove(index);
             self.apply_dock_insets();
             wm.update_monitor_config(self.monitors.clone());
@@ -610,7 +618,6 @@ impl Backend<X11Client> for X11Backend {
         // export workspace names
         let cstrings: Vec<CString> = workspaces.iter().map(|s| CString::new(s.as_str()).unwrap()).collect();
         self.root.x11_set_text_list_property(self.display, NetDesktopNames.to_xlib_atom(self.display), cstrings);
-
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
