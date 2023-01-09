@@ -186,13 +186,7 @@ impl X11Client {
 
     pub fn destroy_frame(&self) {
         println!("Destroying frame for client {}", self.name);
-        unsafe {
-            // These generate xlib errors if the window is already unmapped
-            xlib::XReparentWindow(self.display, self.window, self.root, 0, 0);
-            xlib::XRemoveFromSaveSet(self.display, self.window);
-            xlib::XDestroyWindow(self.display, self.frame);
-        }
-
+        self.x11_destroy(self.display);
     }
 
     pub fn frame(&self) -> u64 {
@@ -529,8 +523,22 @@ impl X11Window for X11Client {
         return self.window.x11_class_hint(display);
     }
 
+    fn x11_destroy(&self, display: *mut xlib::Display) {
+        println!("Destroying frame for client {}", self.name);
+        unsafe {
+            // These generate xlib errors if the window is already unmapped
+            xlib::XReparentWindow(display, self.window, self.root, 0, 0);
+            xlib::XRemoveFromSaveSet(display, self.window);
+            xlib::XDestroyWindow(display, self.frame);
+        }
+    }
+
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str> {
         return self.window.x11_get_state(display);
+    }
+
+    fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<Vec<String>, &'static str> {
+        return self.window.x11_get_text_list_property(display, property);
     }
 
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {

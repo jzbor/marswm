@@ -155,7 +155,7 @@ pub trait Dimensioned {
     }
 }
 
-#[derive(Copy,Clone,PartialEq,Eq)]
+#[derive(Copy,Clone,PartialEq,Eq,Debug)]
 pub struct Dimensions {
     x: i32,
     y: i32,

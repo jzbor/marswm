@@ -1,7 +1,6 @@
 extern crate x11;
 
 use x11::xlib;
-use x11::xinerama;
 use std::ptr;
 use std::slice;
 use std::mem::MaybeUninit;
@@ -124,7 +123,7 @@ impl X11Backend {
             xlib::XSetErrorHandler(Some(on_error));
 
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
-            x11b.monitors = x11b.query_monitor_config();
+            x11b.monitors = query_monitor_config(display);
 
             return Ok(x11b);
         }
@@ -394,7 +393,7 @@ impl X11Backend {
     fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
         if event.window == self.root {
-            self.monitors = self.query_monitor_config();
+            self.monitors = query_monitor_config(self.display);
             self.apply_dock_insets();
             wm.update_monitor_config(self.monitors.clone());
         }
@@ -553,27 +552,6 @@ impl X11Backend {
         debug_assert!(Rc::strong_count(&client_rc) == 1);
     }
 
-    fn query_monitor_config(&self) -> Vec<MonitorConfig> {
-        unsafe {
-            if xinerama::XineramaIsActive(self.display) != 0 {
-                let mut screen_count = 0;
-                let screens_raw = xinerama::XineramaQueryScreens(self.display, &mut screen_count);
-                let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
-                let configs =  screens_slice.iter().map(|x| MonitorConfig::from(*x)).collect();
-                xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
-                return configs;
-            } else {
-                let w = xlib::XWidthOfScreen(self.screen).try_into().unwrap();
-                let h = xlib::XHeightOfScreen(self.screen).try_into().unwrap();
-                let dims = Dimensions { x: 0, y: 0, w, h };
-
-                return vec![
-                    MonitorConfig { num: 0, dims, win_area: dims }
-                ];
-            }
-        }
-    }
-
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
     }
@@ -673,7 +651,7 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
-        for mon in self.query_monitor_config() {
+        for mon in query_monitor_config(self.display) {
             if point.0 >= mon.dimensions().x()
                 && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
                 && point.1 >= mon.dimensions().y()

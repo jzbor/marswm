@@ -1,5 +1,6 @@
 use clap::Parser;
 use libmars::x11::atoms::*;
+use libmars::x11::send_client_message;
 use libmars::x11::atoms::X11Atom::*;
 use libmars::x11::window::X11Window;
 use std::ptr;
@@ -181,30 +182,6 @@ fn require_ewmh_atom(display: *mut xlib::Display, atom: X11Atom) -> Result<(), &
     } else {
         eprintln!("Required atom: {} / {}", atom, xatom);
         return Err("Required atom not supported");
-    }
-}
-
-fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: xlib::Window, data: xlib::ClientMessageData) {
-    let mut event = xlib::XEvent {
-        client_message: xlib::XClientMessageEvent {
-            type_: xlib::ClientMessage,
-            serial: 0,
-            send_event: xlib::True,
-            display,
-            window,
-            message_type: atom.to_xlib_atom(display),
-            format: 32,
-            data,
-        }
-    };
-
-
-    unsafe {
-        let root = xlib::XDefaultRootWindow(display);
-        let mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask;
-        let propagate = xlib::False;
-        xlib::XSendEvent(display, root, propagate, mask, &mut event);
-        xlib::XFlush(display);
     }
 }
 

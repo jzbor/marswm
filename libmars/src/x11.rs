@@ -3,8 +3,10 @@ extern crate x11;
 use std::ffi::*;
 use x11::xlib;
 use x11::xinerama;
+use std::slice;
 
 use crate::*;
+use crate::x11::atoms::X11Atom;
 use crate::x11::atoms::X11Atom::*;
 
 pub mod backend;
@@ -109,7 +111,54 @@ extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XE
     return 0;
 }
 
+pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
+    unsafe {
+        if xinerama::XineramaIsActive(display) != 0 {
+            let mut screen_count = 0;
+            let screens_raw = xinerama::XineramaQueryScreens(display, &mut screen_count);
+            let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
+            let configs =  screens_slice.iter().map(|x| MonitorConfig::from(*x)).collect();
+            xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
+            return configs;
+        } else {
+            let screen = xlib::XDefaultScreenOfDisplay(display);
+            let w = xlib::XWidthOfScreen(screen).try_into().unwrap();
+            let h = xlib::XHeightOfScreen(screen).try_into().unwrap();
+            let dims = Dimensions { x: 0, y: 0, w, h };
+
+            return vec![
+                MonitorConfig { num: 0, dims, win_area: dims }
+            ];
+        }
+    }
+}
+
 fn sanitize_modifiers(modifiers: u32) -> u32 {
     return modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod2Mask
                         | xlib::Mod3Mask | xlib::Mod4Mask |xlib::Mod5Mask);
 }
+
+pub fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: xlib::Window, data: xlib::ClientMessageData) {
+    let mut event = xlib::XEvent {
+        client_message: xlib::XClientMessageEvent {
+            type_: xlib::ClientMessage,
+            serial: 0,
+            send_event: xlib::True,
+            display,
+            window,
+            message_type: atom.to_xlib_atom(display),
+            format: 32,
+            data,
+        }
+    };
+
+
+    unsafe {
+        let root = xlib::XDefaultRootWindow(display);
+        let mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask;
+        let propagate = xlib::False;
+        xlib::XSendEvent(display, root, propagate, mask, &mut event);
+        xlib::XFlush(display);
+    }
+}
+

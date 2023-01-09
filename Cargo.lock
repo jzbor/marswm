@@ -115,6 +115,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mars-bar"
+version = "0.1.0"
+dependencies = [
+ "libmars",
+ "x11",
+]
+
+[[package]]
 name = "mars-relay"
 version = "0.1.0"
 dependencies = [
