@@ -224,33 +224,34 @@ impl X11Backend {
         //     None => None,
         // };
 
-        let mut client = X11Client::new(self.display, self.root, window, is_dialog);
-        client.apply_size_hints();
-        client.apply_motif_hints();
+        if let Ok(mut client) = X11Client::new(self.display, self.root, window, is_dialog) {
+            client.apply_size_hints();
+            client.apply_motif_hints();
 
-        // println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
+            // println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
 
-        // Setting workspace as specified by _NET_WM_DESKTOP
-        let workspace_req = {
-            match client.x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
-                // FIXME handle -1 as value for all desktops
-                Ok(data) => {
-                    if data[0] == u64::MAX {
-                        // TODO pin client
-                        None
-                    } else if data[0] >= u32::MAX.into() {
-                        // value to big
-                        None
-                    } else {
-                        Some(data[0] as u32)
-                    }
-                },
-                Err(_msg) => None,
-            }
-        };
+            // Setting workspace as specified by _NET_WM_DESKTOP
+            let workspace_req = {
+                match client.x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
+                    // FIXME handle -1 as value for all desktops
+                    Ok(data) => {
+                        if data[0] == u64::MAX {
+                            // TODO pin client
+                            None
+                        } else if data[0] >= u32::MAX.into() {
+                            // value to big
+                            None
+                        } else {
+                            Some(data[0] as u32)
+                        }
+                    },
+                    Err(_msg) => None,
+                }
+            };
 
-        let boxed_client = Rc::new(RefCell::new(client));
-        wm.manage(self, boxed_client.clone(), workspace_req);
+            let boxed_client = Rc::new(RefCell::new(client));
+            wm.manage(self, boxed_client.clone(), workspace_req);
+        }
 
         // TODO move transient clients to workspace and monitor of their counterpart
     }

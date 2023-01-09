@@ -33,9 +33,8 @@ pub struct X11Client {
 }
 
 impl X11Client {
-    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> X11Client {
-        let attributes = window.x11_attributes(display)
-            .expect("Unable to retrieve attributes for new client");  // FIXME this should not be fatal
+    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> Result<X11Client, String> {
+        let attributes = window.x11_attributes(display)?;
         let x = attributes.x;
         let y = attributes.y;
         let w: u32 = attributes.width.try_into().unwrap();
@@ -68,7 +67,7 @@ impl X11Client {
             },
         };
 
-        return X11Client {
+        return Ok( X11Client {
             name,
             display, root, window, frame,
             x, y, w, h,
@@ -84,7 +83,7 @@ impl X11Client {
 
             saved_decorations: None,
             saved_dimensions: None,
-        };
+        } );
     }
 
     pub fn apply_motif_hints(&mut self) {
@@ -579,6 +578,10 @@ impl X11Window for X11Client {
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
         return self.window.x11_wm_protocols(display);
+    }
+
+    fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String, &'static str> {
+        return self.window.x11_wm_name(display);
     }
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String> {
