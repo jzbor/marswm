@@ -3,6 +3,7 @@ extern crate x11;
 use std::ffi::*;
 use std::mem;
 use std::mem::MaybeUninit;
+use std::os::raw::c_void;
 use std::ptr;
 use std::slice;
 use x11::xlib;
@@ -28,6 +29,7 @@ pub trait X11Window {
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window>;
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData);
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom>;
+    fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String, &'static str>;
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String>;
 }
 
@@ -280,6 +282,33 @@ impl X11Window for xlib::Window {
             }
         }
         return supported_atoms;
+    }
+
+    fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String, &'static str> {
+        // let mut str_ptr: *mut i8 = ptr::null_mut();
+        // unsafe {
+        //     if xlib::XFetchName(display, *self, &mut str_ptr) == 0 {
+        //         return Err("unable to get name for window");
+        //     }
+        //     let cstr = CStr::from_ptr(str_ptr);
+        //     let string = cstr.to_string_lossy().to_string();
+        //     xlib::XFree(str_ptr as *mut c_void);
+        //     return Ok(string);
+        // }
+        let v = self.x11_get_text_list_property(display, WMName.to_xlib_atom(display))?;
+        match v.get(0) {
+            Some(wm_name) => return Ok(wm_name.to_owned()),
+            None => return Err("unable to get name for window"),
+        }
+        // let text_prop: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
+        // unsafe {
+        //     if xlib::XGetWMName(display, *self, text_prop.as_mut_ptr()) == 0 {
+        //         return Err("unable to get wm name for window");
+        //     }
+        //     let text_prop = text_prop.assume_init();
+
+        // }
+
     }
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String> {

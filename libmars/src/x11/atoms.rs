@@ -12,6 +12,7 @@ enum_with_values! {
         // ICCCM
         UTF8String,
         WMDeleteWindow,
+        WMName,
         WMProtocols,
         WMState,
 
@@ -50,6 +51,7 @@ impl Display for X11Atom {
             X11Atom::UTF8String => "UTF8_STRING",
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
             X11Atom::WMProtocols => "WM_PROTOCOLS",
+            X11Atom::WMName => "WM_NAME",
             X11Atom::WMState => "WM_STATE",
 
             X11Atom::NetActiveWindow => "_NET_ACTIVE_WINDOW",

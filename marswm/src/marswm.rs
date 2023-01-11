@@ -106,8 +106,7 @@ impl<C: Client> MarsWM<C> {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
         let new_workspace_idx = (cur_workspace_idx as i32 + inc) as u32 % self.config.workspaces;
-        let monitor = self.current_monitor_mut(backend);
-        monitor.switch_workspace(backend, new_workspace_idx);
+        self.switch_workspace(backend, new_workspace_idx);
     }
 
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
@@ -390,6 +389,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
         self.current_monitor_mut(backend).switch_workspace(backend, workspace_idx);
+        self.active_client = None;
+        backend.export_active_window(&self.active_client);
     }
 
     fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
