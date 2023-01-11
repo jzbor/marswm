@@ -151,12 +151,47 @@ impl X11Backend {
         }
     }
 
+    fn send_configure_notify(&self, client_rc: Rc<RefCell<X11Client>>) {
+        let client = client_rc.borrow();
+        let inner_dimensions = client.inner_dimensions();
+        let ce = xlib::XConfigureEvent {
+            type_: xlib::ConfigureNotify,
+            serial: 0,
+            send_event: xlib::True,
+            display: self.display,
+            event: client.window(),
+            window: client.window(),
+            x: inner_dimensions.x(),
+            y: inner_dimensions.y(),
+            width: inner_dimensions.w() as i32,
+            height: inner_dimensions.h() as i32,
+            border_width: client.inner_bw() as i32,
+            above: XLIB_NONE,
+            override_redirect: xlib::False,
+        };
+        let mut xevent = xlib::XEvent::from(ce);
+        unsafe {
+            xlib::XSendEvent(self.display, client.window(), xlib::False, xlib::StructureNotifyMask, &mut xevent);
+        }
+    }
+
+    fn handle_resize_request(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, width: u32, height: u32) {
+        let size_changed = wm.resize_request(self, client_rc.clone(), width, height);
+        if !size_changed {
+            // Generate synthetic ConfigureNotify event if nothing as changed.
+            // A real one will have been genereated by a XMoveResize or similar if the wm changed
+            // the size.
+            self.send_configure_notify(client_rc);
+        }
+    }
+
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             match event.get_type() {
                 xlib::ButtonPress => self.on_button_press(wm, event.button),
                 xlib::ClientMessage => self.on_client_message(wm, event.client_message),
                 xlib::ConfigureNotify => self.on_configure_notify(wm, event.configure),
+                xlib::ConfigureRequest => self.on_configure_request(wm, event.configure_request),
                 xlib::DestroyNotify => self.on_destroy_notify(wm, event.destroy_window),
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
@@ -397,6 +432,47 @@ impl X11Backend {
             self.monitors = query_monitor_config(self.display);
             self.apply_dock_insets();
             wm.update_monitor_config(self.monitors.clone());
+        }
+    }
+
+    fn on_configure_request(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureRequestEvent) {
+        let client = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.clone());
+        let inner = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.borrow().inner_dimensions());
+        if let Some(client_rc) = client {
+            if let Some(inner) = inner {
+                let width = if event.value_mask & (xlib::CWWidth as u64) != 0 {
+                    event.width as u32
+                } else {
+                    inner.w()
+                };
+                let height = if event.value_mask & (xlib::CWHeight as u64) != 0 {
+                    event.height as u32
+                } else {
+                    inner.h()
+                };
+
+                if width != inner.w() || height != inner.h() {
+                    let client = client_rc.borrow();
+                    // add border to size
+                    let width = width + 2*client.total_bw();
+                    let height = height + 2*client.total_bw();
+                    drop(client);
+                    self.handle_resize_request(wm, client_rc, width, height);
+                }
+            }
+        } else {
+            let mut wc = xlib::XWindowChanges {
+                x: event.x,
+                y: event.y,
+                width: event.width,
+                height: event.height,
+                border_width: event.border_width,
+                sibling: event.above,
+                stack_mode: event.detail,
+            };
+            unsafe {
+                xlib::XConfigureWindow(self.display, event.window, event.value_mask as u32, &mut wc);
+            }
         }
     }
 

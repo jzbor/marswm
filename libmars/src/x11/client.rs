@@ -297,6 +297,10 @@ impl Client for X11Client {
         self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
     }
 
+    fn frame_width(&self) -> u32 {
+        return self.fw;
+    }
+
     fn hide(&mut self) {
         if !self.visible {
             return;
@@ -320,6 +324,19 @@ impl Client for X11Client {
         }
 
         self.visible = false;
+    }
+
+    fn inner_bw(&self) -> u32 {
+        return self.ibw;
+    }
+
+    fn inner_dimensions(&self) -> Dimensions {
+        return Dimensions {
+            x: self.fw.try_into().unwrap(),
+            y: self.fw.try_into().unwrap(),
+            w: self.w - 2*self.total_bw(),
+            h: self.h - 2*self.total_bw(),
+        };
     }
 
     fn is_dialog(&self) -> bool {
@@ -354,13 +371,17 @@ impl Client for X11Client {
                                     self.w - 2*self.obw, self.h - 2 * self.obw);
             xlib::XMoveResizeWindow(self.display, self.window,
                                     self.fw.try_into().unwrap(), self.fw.try_into().unwrap(),
-                                    self.w - 2*self.ibw - 2*self.fw - 2 * self.obw,
-                                    self.h - 2*self.ibw - 2*self.fw - 2 * self.obw);
+                                    self.w - 2*self.total_bw(),
+                                    self.h - 2*self.total_bw());
         }
     }
 
     fn name(&self) -> &str {
         return &self.name;
+    }
+
+    fn outer_bw(&self) -> u32 {
+        return self.obw;
     }
 
     fn raise(&self) {
@@ -441,6 +462,10 @@ impl Client for X11Client {
         }
 
         self.visible = true;
+    }
+
+    fn total_bw(&self) -> u32 {
+        return self.ibw + self.fw + self.obw;
     }
 
     fn unset_fullscreen(&mut self) {

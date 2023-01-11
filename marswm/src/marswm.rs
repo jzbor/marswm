@@ -375,6 +375,21 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client_rc.borrow().export_workspace(workspace_idx);
     }
 
+    fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool {
+        if let Some(ws) = self.get_workspace(&client_rc) {
+            if ws.is_floating(&client_rc) {
+                let mut client = client_rc.borrow_mut();
+                let (x, y) = client.pos();
+                client.move_resize(x, y, width, height);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     fn set_client_pinned(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
             ws.set_pinned(client_rc, state);

@@ -60,6 +60,10 @@ impl<C: Client> Workspace<C> {
         self.apply_layout();
     }
 
+    pub fn is_floating(&self, client_rc: &Rc<RefCell<C>>) -> bool {
+        return self.floating_clients.contains(client_rc);
+    }
+
     pub fn name(&self) -> &'static str {
         return self.name;
     }

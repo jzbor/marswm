@@ -22,6 +22,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
+    fn resize_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool;
     fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32);
     fn tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
@@ -41,12 +42,17 @@ pub trait Client: Eq + Dimensioned{
     fn export_pinned(&self, state: bool, workspace_idx: Option<u32>);
     fn export_tiled(&self, state: bool);
     fn export_workspace(&self, workspace_idx: u32);
+    fn frame_width(&self) -> u32;
     fn hide(&mut self);
+    fn inner_bw(&self) -> u32;
+    // dimensions excluding all borders
+    fn inner_dimensions(&self) -> Dimensions;
     fn is_dialog(&self) -> bool;
     fn is_fullscreen(&self) -> bool;
     fn is_visible(&self) -> bool;
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32);
     fn name(&self) -> &str;
+    fn outer_bw(&self) -> u32;
     fn raise(&self);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: u32);
@@ -57,6 +63,7 @@ pub trait Client: Eq + Dimensioned{
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
     fn show(&mut self);
+    fn total_bw(&self) -> u32;
     fn unset_fullscreen(&mut self);
     fn warp_pointer_to_center(&self);
 }
