@@ -260,7 +260,7 @@ impl X11Backend {
         // };
 
         if let Ok(mut client) = X11Client::new(self.display, self.root, window, is_dialog) {
-            client.apply_size_hints();
+            // client.apply_size_hints();
             client.apply_motif_hints();
 
             // println!("New client: {} (frame: {}) with types {:?}", client.name(), client.frame(), window_types);
@@ -720,10 +720,20 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+        // ignore fullscreen windows
+        if client_rc.borrow().is_fullscreen() {
+            return;
+        }
+
         self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_move);
     }
 
     fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+        // ignore fullscreen windows
+        if client_rc.borrow().is_fullscreen() {
+            return;
+        }
+
         self.mouse_action(wm, client_rc, CURSOR_RESIZE, Self::mouse_action_resize);
     }
 
