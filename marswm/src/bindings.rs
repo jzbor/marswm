@@ -13,25 +13,27 @@ use crate::layouts::*;
 
 pub const DEFAULT_MODKEY: Modifier = Modifier::Mod4;
 
-#[derive(Serialize,Deserialize,Clone,Debug,PartialEq,Eq)]
+#[derive(Serialize,Deserialize,Clone,Debug,PartialEq)]
 #[serde(rename_all = "kebab-case")]
 // #[serde(tag = "action", content = "arg")]
 // #[serde(tag = "type")]
 pub enum BindingAction {
     CenterClient,
+    ChangeMainRatio(f32),
     CloseClient,
     CycleClient(i32),
     CycleLayout,
     CycleWorkspace(i32),
-    DecNMain,
     Execute(String),
     Exit,
-    IncNMain,
+    IncNMain(i32),
     MoveWorkspace(u32),
     PreviousWorkspace,
     MoveMain,
     Restart,
     SetLayout(LayoutType),
+    SetStackMode(StackMode),
+    SetStackPosition(StackPosition),
     SwitchWorkspace(u32),
     ToggleFloating,
     ToggleFullscreen,
@@ -45,7 +47,7 @@ pub enum Modifier {
     Control,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
+#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
 pub struct Keybinding {
     /// list of modifiers that apply to this binding
     modifiers: Vec<Modifier>,
@@ -53,7 +55,7 @@ pub struct Keybinding {
     /// key name (as found in
     /// [keysymdef.h](https://cgit.freedesktop.org/xorg/proto/x11proto/tree/keysymdef.h) without
     /// the leading "XK_")
-    key_name: String,
+    key: String,
 
     /// action to execute on key press
     action: BindingAction,
@@ -69,13 +71,13 @@ impl BindingAction {
                     client_rc.borrow_mut().center_on_screen(mon.config());
                 }
             },
+            ChangeMainRatio(f) =>  wm.current_workspace_mut(backend).change_main_ratio(*f),
             CloseClient => if let Some(client_rc) = client_option {
                 client_rc.borrow().close();
             },
             CycleClient(inc) => wm.cycle_client(backend, *inc),
             CycleLayout => wm.current_workspace_mut(backend).cycle_layout(),
             CycleWorkspace(inc) => wm.cycle_workspace(backend, *inc),
-            DecNMain => wm.current_workspace_mut(backend).dec_nmain(),
             Execute(cmd) => {
                 if let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(cmd).spawn() {
                     std::thread::spawn(move || {
@@ -86,7 +88,7 @@ impl BindingAction {
             Exit => {
                 wm.exit(backend);
             },
-            IncNMain => wm.current_workspace_mut(backend).inc_nmain(),
+            IncNMain(i) => wm.current_workspace_mut(backend).inc_nmain(*i),
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
                 wm.move_to_workspace(backend, client_rc, *ws);
             },
@@ -96,6 +98,8 @@ impl BindingAction {
             },
             Restart => wm.restart(backend),
             SetLayout(layout) => wm.current_workspace_mut(backend).set_layout(*layout),
+            SetStackMode(mode) => wm.current_workspace_mut(backend).set_stack_mode(*mode),
+            SetStackPosition(position) => wm.current_workspace_mut(backend).set_stack_position(*position),
             SwitchWorkspace(ws) => wm.switch_workspace(backend, *ws),
             ToggleFloating => if let Some(client_rc) = client_option {
                 if let Some(ws) = wm.get_workspace_mut(&client_rc) {
@@ -111,8 +115,8 @@ impl BindingAction {
 }
 
 impl Keybinding {
-    pub fn new(modifiers: Vec<Modifier>, key_name: &str, action: BindingAction) -> Keybinding {
-        return Keybinding { modifiers, key_name: key_name.to_owned(), action };
+    pub fn new(modifiers: Vec<Modifier>, key: &str, action: BindingAction) -> Keybinding {
+        return Keybinding { modifiers, key: key.to_owned(), action };
     }
 
     pub fn action(&self) -> BindingAction {
@@ -128,7 +132,7 @@ impl Keybinding {
     }
 
     pub fn key(&self) -> u32 {
-        return get_keysym(&self.key_name) as u32;
+        return get_keysym(&self.key) as u32;
     }
 }
 
@@ -148,13 +152,16 @@ pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
     let mut bindings = vec![
         Keybinding::new(vec!(DEFAULT_MODKEY), "Delete", CloseClient),
         Keybinding::new(vec!(DEFAULT_MODKEY), "n", CycleLayout),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "t", SetLayout(LayoutType::Stack)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "t", SetLayout(LayoutType::Stack)),
         Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "t", SetLayout(LayoutType::BottomStack)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "c", SetLayout(LayoutType::Deck)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "m", SetLayout(LayoutType::Monocle)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "t", SetLayout(LayoutType::Dynamic)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "BackSpace", MoveMain),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "a", IncNMain),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "x", DecNMain),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "a", IncNMain(1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "x", IncNMain(-1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "a", ChangeMainRatio(0.10)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "x", ChangeMainRatio(-0.10)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "j", CycleClient(1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "k", CycleClient(-1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "period", CycleWorkspace(1)),
@@ -166,6 +173,12 @@ pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
         Keybinding::new(vec!(DEFAULT_MODKEY), "Return", Execute("buttermilk".to_owned())),
         Keybinding::new(vec!(DEFAULT_MODKEY), "d", Execute("rofi -show drun".to_owned())),
         Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "BackSpace", Restart),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Up", SetStackPosition(StackPosition::Top)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Right", SetStackPosition(StackPosition::Right)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Down", SetStackPosition(StackPosition::Bottom)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Left", SetStackPosition(StackPosition::Left)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "semicolon", SetStackMode(StackMode::Split)),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "apostrophe", SetStackMode(StackMode::Deck)),
     ];
 
     for i in 0..cmp::min(nworkspaces, 9) {

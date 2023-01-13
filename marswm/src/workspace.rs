@@ -2,6 +2,7 @@ use libmars::Client;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
+use std::cmp;
 
 use crate::*;
 use crate::layouts::*;
@@ -25,15 +26,14 @@ pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
 
 
 impl<C: Client> Workspace<C> {
-    pub fn new(name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration,
-               layout: LayoutType) -> Workspace<C> {
+    pub fn new(name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
         return Workspace {
             name,
             floating_clients: VecDeque::new(),
             pinned_clients: Vec::new(),
             tiled_clients: VecDeque::new(),
             win_area,
-            cur_layout: layout,
+            cur_layout: layout_config.default,
             layout_config,
         };
     }
@@ -42,21 +42,22 @@ impl<C: Client> Workspace<C> {
         Layout::get(self.cur_layout).apply_layout(self.win_area, &self.tiled_clients, &self.layout_config);
     }
 
+    pub fn change_main_ratio(&mut self, i: f32) {
+        let new_ratio = self.layout_config.main_ratio + i;
+        if new_ratio > 0.20 && new_ratio < 0.80 {
+            self.layout_config.main_ratio = new_ratio;
+            self.apply_layout();
+        }
+    }
+
     pub fn cycle_layout(&mut self) {
         let cur_idx = LayoutType::VALUES.iter().position(|l| *l == self.cur_layout).unwrap();
         self.cur_layout = LayoutType::VALUES[(cur_idx + 1) % LayoutType::SIZE];
         self.apply_layout();
     }
 
-    pub fn dec_nmain(&mut self) {
-        if self.layout_config.nmain > 0 {
-            self.layout_config.nmain -= 1;
-            self.apply_layout();
-        }
-    }
-
-    pub fn inc_nmain(&mut self) {
-        self.layout_config.nmain += 1;
+    pub fn inc_nmain(&mut self, i: i32) {
+        self.layout_config.nmain = (self.layout_config.nmain as i32 + i) as u32;
         self.apply_layout();
     }
 
@@ -184,6 +185,16 @@ impl<C: Client> Workspace<C> {
                 self.pinned_clients.remove(index);
             }
         }
+    }
+
+    pub fn set_stack_mode(&mut self, mode: StackMode) {
+        self.layout_config.stack_mode = mode;
+        self.apply_layout();
+    }
+
+    pub fn set_stack_position(&mut self, position: StackPosition) {
+        self.layout_config.stack_position = position;
+        self.apply_layout();
     }
 
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {

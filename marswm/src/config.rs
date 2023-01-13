@@ -4,6 +4,8 @@ use std::path;
 use serde::{Serialize, Deserialize};
 
 use crate::layouts::LayoutType;
+use crate::layouts::StackPosition;
+use crate::layouts::StackMode;
 use crate::bindings::*;
 
 const CONFIG_DIR: &str = "marswm";
@@ -16,9 +18,6 @@ pub struct Configuration {
     /// number of workspaces for each monitor
     pub workspaces: u32,
 
-    /// default layout for each workspace
-    pub default_layout: LayoutType,
-
     /// layout configuration
     pub layout: LayoutConfiguration,
 
@@ -29,6 +28,9 @@ pub struct Configuration {
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct LayoutConfiguration {
+    /// default layout for each workspace
+    pub default: LayoutType,
+
     /// width of the gap between windows in a tiled layout
     pub gap_width: u32,
 
@@ -37,6 +39,12 @@ pub struct LayoutConfiguration {
 
     /// number of windows in the main area
     pub nmain: u32,
+
+    /// position of the stack relative to the main windows (dynamic layout)
+    pub stack_position: StackPosition,
+
+    /// mode of laying out the windows in the stack area (dynamic layout)
+    pub stack_mode: StackMode,
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Copy,Clone)]
@@ -65,7 +73,6 @@ impl Default for Configuration {
     fn default() -> Self {
         return Configuration {
             workspaces: 8,
-            default_layout: LayoutType::Floating,
             layout: LayoutConfiguration::default(),
             theming: ThemingConfiguration::default(),
         }
@@ -75,9 +82,12 @@ impl Default for Configuration {
 impl Default for LayoutConfiguration {
     fn default() -> Self {
         return LayoutConfiguration {
+            default: LayoutType::Floating,
             gap_width: 4,
             main_ratio: 0.6,
-            nmain: 1
+            nmain: 1,
+            stack_position: StackPosition::Right,
+            stack_mode: StackMode::Split,
         };
     }
 }
