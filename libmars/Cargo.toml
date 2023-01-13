@@ -8,6 +8,10 @@ workspace = ".."
 
 [dependencies]
 x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
+serde = { version = "1.0.151", features = ["derive"], optional = true }
+serde_yaml = { version = "0.9.16", optional = true }
 
 [features]
+configuration = ["dep:serde", "dep:serde_yaml"]
 xlib = []
+

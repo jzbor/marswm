@@ -1,7 +1,5 @@
-use std::env;
-use std::fs;
-use std::path;
 use serde::{Serialize, Deserialize};
+use libmars::configuration::*;
 
 use crate::layouts::LayoutType;
 use crate::layouts::StackPosition;
@@ -105,48 +103,8 @@ impl Default for ThemingConfiguration {
     }
 }
 
-
-fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, (bool, String)> {
-    let fs_result = fs::read(path);
-    let raw = match fs_result {
-        Ok(content) => content,
-        Err(e) => return Err((true, e.to_string())),
-    };
-
-    match serde_yaml::from_slice(&raw) {
-        Ok(config) => return Ok(config),
-        Err(e) => return Err((true, e.to_string())),
-    };
-}
-
-fn read_config_file<T: for<'a> Deserialize<'a>>(file_name: &str) -> Result<T, String>{
-    // check configuration dir as specified in xdg base dir specification
-    if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
-        let path = path::Path::new(&xdg_config).join(CONFIG_DIR).join(file_name);
-        if path.is_file() {
-            return deserialize_file(&path).map_err(|(_, msg)| msg);
-        }
-    }
-
-    // check ~/.config
-    if let Ok(home) = env::var("HOME") {
-        let path = path::Path::new(&home).join(".config").join(CONFIG_DIR).join(file_name);
-        if path.is_file() {
-            return deserialize_file(&path).map_err(|(_, msg)| msg);
-        }
-    }
-
-    // check local working directory
-    let path = path::Path::new(file_name);
-    if path.is_file() {
-        return deserialize_file(&path).map_err(|(_, msg)| msg);
-    } else {
-        return Err(format!("configuration {} not found", file_name));
-    }
-}
-
 pub fn read_config() -> Configuration {
-    let result = read_config_file(CONFIG_FILE);
+    let result = read_config_file(CONFIG_DIR, CONFIG_FILE);
     return match result {
         Ok(config) => config,
         Err(msg) => {
@@ -157,7 +115,7 @@ pub fn read_config() -> Configuration {
 }
 
 pub fn read_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
-    let result = read_config_file(KEYBINDINGS_FILE);
+    let result = read_config_file(CONFIG_DIR, KEYBINDINGS_FILE);
     return match result {
         Ok(config) => config,
         Err(msg) => {

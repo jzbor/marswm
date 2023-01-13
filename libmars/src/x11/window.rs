@@ -118,10 +118,14 @@ impl X11Window for xlib::Window {
                     let cstr = CStr::from_ptr(*ptr);
                     let s = match cstr.to_str() {
                         Ok(s) => s,
-                        Err(_) => return Err("unable to convert to string"),
+                        Err(_) => {
+                            xlib::XFreeStringList(data_ptr);
+                            return Err("unable to convert to string");
+                        },
                     };
                     data.push(s.to_owned());
                 }
+                xlib::XFreeStringList(data_ptr);
                 return Ok(data);
             }
         }
@@ -156,6 +160,7 @@ impl X11Window for xlib::Window {
                     return Err("Property is not u32 format");
                 } else {
                     data.extend_from_slice(slice::from_raw_parts(data_ptr as *mut u64, nitems.try_into().unwrap()));
+                    xlib::XFree(data_ptr as *mut c_void);
                 }
             }
         }

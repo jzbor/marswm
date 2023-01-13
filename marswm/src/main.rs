@@ -11,6 +11,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use libmars::*;
+use libmars::configuration::*;
 use libmars::x11::backend::*;
 
 use crate::bindings::default_keybindings;
@@ -59,22 +60,14 @@ trait ClientList<C: Client> {
 
 fn main() {
     if env::args().find(|a| a == "print-default-config").is_some() {
-        let ser = serde_yaml::to_string(&Configuration::default());
-        match ser {
-            Ok(ser) => println!("{}", ser),
-            Err(e) => eprintln!("Error: {}", e),
-        }
+        print_config(&Configuration::default());
         return;
     }
 
     let config = read_config();
 
     if env::args().find(|a| a == "print-default-keybindings").is_some() {
-        let ser = serde_yaml::to_string(&default_keybindings(config.workspaces));
-        match ser {
-            Ok(ser) => println!("{}", ser),
-            Err(e) => eprintln!("Error: {}", e),
-        }
+        print_config(&default_keybindings(config.workspaces));
         return;
     }
 

@@ -7,6 +7,8 @@ use std::cell::RefCell;
 
 mod macros;
 pub mod x11;
+#[cfg(feature = "configuration")]
+pub mod configuration;
 
 
 pub trait WindowManager<B: Backend<C>, C: Client> {

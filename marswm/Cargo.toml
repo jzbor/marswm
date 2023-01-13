@@ -14,3 +14,4 @@ x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
 [dependencies.libmars]
 path = "../libmars"
 version = "0.1.0"
+features = ["configuration"]
