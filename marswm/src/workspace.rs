@@ -2,7 +2,6 @@ use libmars::Client;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
-use std::cmp;
 
 use crate::*;
 use crate::layouts::*;

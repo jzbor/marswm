@@ -18,7 +18,6 @@ struct CanvasStyle {
     xfont: Option<*mut xft::XftFont>,
 }
 
-// TODO add destructor
 pub struct Canvas {
     display: *mut xlib::Display,
     screen: i32,
@@ -203,7 +202,6 @@ impl Canvas {
     pub fn fill_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: &str) {
         if let Ok(xft_color) = self.alloc_color(color) {
             let saved_color = self.style.xft_color;
-            let saved_line_width = self.style.line_width;
 
             // configure new style
             self.style.xft_color = xft_color;
@@ -228,29 +226,9 @@ impl Canvas {
         }
     }
 
-    fn free_color(&self, xft_color: *mut xft::XftColor) {
-        unsafe {
-            let visual = xlib::XDefaultVisual(self.display, self.screen);
-            let colormap = xlib::XDefaultColormap(self.display, self.screen);
-            xft::XftColorFree(self.display, visual, colormap, xft_color);
-        }
-    }
-
-    fn gc_apply_all(&self) {
-        self.gc_apply_foreground();
-        self.gc_apply_fill_style();
-        self.gc_apply_line_attrib();
-    }
-
     fn gc_apply_foreground(&self) {
         unsafe {
             xlib::XSetForeground(self.display, self.gc, self.style.xft_color.pixel);
-        }
-    }
-
-    fn gc_apply_fill_style(&self) {
-        unsafe {
-            xlib::XSetFillStyle(self.display, self.gc, self.style.fill_style);
         }
     }
 
@@ -290,6 +268,11 @@ impl Canvas {
 
     pub fn set_font(&mut self, font_name: &str) -> Result<(), String> {
         unsafe {
+            // deallocate previous font if necessary
+            if let Some(prev_font) = self.style.xfont.take() {
+                xft::XftFontClose(self.display, prev_font);
+            }
+
             // allocate font
             let xfont = xft::XftFontOpenName(self.display, self.screen,font_name.as_ptr() as *const i8);
             if xfont.is_null() {

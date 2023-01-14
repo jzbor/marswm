@@ -35,7 +35,6 @@ type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 
 pub struct X11Backend {
     display: *mut xlib::Display,
-    screen: *mut xlib::Screen,
     root: u64,
     monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
@@ -86,12 +85,10 @@ impl X11Backend {
     /// Register window manager and create backend from existing connection.
     pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend, String> {
         unsafe {
-            let screen = xlib::XDefaultScreenOfDisplay(display);
             let root = xlib::XDefaultRootWindow(display);
 
             let mut x11b = X11Backend {
                 display,
-                screen,
                 root,
                 monitors: Vec::new(),
                 wmcheck_win: 0,
