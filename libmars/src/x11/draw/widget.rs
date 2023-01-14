@@ -47,19 +47,19 @@ pub struct TextWidget {
     height: u32,
     hpad: u32,
     vpad: u32,
-    fg_color: String,
-    bg_color: String,
+    fg_color: u64,
+    bg_color: u64,
 }
 
 impl<W: Widget> FlowLayoutWidget<W> {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
-               children: Vec<W>, bg_color: &str) -> Result<FlowLayoutWidget<W>, String> {
+               children: Vec<W>, bg_color: u64) -> Result<FlowLayoutWidget<W>, String> {
         let outer_dimensions = Dimensions::new(x, y, 10, 10);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
-        canvas.set_foreground(&bg_color)
+        canvas.set_foreground(bg_color)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         let mut widget = FlowLayoutWidget {
@@ -144,14 +144,14 @@ impl<W: Widget> FlowLayoutWidget<W> {
 
 impl TextWidget {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
-               label: String, font: &str, fg_color: &str, bg_color: &str) -> Result<TextWidget, String> {
+               label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<TextWidget, String> {
 
         let outer_dimensions = Dimensions::new(x, y, 10, 10);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
-        canvas.set_foreground(&fg_color)
+        canvas.set_foreground(fg_color)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
         canvas.set_font(&font)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
@@ -163,8 +163,7 @@ impl TextWidget {
             event_handlers: Vec::new(),
             width: 10, height: 10,
             hpad, vpad,
-            fg_color: fg_color.to_owned(),
-            bg_color: bg_color.to_owned(),
+            fg_color, bg_color,
         };
 
         widget.resize_to_content();
@@ -188,16 +187,16 @@ impl TextWidget {
         self.canvas.match_resize();
     }
 
-    pub fn set_foreground(&mut self, color: &str) -> Result<(), String> {
+    pub fn set_foreground(&mut self, color: u64) -> Result<(), String> {
         self.canvas.set_foreground(color)?;
-        self.fg_color = color.to_owned();
+        self.fg_color = color;
         self.redraw();
         return Ok(());
     }
 
-    pub fn set_background(&mut self, color: &str) -> Result<(), String> {
+    pub fn set_background(&mut self, color: u64) -> Result<(), String> {
         // TODO check color before assigning
-        self.bg_color = color.to_owned();
+        self.bg_color = color;
         self.redraw();
         return Ok(());
     }
@@ -252,7 +251,7 @@ impl Widget for TextWidget {
     }
 
     fn redraw(&mut self) {
-        self.canvas.fill_rectangle_with(0, 0, self.width, self.height, &self.bg_color);
+        self.canvas.fill_rectangle_with(0, 0, self.width, self.height, self.bg_color);
         let _ = self.canvas.draw_text(self.hpad as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
         self.canvas.flush();
     }

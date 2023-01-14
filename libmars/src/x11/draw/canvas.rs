@@ -86,7 +86,7 @@ impl Canvas {
         }
     }
 
-    pub fn draw_line_with(&mut self, pt1: (i32, i32), pt2: (i32, i32), color: &str, line_width: u32) {
+    pub fn draw_line_with(&mut self, pt1: (i32, i32), pt2: (i32, i32), color: u64, line_width: u32) {
         if let Ok(xft_color) = self.alloc_color(color) {
             let saved_color = self.style.xft_color;
             let saved_line_width = self.style.line_width;
@@ -117,7 +117,7 @@ impl Canvas {
         }
     }
 
-    pub fn draw_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: &str, line_width: u32) {
+    pub fn draw_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: u64, line_width: u32) {
         if let Ok(xft_color) = self.alloc_color(color) {
             let saved_color = self.style.xft_color;
             let saved_line_width = self.style.line_width;
@@ -199,7 +199,7 @@ impl Canvas {
         }
     }
 
-    pub fn fill_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: &str) {
+    pub fn fill_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: u64) {
         if let Ok(xft_color) = self.alloc_color(color) {
             let saved_color = self.style.xft_color;
 
@@ -239,18 +239,23 @@ impl Canvas {
         }
     }
 
-    fn alloc_color(&self, color_name: &str) -> Result<xft::XftColor, String> {
-        // allocate color for xft
-        let color_cstring = match CString::new(color_name) {
-            Ok(cstring) => cstring,
-            Err(_) => return Err(format!("unable to convert color '{}' to C compatible string", color_name))
+    fn alloc_color(&self, color: u64) -> Result<xft::XftColor, String> {
+        let xr_color = {
+            xrender::XRenderColor {
+                red: ((color >> 16) & 0xff) as u16 * 0xff,
+                green: ((color >> 8) & 0xff) as u16 * 0xff,
+                blue: (color & 0xff) as u16 * 0xff,
+                alpha: c_ushort::MAX,
+            }
         };
+
+        // allocate color for xft
         let mut xft_color: MaybeUninit<xft::XftColor> = MaybeUninit::uninit();
         unsafe {
             let visual = xlib::XDefaultVisual(self.display, self.screen);
             let colormap = xlib::XDefaultColormap(self.display, self.screen);
-            if xft::XftColorAllocName(self.display, visual, colormap, color_cstring.as_ptr(), xft_color.as_mut_ptr()) == 0 {
-                return Err(format!("unable to allocate color '{}'", color_name));
+            if xft::XftColorAllocValue(self.display, visual, colormap, &xr_color, xft_color.as_mut_ptr()) == 0 {
+                return Err(format!("unable to allocate color '0x{:x}'", color));
             } else {
                 return Ok(xft_color.assume_init());
             }
@@ -285,7 +290,7 @@ impl Canvas {
         return Ok(());
     }
 
-    pub fn set_foreground(&mut self, color: &str) -> Result<(), String> {
+    pub fn set_foreground(&mut self, color: u64) -> Result<(), String> {
         self.style.xft_color = self.alloc_color(color)?;
         self.gc_apply_foreground();
         return Ok(());

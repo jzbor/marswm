@@ -8,7 +8,6 @@ workspace = ".."
 
 [dependencies]
 serde = { version = "1.0.151", features = ["derive"] }
-serde_yaml = "0.9.16"
 x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
 
 [dependencies.libmars]

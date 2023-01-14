@@ -122,7 +122,6 @@ version = "0.1.0"
 dependencies = [
  "libmars",
  "serde",
- "serde_yaml",
  "x11",
 ]
 
@@ -141,7 +140,6 @@ version = "0.1.0"
 dependencies = [
  "libmars",
  "serde",
- "serde_yaml",
  "x11",
 ]
 
