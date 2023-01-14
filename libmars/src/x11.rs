@@ -12,6 +12,7 @@ use crate::x11::atoms::X11Atom::*;
 pub mod backend;
 pub mod window;
 pub mod atoms;
+pub mod draw;
 mod client;
 
 const XLIB_NONE: u64 = 0;
