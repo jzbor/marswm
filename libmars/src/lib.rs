@@ -174,7 +174,6 @@ pub struct Dimensions {
 
 #[derive(Copy,Clone,PartialEq)]
 pub struct MonitorConfig {
-    num: u32,
     dims: Dimensions,
     win_area: Dimensions,
 }
@@ -204,10 +203,6 @@ impl MonitorConfig {
 
     pub fn dimensions(&self) -> Dimensions {
         return self.dims;
-    }
-
-    pub fn num(&self) -> u32 {
-        return self.num;
     }
 
     pub fn remove_insets(&mut self) {

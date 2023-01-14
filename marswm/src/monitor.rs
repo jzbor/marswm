@@ -63,10 +63,6 @@ impl<C: Client> Monitor<C> {
         self.workspaces[workspace_idx as usize].attach_client(client_rc);
     }
 
-    pub fn num(&self) -> u32 {
-        return self.config.num();
-    }
-
     pub fn restack_current(&self) {
         self.workspaces[self.cur_workspace as usize].restack();
     }

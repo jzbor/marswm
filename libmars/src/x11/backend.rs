@@ -36,10 +36,17 @@ type WM<'a> = dyn WindowManager<X11Backend, X11Client> + 'a;
 pub struct X11Backend {
     display: *mut xlib::Display,
     root: u64,
+    xrandr: XRandrInfo,
     monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
     dock_windows: Vec<xlib::Window>,
     last_active: Option<Rc<RefCell<X11Client>>>,
+}
+
+struct XRandrInfo {
+    supported: bool,
+    event_base: i32,
+    _error_base: i32,
 }
 
 
@@ -90,6 +97,7 @@ impl X11Backend {
             let mut x11b = X11Backend {
                 display,
                 root,
+                xrandr: XRandrInfo::query(display),
                 monitors: Vec::new(),
                 wmcheck_win: 0,
                 dock_windows: Vec::new(),
@@ -118,6 +126,10 @@ impl X11Backend {
             xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, attributes.as_mut_ptr());
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
+
+            if x11b.xrandr.supported {
+                xrandr::XRRSelectInput(display, root, xrandr::RRCrtcChangeNotifyMask);
+            }
 
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
             x11b.monitors = query_monitor_config(display);
@@ -184,6 +196,13 @@ impl X11Backend {
 
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
+            if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
+                self.monitors = query_monitor_config(self.display);
+                self.apply_dock_insets();
+                wm.update_monitor_config(self.monitors.clone());
+                return;
+            }
+
             match event.get_type() {
                 xlib::ButtonPress => self.on_button_press(wm, event.button),
                 xlib::ClientMessage => self.on_client_message(wm, event.client_message),
@@ -425,7 +444,7 @@ impl X11Backend {
 
     fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
-        if event.window == self.root {
+        if event.window == self.root && !self.xrandr.supported {
             self.monitors = query_monitor_config(self.display);
             self.apply_dock_insets();
             wm.update_monitor_config(self.monitors.clone());
@@ -635,6 +654,18 @@ impl X11Backend {
     }
 }
 
+impl XRandrInfo {
+    pub fn query(display: *mut xlib::Display) -> XRandrInfo {
+        let mut event_base = 0;
+        let mut error_base = 0;
+        let supported = unsafe {
+            xrandr::XRRQueryExtension(display, &mut event_base, &mut error_base) != 0
+        };
+
+        return XRandrInfo { supported, event_base, _error_base: error_base };
+    }
+}
+
 impl Backend<X11Client> for X11Backend {
     fn export_active_window(&self, client_option: &Option<Rc<RefCell<X11Client>>>) {
         let window = match client_option {
@@ -735,12 +766,12 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
-        for mon in query_monitor_config(self.display) {
+        for (i, mon) in query_monitor_config(self.display).iter().enumerate() {
             if point.0 >= mon.dimensions().x()
                 && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
                 && point.1 >= mon.dimensions().y()
                 && point.1 < mon.dimensions().y() + mon.dimensions().h() as i32 {
-                    return Some(mon.num());
+                    return Some(i as u32);
             }
         }
         return None;

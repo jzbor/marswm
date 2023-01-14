@@ -222,7 +222,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         for mon in &mut self.monitors {
             mon.detach_client(&client_rc)
         }
-        if let Some(monitor) = self.monitors.iter_mut().find(|m| m.num() == monitor) {
+
+        if let Some(monitor) = self.monitors.get_mut(monitor as usize) {
             monitor.attach_client(client_rc);
         } else {
             panic!("Monitor {} not found", monitor);
@@ -310,7 +311,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         client_rc.borrow_mut().set_pos(pos);
 
         let monitor = if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
-            self.monitors.iter_mut().find(|m| m.num() == monitor_num).unwrap()
+            self.monitors.get_mut(monitor_num as usize).unwrap()
         } else {
             self.current_monitor_mut(backend)
         };
@@ -454,7 +455,10 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
 
         if configs.len() < cur_monitor_count {
             let mut detached_clients = Vec::new();
-            for monitor in self.monitors.iter_mut().filter(|m| m.num() >= configs.len().try_into().unwrap()) {
+            let extra_monitors = self.monitors.iter_mut().enumerate()
+                .filter(|(i, _)| *i >= configs.len())
+                .map(|(_, m)| m);
+            for monitor in extra_monitors {
                 detached_clients.extend(monitor.detach_all());
             }
             let last_monitor = self.monitors.get_mut(cur_monitor_count - 1).unwrap();

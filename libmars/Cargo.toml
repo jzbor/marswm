@@ -7,7 +7,7 @@ workspace = ".."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
+x11 = { version = "2.19.1", features = ["xlib", "xinerama", "xrandr"] }
 serde = { version = "1.0.151", features = ["derive"], optional = true }
 serde_yaml = { version = "0.9.16", optional = true }
 
