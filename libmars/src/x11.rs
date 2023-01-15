@@ -16,18 +16,18 @@ pub mod atoms;
 pub mod draw;
 mod client;
 
-const XLIB_NONE: u64 = 0;
+pub const XLIB_NONE: u64 = 0;
 const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
 const WINDOW_MIN_SIZE: u32 = 40;
 // Cursor selectors (see cursorfont.h)
-const CURSOR_NORMAL: u32 = 68;
-const CURSOR_RESIZE: u32 = 120;
-const CURSOR_MOVE: u32 = 52;
+pub const CURSOR_NORMAL: u32 = 68;
+pub const CURSOR_RESIZE: u32 = 120;
+pub const CURSOR_MOVE: u32 = 52;
 // Window states
-const WITHDRAWN_STATE: i32 = 0;
-const NORMAL_STATE: i32 = 1;
-const ICONIC_STATE: i32 = 3;
+pub const WITHDRAWN_STATE: i32 = 0;
+pub const NORMAL_STATE: i32 = 1;
+pub const ICONIC_STATE: i32 = 3;
 // Motif hints
 const MWM_HINTS_FLAGS_FIELD: usize = 0;
 const MWM_HINTS_DECORATIONS_FIELD: usize = 2;

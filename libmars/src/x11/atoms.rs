@@ -26,6 +26,9 @@ enum_with_values! {
         NetNumberOfDesktops,
         NetSupported,
         NetSupportingWMCheck,
+        NetSystemTray,
+        NetSystemTrayOpcode,
+        NetSystemTrayOrientation,
         NetWMDesktop,
         NetWMName,
         NetWMState,
@@ -38,6 +41,11 @@ enum_with_values! {
 
         // Motif
         MotifWMHints,
+
+        // XEMBED
+        Manager,
+        Xembed,
+        XembedInfo,
 
         // TODO add custom hints for pinned, tiled
         // MARS (custom)
@@ -63,6 +71,9 @@ impl Display for X11Atom {
             X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
             X11Atom::NetSupported => "_NET_SUPPORTED",
             X11Atom::NetSupportingWMCheck => "_NET_SUPPORTING_WM_CHECK",
+            X11Atom::NetSystemTray => "_NET_SYSTEM_TRAY_S0",
+            X11Atom::NetSystemTrayOpcode => "_NET_SYSTEM_TRAY_OPCODE",
+            X11Atom::NetSystemTrayOrientation => "_NET_SYSTEM_TRAY_ORIENTATION",
             X11Atom::NetWMDesktop => "_NET_WM_DESKTOP",
             X11Atom::NetWMName => "_NET_WM_NAME",
             X11Atom::NetWMState => "_NET_WM_STATE",
@@ -74,6 +85,10 @@ impl Display for X11Atom {
             X11Atom::NetWMWindowTypeMenu => "_NET_WM_WINDOW_TYPE_MENU",
 
             X11Atom::MotifWMHints => "_MOTIF_WM_HINTS",
+
+            X11Atom::Manager => "MANAGER",
+            X11Atom::Xembed => "_XEMBED",
+            X11Atom::XembedInfo => "_XEMBED_INFO",
 
             X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
         };

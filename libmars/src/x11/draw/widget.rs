@@ -290,7 +290,7 @@ impl Drop for TextWidget {
     }
 }
 
-fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimensions: Dimensions) -> Result<xlib::Window, String> {
+pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimensions: Dimensions) -> Result<xlib::Window, String> {
     unsafe {
         let screen = xlib::XDefaultScreen(display);
         let border_width = 0;
@@ -301,8 +301,9 @@ fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimen
                                        xlib::XWhitePixel(display, screen));
 
         // subscribe to StructureNotifyMask for MapNotify events
+        // subscribe to SubstructureNotifyMask for widgets reparenting other widgets or windows
         // subscribe to ExposureMask for Expose events
-        let mask = xlib::StructureNotifyMask | xlib::ExposureMask | xlib::ButtonPressMask;
+        let mask = xlib::StructureNotifyMask | xlib::SubstructureNotifyMask | xlib::ExposureMask | xlib::ButtonPressMask;
         xlib::XSelectInput(display, win, mask);
 
         // reparent window
