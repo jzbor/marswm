@@ -34,6 +34,7 @@ pub enum BindingAction {
     SetLayout(LayoutType),
     SetStackMode(StackMode),
     SetStackPosition(StackPosition),
+    StackMove(i32),
     SwitchWorkspace(u32),
     ToggleFloating,
     ToggleFullscreen,
@@ -100,6 +101,9 @@ impl BindingAction {
             SetLayout(layout) => wm.current_workspace_mut(backend).set_layout(*layout),
             SetStackMode(mode) => wm.current_workspace_mut(backend).set_stack_mode(*mode),
             SetStackPosition(position) => wm.current_workspace_mut(backend).set_stack_position(*position),
+            StackMove(i) => if let Some(client_rc) = client_option {
+                wm.current_workspace_mut(backend).stack_move(client_rc, *i);
+            },
             SwitchWorkspace(ws) => wm.switch_workspace(backend, *ws),
             ToggleFloating => if let Some(client_rc) = client_option {
                 if let Some(ws) = wm.get_workspace_mut(&client_rc) {
@@ -164,6 +168,8 @@ pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
         Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "x", ChangeMainRatio(-0.10)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "j", CycleClient(1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "k", CycleClient(-1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "j", StackMove(1)),
+        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "k", StackMove(-1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "period", CycleWorkspace(1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "comma", CycleWorkspace(-1)),
         Keybinding::new(vec!(DEFAULT_MODKEY), "f", ToggleFullscreen),

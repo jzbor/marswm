@@ -196,6 +196,17 @@ impl<C: Client> Workspace<C> {
         self.apply_layout();
     }
 
+    pub fn stack_move(&mut self, client_rc: Rc<RefCell<C>>, inc: i32) {
+        if let Some(pos) = self.tiled_clients.iter().position(|c| *c == client_rc) {
+            let len = self.tiled_clients.len();
+            let new_pos = (pos as i32 + inc + len as i32) as usize % len;
+            self.tiled_clients.remove(pos);
+            self.tiled_clients.insert(new_pos, client_rc.clone());
+            self.apply_layout();
+            client_rc.borrow().warp_pointer_to_center();
+        }
+    }
+
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
         return Box::new(self.tiled_clients.iter());
     }
