@@ -60,6 +60,7 @@ impl<W: Widget> FlowLayoutWidget<W> {
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         canvas.set_foreground(bg_color)
+            .and(canvas.set_background(bg_color))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         let mut widget = FlowLayoutWidget {
@@ -156,8 +157,8 @@ impl TextWidget {
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         canvas.set_foreground(fg_color)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
-        canvas.set_font(&font)
+            .and(canvas.set_background(bg_color))
+            .and(canvas.set_font(&font))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         let mut widget = TextWidget {
@@ -199,7 +200,7 @@ impl TextWidget {
     }
 
     pub fn set_background(&mut self, color: u64) -> Result<(), String> {
-        // TODO check color before assigning
+        self.canvas.set_background(color)?;
         self.bg_color = color;
         self.redraw();
         return Ok(());

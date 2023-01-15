@@ -271,6 +271,14 @@ impl Canvas {
         }
     }
 
+    pub fn set_background(&mut self, color: u64) -> Result<(), String> {
+        let xft_color = self.alloc_color(color)?;
+        unsafe {
+            xlib::XSetBackground(self.display, self.gc, xft_color.pixel);
+        }
+        return Ok(());
+    }
+
     pub fn set_font(&mut self, font_name: &str) -> Result<(), String> {
         unsafe {
             // deallocate previous font if necessary
