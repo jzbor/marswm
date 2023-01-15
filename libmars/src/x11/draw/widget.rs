@@ -76,6 +76,16 @@ impl<W: Widget> FlowLayoutWidget<W> {
         return Ok(widget);
     }
 
+    fn arrange_children(&mut self) {
+        let mut x = self.hpad as i32;
+        for child in &mut self.children {
+            let (cw, ch) = child.size();
+            let y = (self.height as i32 - ch as i32) / 2;
+            child.move_to(x, y);
+            x += (cw + self.hpad) as i32;
+        }
+    }
+
     pub fn children(&self) -> Box<dyn Iterator<Item = &W> + '_> {
         return Box::new(self.children.iter());
     }
@@ -96,10 +106,6 @@ impl<W: Widget> FlowLayoutWidget<W> {
         return self.children.len();
     }
 
-    pub fn remove(&mut self, index: usize) {
-        self.children.remove(index);
-    }
-
     pub fn push(&mut self, widget: W) {
         self.children.push(widget);
         self.rearrange();
@@ -108,6 +114,10 @@ impl<W: Widget> FlowLayoutWidget<W> {
     pub fn rearrange(&mut self) {
         self.resize_to_content();
         self.arrange_children();
+    }
+
+    pub fn remove(&mut self, index: usize) {
+        self.children.remove(index);
     }
 
     fn resize_to_content(&mut self) {
@@ -131,14 +141,8 @@ impl<W: Widget> FlowLayoutWidget<W> {
         self.canvas.match_resize();
     }
 
-    fn arrange_children(&mut self) {
-        let mut x = self.hpad as i32;
-        for child in &mut self.children {
-            let (cw, ch) = child.size();
-            let y = (self.height as i32 - ch as i32) / 2;
-            child.move_to(x, y);
-            x += (cw + self.hpad) as i32;
-        }
+    pub fn truncate_children(&mut self, len: usize) {
+        self.children.truncate(len);
     }
 }
 
