@@ -14,7 +14,7 @@ pub trait Widget {
     fn move_to(&mut self, x: i32, y: i32);
     fn redraw(&mut self);
     fn register_event_handler(&mut self, event_handler: Box<dyn WidgetEventHandler>);
-    fn report_event(&mut self, event: WidgetEvent);
+    fn handle_xevent(&mut self, event: xlib::XEvent) -> bool;
     fn size(&self) -> (u32, u32);
     fn wid(&self) -> xlib::Window;
 }
@@ -35,6 +35,7 @@ pub struct FlowLayoutWidget<W: Widget> {
     height: u32,
     hpad: u32,
     vpad: u32,
+    ipad: u32,
 }
 
 pub struct TextWidget {
@@ -52,7 +53,7 @@ pub struct TextWidget {
 }
 
 impl<W: Widget> FlowLayoutWidget<W> {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
+    pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32, ipad: u32,
                children: Vec<W>, bg_color: u64) -> Result<FlowLayoutWidget<W>, String> {
         let outer_dimensions = Dimensions::new(x, y, 10, 10);
         let window = create_widget_window(display, parent, outer_dimensions)?;
@@ -69,7 +70,7 @@ impl<W: Widget> FlowLayoutWidget<W> {
             window, canvas,
             event_handlers: Vec::new(),
             width: 10, height: 10,
-            hpad, vpad,
+            hpad, vpad, ipad,
         };
 
         widget.rearrange();
@@ -83,7 +84,7 @@ impl<W: Widget> FlowLayoutWidget<W> {
             let (cw, ch) = child.size();
             let y = (self.height as i32 - ch as i32) / 2;
             child.move_to(x, y);
-            x += (cw + self.hpad) as i32;
+            x += (cw + self.ipad) as i32;
         }
     }
 
@@ -122,18 +123,20 @@ impl<W: Widget> FlowLayoutWidget<W> {
     }
 
     fn resize_to_content(&mut self) {
-        let mut w = self.hpad;
+        let mut w = 0;
         let mut h = 0;
 
         for child in &self.children {
             let (cw, ch) = child.size();
-            w += cw + self.hpad;
+            w += cw + self.ipad;
             h = cmp::max(h, ch);
         }
+        w = if w > self.ipad { w - self.ipad } else { w }; // remove last unused inner padding
+        w += 2 * self.hpad;
         h += 2 * self.vpad;
 
-        self.width = w;
-        self.height = h;
+        self.width = cmp::max(w, 10);
+        self.height = cmp::max(h, 10);
 
         unsafe {
             xlib::XResizeWindow(self.display, self.window, self.width, self.height);
@@ -233,9 +236,37 @@ impl<W: Widget> Widget for FlowLayoutWidget<W> {
         self.event_handlers.push(event_handler);
     }
 
-    fn report_event(&mut self, event: WidgetEvent) {
-        let _handled = self.event_handlers.iter()
-            .fold(false, |already_handled, handler| handler.handle_action_event(event, already_handled));
+    fn handle_xevent(&mut self, event: xlib::XEvent) -> bool {
+        unsafe {
+            if event.any.window == self.window {
+                let widget_event = match event.get_type() {
+                    xlib::ButtonPress => {
+                        let button = event.button.button;
+                        Some(WidgetEvent::ButtonPressed(button))
+                    },
+                    xlib::Expose => {
+                        self.redraw();
+                        None
+                    }
+                    _ => None,
+                };
+
+                if let Some(widget_event) = widget_event {
+                    let _handled = self.event_handlers.iter()
+                        .fold(false, {
+                            |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
+                        });
+                }
+                return true;
+            } else {
+                for child in &mut self.children {
+                    if child.handle_xevent(event) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
     }
 
     fn size(&self) -> (u32, u32) {
@@ -265,9 +296,32 @@ impl Widget for TextWidget {
         self.event_handlers.push(event_handler);
     }
 
-    fn report_event(&mut self, event: WidgetEvent) {
-        let _handled = self.event_handlers.iter()
-            .fold(false, |already_handled, handler| handler.handle_action_event(event, already_handled));
+    fn handle_xevent(&mut self, event: xlib::XEvent) -> bool {
+        unsafe {
+            if event.any.window == self.window {
+                let widget_event = match event.get_type() {
+                    xlib::ButtonPress => {
+                        let button = event.button.button;
+                        Some(WidgetEvent::ButtonPressed(button))
+                    },
+                    xlib::Expose => {
+                        self.redraw();
+                        None
+                    }
+                    _ => None,
+                };
+
+                if let Some(widget_event) = widget_event {
+                    let _handled = self.event_handlers.iter()
+                        .fold(false, {
+                            |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
+                        });
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     fn size(&self) -> (u32, u32) {
@@ -302,9 +356,8 @@ pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, d
                                        xlib::XWhitePixel(display, screen));
 
         // subscribe to StructureNotifyMask for MapNotify events
-        // subscribe to SubstructureNotifyMask for widgets reparenting other widgets or windows
         // subscribe to ExposureMask for Expose events
-        let mask = xlib::StructureNotifyMask | xlib::SubstructureNotifyMask | xlib::ExposureMask | xlib::ButtonPressMask;
+        let mask = xlib::StructureNotifyMask | xlib::ExposureMask | xlib::ButtonPressMask;
         xlib::XSelectInput(display, win, mask);
 
         // reparent window
@@ -325,23 +378,9 @@ pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, d
 }
 
 pub fn distribute_widget_event<'a, I: Iterator<Item=&'a mut dyn Widget>>(widgets: &mut I, xevent: xlib::XEvent) {
-    unsafe {
-        let widget_event = match xevent.get_type() {
-            xlib::ButtonPress => {
-                let button = xevent.button.button;
-                WidgetEvent::ButtonPressed(button)
-            },
-            xlib::Expose => {
-                if let Some(widget) = widgets.find(|w| w.wid() == xevent.any.window) {
-                    widget.redraw();
-                }
-                return;
-            },
-            _ => return,
-        };
-
-        if let Some(widget) = widgets.find(|w| w.wid() == xevent.any.window) {
-            widget.report_event(widget_event);
+    for widget in widgets {
+        if widget.handle_xevent(xevent) {
+            return;
         }
     }
 }

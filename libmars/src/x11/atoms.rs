@@ -12,6 +12,8 @@ enum_with_values! {
         // ICCCM
         UTF8String,
         WMDeleteWindow,
+        WMIconName,
+        WMIconSize,
         WMName,
         WMProtocols,
         WMState,
@@ -58,6 +60,8 @@ impl Display for X11Atom {
         let string = match self {
             X11Atom::UTF8String => "UTF8_STRING",
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
+            X11Atom::WMIconName => "WM_ICON_NAME",
+            X11Atom::WMIconSize => "WM_ICON_SIZE",
             X11Atom::WMProtocols => "WM_PROTOCOLS",
             X11Atom::WMName => "WM_NAME",
             X11Atom::WMState => "WM_STATE",

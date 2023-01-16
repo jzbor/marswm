@@ -105,8 +105,8 @@ impl X11Backend {
             };
 
             // For debugging:
-            #[cfg(debug_assertions)]
-            xlib::XSynchronize(display, 1);
+            // #[cfg(debug_assertions)]
+            // xlib::XSynchronize(display, 1);
 
             // export wm name
             x11b.wmcheck_win = xlib::XCreateSimpleWindow(display, root, 0, 0, 1, 1, 0, 0, 0);
