@@ -6,6 +6,11 @@ use crate::Dimensioned;
 use crate::x11::window::X11Window;
 use crate::x11::draw::canvas::Canvas;
 
+
+pub const MIN_SIZE: (u32, u32) = (10, 10);
+pub const MAX_SIZE: (u32, u32) = (u32::MAX, u32::MAX);
+
+
 pub trait WidgetEventHandler {
     fn handle_action_event(&self, event: WidgetEvent, already_handled: bool) -> bool;
 }
@@ -15,6 +20,8 @@ pub trait Widget {
     fn redraw(&mut self);
     fn register_event_handler(&mut self, event_handler: Box<dyn WidgetEventHandler>);
     fn handle_xevent(&mut self, event: xlib::XEvent) -> bool;
+    fn set_max_size(&mut self, max_size: (u32, u32));
+    fn set_min_size(&mut self, min_size: (u32, u32));
     fn size(&self) -> (u32, u32);
     fn wid(&self) -> xlib::Window;
 }
@@ -33,6 +40,8 @@ pub struct FlowLayoutWidget<W: Widget> {
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
     width: u32,
     height: u32,
+    min_size: (u32, u32),
+    max_size: (u32, u32),
     hpad: u32,
     vpad: u32,
     ipad: u32,
@@ -46,6 +55,8 @@ pub struct TextWidget {
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
     width: u32,
     height: u32,
+    min_size: (u32, u32),
+    max_size: (u32, u32),
     hpad: u32,
     vpad: u32,
     fg_color: u64,
@@ -55,7 +66,7 @@ pub struct TextWidget {
 impl<W: Widget> FlowLayoutWidget<W> {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32, ipad: u32,
                children: Vec<W>, bg_color: u64) -> Result<FlowLayoutWidget<W>, String> {
-        let outer_dimensions = Dimensions::new(x, y, 10, 10);
+        let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
@@ -69,7 +80,9 @@ impl<W: Widget> FlowLayoutWidget<W> {
             children,
             window, canvas,
             event_handlers: Vec::new(),
-            width: 10, height: 10,
+            width: MIN_SIZE.0, height: MIN_SIZE.1,
+            min_size: MIN_SIZE,
+            max_size: MAX_SIZE,
             hpad, vpad, ipad,
         };
 
@@ -135,8 +148,8 @@ impl<W: Widget> FlowLayoutWidget<W> {
         w += 2 * self.hpad;
         h += 2 * self.vpad;
 
-        self.width = cmp::max(w, 10);
-        self.height = cmp::max(h, 10);
+        self.width = cmp::min(cmp::max(w, self.min_size.0), self.max_size.0);
+        self.height = cmp::min(cmp::max(h, self.min_size.1), self.max_size.1);
 
         unsafe {
             xlib::XResizeWindow(self.display, self.window, self.width, self.height);
@@ -154,7 +167,7 @@ impl TextWidget {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
                label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<TextWidget, String> {
 
-        let outer_dimensions = Dimensions::new(x, y, 10, 10);
+        let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
@@ -169,7 +182,9 @@ impl TextWidget {
             label,
             window, canvas,
             event_handlers: Vec::new(),
-            width: 10, height: 10,
+            width: MIN_SIZE.0, height: MIN_SIZE.1,
+            min_size: MIN_SIZE,
+            max_size: MAX_SIZE,
             hpad, vpad,
             fg_color, bg_color,
         };
@@ -187,6 +202,8 @@ impl TextWidget {
 
         self.width = tw + 2 * self.hpad;
         self.height = th + 2 * self.vpad;
+        self.width = cmp::min(cmp::max(self.width, self.min_size.0), self.max_size.0);
+        self.height = cmp::min(cmp::max(self.height, self.min_size.1), self.max_size.1);
 
         unsafe {
             xlib::XResizeWindow(self.display, self.window, self.width, self.height);
@@ -269,6 +286,16 @@ impl<W: Widget> Widget for FlowLayoutWidget<W> {
         }
     }
 
+    fn set_max_size(&mut self, max_size: (u32, u32)) {
+        self.max_size = max_size;
+        self.resize_to_content();
+    }
+
+    fn set_min_size(&mut self, min_size: (u32, u32)) {
+        self.min_size = min_size;
+        self.resize_to_content();
+    }
+
     fn size(&self) -> (u32, u32) {
         return (self.width, self.height);
     }
@@ -322,6 +349,16 @@ impl Widget for TextWidget {
                 return false;
             }
         }
+    }
+
+    fn set_max_size(&mut self, max_size: (u32, u32)) {
+        self.max_size = max_size;
+        self.resize_to_content();
+    }
+
+    fn set_min_size(&mut self, min_size: (u32, u32)) {
+        self.min_size = min_size;
+        self.resize_to_content();
     }
 
     fn size(&self) -> (u32, u32) {
