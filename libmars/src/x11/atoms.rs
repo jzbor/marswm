@@ -51,7 +51,8 @@ enum_with_values! {
 
         // TODO add custom hints for pinned, tiled
         // MARS (custom)
-        MarsWMStateTiled
+        MarsWMStateTiled,
+        MarsStatus
     }
 }
 
@@ -95,6 +96,7 @@ impl Display for X11Atom {
             X11Atom::XembedInfo => "_XEMBED_INFO",
 
             X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
+            X11Atom::MarsStatus => "_MARS_STATUS",
         };
         return write!(f, "{}", string);
     }

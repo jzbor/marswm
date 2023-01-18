@@ -569,6 +569,10 @@ impl X11Window for X11Client {
         return self.window.x11_read_property_long(display, property, prop_type);
     }
 
+    fn x11_read_property_string(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<String, &'static str> {
+        return self.window.x11_read_property_string(display, property);
+    }
+
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
         self.window.x11_replace_property_long(display, property, prop_type, data);
     }

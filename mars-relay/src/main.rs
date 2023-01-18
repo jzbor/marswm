@@ -28,6 +28,9 @@ struct Args {
     #[clap(short, long)]
     desktop: Option<usize>,
 
+    /// String parameter
+    #[clap(short, long)]
+    status: Option<String>
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ArgEnum)]
@@ -41,6 +44,7 @@ pub enum Command {
     SetFullscreen,
     ToggleFullscreen,
     UnsetFullscreen,
+    SetStatus,
     SetTiled,
     ToggleTiled,
     UnsetTiled,
@@ -54,21 +58,22 @@ const MODE_TOGGLE: u64 = 2;
 
 
 impl Command {
-    fn execute(&self, display: *mut xlib::Display, window: xlib::Window, desktop: Option<usize>) -> Result<(), &'static str> {
+    fn execute(&self, display: *mut xlib::Display, window: xlib::Window, args: Args) -> Result<(), &'static str> {
         match self {
             Command::Activate => Self::simple_window_message(display, window, NetActiveWindow),
             Command::Close => Self::simple_window_message(display, window, NetCloseWindow),
-            Command::Menu => Self::menu(display, window),
+            Command::Menu => Self::menu(display, window, args),
             Command::Pin => Self::pin_window(display, window),
             Command::Unpin => Self::unpin_window(display, window),
-            Command::SendToDesktop => Self::send_window_to_desktop(display, window, desktop),
+            Command::SendToDesktop => Self::send_window_to_desktop(display, window, args.desktop),
             Command::SetFullscreen => Self::fullscreen_window(display, window, MODE_SET),
             Command::ToggleFullscreen => Self::fullscreen_window(display, window, MODE_TOGGLE),
             Command::UnsetFullscreen => Self::fullscreen_window(display, window, MODE_UNSET),
+            Command::SetStatus => Self::set_status(display, args.status),
             Command::SetTiled => Self::tile_window(display, window, MODE_SET),
             Command::ToggleTiled => Self::tile_window(display, window, MODE_TOGGLE),
             Command::UnsetTiled => Self::tile_window(display, window, MODE_UNSET),
-            Command::SwitchDesktop => Self::switch_desktop(display, desktop),
+            Command::SwitchDesktop => Self::switch_desktop(display, args.desktop),
         }
     }
 
@@ -81,12 +86,12 @@ impl Command {
         return Ok(());
     }
 
-    fn menu(display: *mut xlib::Display, window: xlib::Window) -> Result<(), &'static str> {
+    fn menu(display: *mut xlib::Display, window: xlib::Window, args: Args) -> Result<(), &'static str> {
         let command = match display_menu() {
             Ok(cmd) => cmd,
             Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu"); },
         };
-        return command.execute(display, window, None);
+        return command.execute(display, window, args);
     }
 
     fn pin_window(display: *mut xlib::Display, window: xlib::Window) -> Result<(), &'static str> {
@@ -111,6 +116,25 @@ impl Command {
         data.set_long(0, desktop);
         send_client_message(display, NetWMDesktop, window, data);
         return Ok(());
+    }
+
+    fn set_status(display: *mut xlib::Display, status: Option<String>) -> Result<(), &'static str> {
+        let status = match status {
+            Some(status) => status,
+            None => return Err("Please supply a status string"),
+        };
+
+        unsafe {
+            let root = xlib::XDefaultRootWindow(display);
+            let success = xlib::XChangeProperty(display, root, MarsStatus.to_xlib_atom(display),
+                UTF8String.to_xlib_atom(display), 8, xlib::PropModeReplace, status.as_ptr(), status.len() as i32);
+            if success == 0 {
+                return Err("Error setting property on root window");
+            } else {
+                xlib::XFlush(display);
+                return Ok(());
+            }
+        }
     }
 
     fn simple_window_message(display: *mut xlib::Display, window: xlib::Window, atom: X11Atom)
@@ -208,7 +232,7 @@ fn main() {
         },
     };
     let desktop = args.desktop;
-    if let Err(msg) = command.execute(display, window, desktop) {
+    if let Err(msg) = command.execute(display, window, args) {
         eprintln!("Error: {}", msg);
         std::process::exit(1);
     }

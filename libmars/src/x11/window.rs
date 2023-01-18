@@ -20,6 +20,7 @@ pub trait X11Window {
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str>;
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<Vec<String>, &'static str>;
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str>;
+    fn x11_read_property_string(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<String, &'static str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>);
@@ -167,6 +168,14 @@ impl X11Window for xlib::Window {
         return Ok(data);
     }
 
+    fn x11_read_property_string(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<String, &'static str> {
+        let v = self.x11_get_text_list_property(display, property)?;
+        match v.get(0) {
+            Some(string) => return Ok(string.to_owned()),
+            None => return Err("unable to get name for window"),
+        }
+    }
+
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
         unsafe {
             xlib::XChangeProperty(display,
@@ -290,30 +299,7 @@ impl X11Window for xlib::Window {
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String, &'static str> {
-        // let mut str_ptr: *mut i8 = ptr::null_mut();
-        // unsafe {
-        //     if xlib::XFetchName(display, *self, &mut str_ptr) == 0 {
-        //         return Err("unable to get name for window");
-        //     }
-        //     let cstr = CStr::from_ptr(str_ptr);
-        //     let string = cstr.to_string_lossy().to_string();
-        //     xlib::XFree(str_ptr as *mut c_void);
-        //     return Ok(string);
-        // }
-        let v = self.x11_get_text_list_property(display, WMName.to_xlib_atom(display))?;
-        match v.get(0) {
-            Some(wm_name) => return Ok(wm_name.to_owned()),
-            None => return Err("unable to get name for window"),
-        }
-        // let text_prop: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
-        // unsafe {
-        //     if xlib::XGetWMName(display, *self, text_prop.as_mut_ptr()) == 0 {
-        //         return Err("unable to get wm name for window");
-        //     }
-        //     let text_prop = text_prop.assume_init();
-
-        // }
-
+        return self.x11_read_property_string(display, WMName.to_xlib_atom(display));
     }
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String> {
