@@ -76,7 +76,7 @@ pub fn create_window(display: *mut xlib::Display, x: i32, y: i32, width: u32, he
         // set window type if requested
         if let Some(win_type) = win_type {
             let data = [win_type.to_xlib_atom(display)];
-            win.x11_replace_property_long(display, NetWMWindowType.to_xlib_atom(display), xlib::XA_ATOM, &data);
+            win.x11_replace_property_long(display, NetWMWindowType, xlib::XA_ATOM, &data);
         }
 
         // make window visible on screen

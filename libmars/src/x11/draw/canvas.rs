@@ -274,6 +274,12 @@ impl Canvas {
     pub fn set_background(&mut self, color: u64) -> Result<(), String> {
         let xft_color = self.alloc_color(color)?;
         unsafe {
+            // set background for associated window
+            let mut swa: xlib::XSetWindowAttributes = MaybeUninit::zeroed().assume_init();
+            swa.background_pixel = color;
+			xlib::XChangeWindowAttributes(self.display, self.window,  xlib::CWBackPixel, &mut swa);
+
+            // set background for gc
             xlib::XSetBackground(self.display, self.gc, xft_color.pixel);
         }
         return Ok(());

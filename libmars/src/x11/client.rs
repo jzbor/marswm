@@ -88,7 +88,7 @@ impl X11Client {
 
     pub fn apply_motif_hints(&mut self) {
         let motif_atom = MotifWMHints.to_xlib_atom(self.display);
-        if let Ok(hints) = self.x11_read_property_long(self.display, motif_atom, motif_atom) {
+        if let Ok(hints) = self.x11_read_property_long(self.display, MotifWMHints, motif_atom) {
             if hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0 {
                 if hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL == 0
                         && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER == 0
@@ -219,8 +219,7 @@ impl X11Client {
     }
 
     fn supports_protocol(&self, atom: atoms::X11Atom) -> bool {
-        let xatom = atom.to_xlib_atom(self.display);
-        return self.window.x11_wm_protocols(self.display).contains(&xatom);
+        return self.window.x11_wm_protocols(self.display).contains(&atom);
     }
 
     pub fn window(&self) -> u64 {
@@ -279,22 +278,21 @@ impl Client for X11Client {
     fn export_pinned(&self, state: bool, workspace_idx: Option<u32>) {
         let idx: u64 = if state { 0xffffffff } else { workspace_idx.expect("Need workspace index to unpin window").into() };
         let data = &[idx];
-        self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
+        self.window.x11_replace_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL, data);
     }
 
     fn export_tiled(&self, state: bool) {
-        let xatom = MarsWMStateTiled.to_xlib_atom(self.display);
         if state {
-            self.x11_net_wm_state_add(self.display, xatom);
+            self.x11_net_wm_state_add(self.display, MarsWMStateTiled);
         } else {
-            self.x11_net_wm_state_remove(self.display, xatom);
+            self.x11_net_wm_state_remove(self.display, MarsWMStateTiled);
         }
     }
 
     fn export_workspace(&self, workspace_idx: u32) {
         let idx: u64 = workspace_idx.into();
         let data = &[idx];
-        self.window.x11_replace_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
+        self.window.x11_replace_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL, data);
     }
 
     fn frame_width(&self) -> u32 {
@@ -408,8 +406,7 @@ impl Client for X11Client {
         let dimensions = monitor_conf.dimensions();
         self.saved_dimensions = Some(self.dimensions());
         self.fullscreen = true;
-        let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
-        self.x11_net_wm_state_add(self.display, xatom);
+        self.x11_net_wm_state_add(self.display, NetWMStateFullscreen);
         self.remove_decoration();
         self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
         self.raise();
@@ -471,8 +468,7 @@ impl Client for X11Client {
     fn unset_fullscreen(&mut self) {
         if let Some(dimensions) = self.saved_dimensions {
             self.fullscreen = false;
-            let xatom = NetWMStateFullscreen.to_xlib_atom(self.display);
-            self.x11_net_wm_state_remove(self.display, xatom);
+            self.x11_net_wm_state_remove(self.display, NetWMStateFullscreen);
             self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
             self.restore_decoration();
             self.saved_dimensions = None;
@@ -531,11 +527,11 @@ impl Dimensioned for X11Client {
 }
 
 impl X11Window for X11Client {
-    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: xlib::Atom) {
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
         self.window.x11_net_wm_state_add(display, state);
     }
 
-    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: xlib::Atom) {
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom) {
         self.window.x11_net_wm_state_remove(display, state);
     }
 
@@ -561,19 +557,19 @@ impl X11Window for X11Client {
         return self.window.x11_get_state(display);
     }
 
-    fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<Vec<String>, &'static str> {
+    fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>, &'static str> {
         return self.window.x11_get_text_list_property(display, property);
     }
 
-    fn x11_read_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
         return self.window.x11_read_property_long(display, property, prop_type);
     }
 
-    fn x11_read_property_string(&self, display: *mut xlib::Display, property: xlib::Atom) -> Result<String, &'static str> {
+    fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String, &'static str> {
         return self.window.x11_read_property_string(display, property);
     }
 
-    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: xlib::Atom, prop_type: c_ulong, data: &[c_ulong]) {
+    fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
         self.window.x11_replace_property_long(display, property, prop_type, data);
     }
 
@@ -581,7 +577,7 @@ impl X11Window for X11Client {
         self.window.x11_set_state(display, state);
     }
 
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: xlib::Atom, list: Vec<CString>) {
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &Vec<String>) {
         self.window.x11_set_text_list_property(display, property, list);
     }
 
@@ -593,7 +589,7 @@ impl X11Window for X11Client {
         return self.frame.x11_geometry(display);
     }
 
-    fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
+    fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<X11Atom> {
         return self.window.x11_get_window_types(display);
     }
 
@@ -605,7 +601,7 @@ impl X11Window for X11Client {
         return self.window.x11_message(display, msg_type, msg_format, msg_data);
     }
 
-    fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<xlib::Atom> {
+    fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {
         return self.window.x11_wm_protocols(display);
     }
 

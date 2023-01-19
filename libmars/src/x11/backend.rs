@@ -238,8 +238,7 @@ impl X11Backend {
         }
 
         let mut is_dialog = false;
-        let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display).iter()
-            .map(|a| X11Atom::from_xlib_atom(self.display, *a)).flatten().collect();
+        let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display);
         for win_type in &window_types {
             match win_type {
                 NetWMWindowTypeDesktop => unsafe {
@@ -283,7 +282,7 @@ impl X11Backend {
 
             // Setting workspace as specified by _NET_WM_DESKTOP
             let workspace_req = {
-                match client.x11_read_property_long(self.display, NetWMDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL) {
+                match client.x11_read_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL) {
                     // FIXME handle -1 as value for all desktops
                     Ok(data) => {
                         if data[0] == u64::MAX {
@@ -617,7 +616,7 @@ impl X11Backend {
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
         let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| a.to_xlib_atom(self.display)).collect();
         let data = atom_vec.as_slice();
-        self.root.x11_replace_property_long(self.display, X11Atom::NetSupported.to_xlib_atom(self.display), xlib::XA_ATOM, data)
+        self.root.x11_replace_property_long(self.display, NetSupported, xlib::XA_ATOM, data)
     }
 
     fn unmanage(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
@@ -641,7 +640,7 @@ impl X11Backend {
         // set WM_STATE to Withdrawn according to ICCCM
         let data = [WITHDRAWN_STATE as u64, 0];
         let wm_state_atom = WMState.to_xlib_atom(self.display);
-        client.window().x11_replace_property_long(self.display, wm_state_atom, wm_state_atom, &data);
+        client.window().x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
         debug_assert!(Rc::strong_count(&client_rc) == 1);
     }
 
@@ -673,7 +672,7 @@ impl Backend<X11Client> for X11Backend {
             None => XLIB_NONE,
         };
         let data = &[window];
-        self.root.x11_replace_property_long(self.display, NetActiveWindow.to_xlib_atom(self.display), xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW, data);
     }
 
     fn export_client_list(&self, clients: Vec<&Rc<RefCell<X11Client>>>, clients_stacked: Vec<&Rc<RefCell<X11Client>>>) {
@@ -681,26 +680,25 @@ impl Backend<X11Client> for X11Backend {
         let data_stacked_vec: Vec<u64> = clients_stacked.iter().map(|c| c.borrow().window()).collect();
         let data = data_vec.as_slice();
         let data_stacked = data_stacked_vec.as_slice();
-        self.root.x11_replace_property_long(self.display, X11Atom::NetClientList.to_xlib_atom(self.display), xlib::XA_WINDOW, data);
-        self.root.x11_replace_property_long(self.display, X11Atom::NetClientListStacking.to_xlib_atom(self.display), xlib::XA_WINDOW, data_stacked);
+        self.root.x11_replace_property_long(self.display, NetClientList, xlib::XA_WINDOW, data);
+        self.root.x11_replace_property_long(self.display, NetClientListStacking, xlib::XA_WINDOW, data_stacked);
 
     }
 
     fn export_current_workspace(&self, workspace_idx: u32) {
         let idx: u64 = workspace_idx.into();
         let data = &[idx];
-        self.root.x11_replace_property_long(self.display, NetCurrentDesktop.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
+        self.root.x11_replace_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL, data);
     }
 
     fn export_workspaces(&self, workspaces: Vec<String>) {
         // export number of workspaces
         let nworkspaces: u64 = workspaces.len().try_into().unwrap();
         let data = &[nworkspaces];
-        self.root.x11_replace_property_long(self.display, NetNumberOfDesktops.to_xlib_atom(self.display), xlib::XA_CARDINAL, data);
+        self.root.x11_replace_property_long(self.display, NetNumberOfDesktops, xlib::XA_CARDINAL, data);
 
         // export workspace names
-        let cstrings: Vec<CString> = workspaces.iter().map(|s| CString::new(s.as_str()).unwrap()).collect();
-        self.root.x11_set_text_list_property(self.display, NetDesktopNames.to_xlib_atom(self.display), cstrings);
+        self.root.x11_set_text_list_property(self.display, NetDesktopNames, &workspaces);
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {

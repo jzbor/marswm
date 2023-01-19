@@ -174,7 +174,7 @@ impl Command {
         require_ewmh_atom(display, NetWMDesktop)?;
         require_ewmh_atom(display, NetCurrentDesktop)?;
         let root = unsafe { xlib::XDefaultRootWindow(display) };
-        let data = root.x11_read_property_long(display, NetCurrentDesktop.to_xlib_atom(display), xlib::XA_CARDINAL)?;
+        let data = root.x11_read_property_long(display, NetCurrentDesktop, xlib::XA_CARDINAL)?;
         return Self::send_window_to_desktop(display, window, Some(data[0].try_into().unwrap()));
     }
 }
@@ -186,7 +186,7 @@ fn active_window(display: *mut xlib::Display) -> Result<xlib::Window, &'static s
         xlib::XDefaultRootWindow(display)
     };
 
-    let data = root.x11_read_property_long(display, NetActiveWindow.to_xlib_atom(display), xlib::XA_WINDOW)?;
+    let data = root.x11_read_property_long(display, NetActiveWindow, xlib::XA_WINDOW)?;
     if data.len() != 1 {
         return Err("Query for _NET_ACTIVE_WINDOW returned invalid data");
     } else {
@@ -199,7 +199,7 @@ fn require_ewmh_atom(display: *mut xlib::Display, atom: X11Atom) -> Result<(), &
         xlib::XDefaultRootWindow(display)
     };
     let xatom = atom.to_xlib_atom(display);
-    let supported = root.x11_read_property_long(display, NetSupported.to_xlib_atom(display), xlib::XA_ATOM)?;
+    let supported = root.x11_read_property_long(display, NetSupported, xlib::XA_ATOM)?;
 
     if supported.contains(&xatom) {
         return Ok(());
