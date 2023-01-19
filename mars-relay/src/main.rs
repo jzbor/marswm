@@ -231,7 +231,6 @@ fn main() {
             },
         },
     };
-    let desktop = args.desktop;
     if let Err(msg) = command.execute(display, window, args) {
         eprintln!("Error: {}", msg);
         std::process::exit(1);
