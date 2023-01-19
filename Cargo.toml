@@ -3,7 +3,7 @@ members = [
 	"marswm",
 	"libmars",
 	"mars-relay",
-	"mars-bar",
+	"marsbar",
 ]
 
 [profile.release]

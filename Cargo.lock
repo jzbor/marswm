@@ -117,20 +117,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "mars-bar"
-version = "0.1.0"
-dependencies = [
- "libmars",
- "serde",
- "x11",
-]
-
-[[package]]
 name = "mars-relay"
 version = "0.1.0"
 dependencies = [
  "clap",
  "libmars",
+ "x11",
+]
+
+[[package]]
+name = "marsbar"
+version = "0.1.0"
+dependencies = [
+ "libmars",
+ "serde",
  "x11",
 ]
 
