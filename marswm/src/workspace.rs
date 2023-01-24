@@ -20,7 +20,7 @@ pub struct Workspace<C: Client> {
 
 
 pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
-    "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
 ];
 
 
