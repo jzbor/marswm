@@ -189,16 +189,27 @@ impl Bar {
     }
 
     fn arrange_workspaces(&mut self, workspace_names: Vec<String>) {
+        let mut max_width = 0;
+
         // update workspaces
         for (i, ws_name) in workspace_names.iter().enumerate() {
             if let Some(widget) = self.workspace_widget.child_mut(i) {
                 widget.set_label(ws_name.to_owned());
+
+                if widget.size().0 > max_width {
+                    max_width = widget.content_size().0
+                }
             } else {
                 let mut widget = self.config.style.workspaces
                     .create_text_widget(self.display, self.workspace_widget.wid())
                     .unwrap();
                 let event_handler = WorkspaceEventHandler::new(self.display, i as u32);
+
                 widget.register_event_handler(Box::new(event_handler));
+                if widget.size().0 > max_width {
+                    max_width = widget.content_size().0
+                }
+
                 self.workspace_widget.push(widget);
             }
         }
@@ -208,6 +219,11 @@ impl Bar {
         let nworkspace_widgets = self.workspace_widget.count_children();
         if nworkspaces < nworkspace_widgets {
             self.workspace_widget.truncate_children(nworkspaces);
+        }
+
+        // resize widgets to the same width
+        for widget in self.workspace_widget.children_mut() {
+            widget.set_min_size((max_width, MIN_SIZE.1))
         }
 
         self.workspace_widget.rearrange();
@@ -329,13 +345,6 @@ impl Bar {
             let event = unsafe { event.property };
             if let Some(property) = X11Atom::from_xlib_atom(self.display, event.atom) {
                 match property {
-                    NetCurrentDesktop => {
-                        let new_idx = match self.get_active_workspace() {
-                            Ok(idx) => idx,
-                            Err(_) => return,
-                        };
-                        self.set_active_workspace(new_idx);
-                    },
                     NetActiveWindow => {
                         // watch updates for WM_NAME on active window
                         unsafe {
@@ -352,12 +361,30 @@ impl Bar {
 
                         let title = self.get_active_window_title();
                         self.arrange_title(title);
+                    },
+                    NetCurrentDesktop => {
+                        let new_idx = match self.get_active_workspace() {
+                            Ok(idx) => idx,
+                            Err(_) => return,
+                        };
+                        self.set_active_workspace(new_idx);
+                    },
+                    NetDesktopNames => {
+                        let result = self.root.x11_get_text_list_property(self.display, NetDesktopNames);
+                        let workspace_names = match result {
+                            Ok(names) => names,
+                            Err(e) => {
+                                eprintln!("WARNING: Desktop names not available ({})", e);
+                                Vec::new()
+                            },
+                        };
+                        self.arrange_workspaces(workspace_names);
                     }
                     MarsStatus | WMName => {
                         if let Ok(status) = self.get_status() {
                             self.arrange_status(status)
                         }
-                    }
+                    },
                     _ => (),
                 }
             };

@@ -194,6 +194,14 @@ impl TextWidget {
         return Ok(widget);
     }
 
+    pub fn content_size(&mut self) -> (u32, u32) {
+        if let Ok(size) = self.canvas.text_size(&self.label) {
+            return size;
+        } else {
+            return self.size();
+        }
+    }
+
     fn resize_to_content(&mut self) {
         let (tw, th) = match self.canvas.text_size(&self.label) {
             Ok(size) => size,
@@ -315,7 +323,14 @@ impl Widget for TextWidget {
 
     fn redraw(&mut self) {
         self.canvas.fill_rectangle_with(0, 0, self.width, self.height, self.bg_color);
-        let _ = self.canvas.draw_text(self.hpad as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
+        if let Ok(text_size) = self.canvas.text_size(&self.label) {
+            // center text if possible
+            let x = (self.width - text_size.0) / 2;
+            let _ = self.canvas.draw_text(x as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
+        } else {
+            // otherwise just align to the left
+            let _ = self.canvas.draw_text(self.hpad as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
+        }
         self.canvas.flush();
     }
 
