@@ -325,7 +325,8 @@ impl Widget for TextWidget {
         self.canvas.fill_rectangle_with(0, 0, self.width, self.height, self.bg_color);
         if let Ok(text_size) = self.canvas.text_size(&self.label) {
             // center text if possible
-            let x = (self.width - text_size.0) / 2;
+            // the min() call is necessary as the text_size might be bigger than the max size
+            let x = (self.width - cmp::min(self.width, text_size.0)) / 2;
             let _ = self.canvas.draw_text(x as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
         } else {
             // otherwise just align to the left
