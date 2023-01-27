@@ -7,7 +7,7 @@ use crate::tray::*;
 
 
 const CONFIG_DIR: &str = "marswm";
-const CONFIG_FILE: &str = "mars-bar.yaml";
+const CONFIG_FILE: &str = "marsbar.yaml";
 
 const DEFAULT_FONT: &'static str = "serif";
 const DEFAULT_LAYOUT_PADDING_HORZ: u32 = 4;
