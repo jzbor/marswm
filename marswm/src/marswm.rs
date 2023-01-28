@@ -350,9 +350,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.move_to_workspace(backend, client_rc.clone(), workspace);
         }
 
+        // adjust workspace to new client
+        if let Some(workspace) = self.get_workspace_mut(&client_rc) {
+            workspace.drop_fullscreen();
+            workspace.restack();
+        }
+
         // set client as currently focused
         self.focus_client(backend, Some(client_rc.clone()));
-        self.current_monitor_mut(backend).restack_current();
         client_rc.borrow_mut().warp_pointer_to_center();
 
         let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();

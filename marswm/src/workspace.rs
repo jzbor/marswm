@@ -55,6 +55,15 @@ impl<C: Client> Workspace<C> {
         self.apply_layout();
     }
 
+    pub fn drop_fullscreen(&mut self) {
+        for client_rc in self.clients() {
+            let mut client = client_rc.borrow_mut();
+            if client.is_fullscreen() {
+                client.unset_fullscreen();
+            }
+        }
+    }
+
     pub fn inc_nmain(&mut self, i: i32) {
         self.layout_config.nmain = (self.layout_config.nmain as i32 + i) as u32;
         self.apply_layout();
