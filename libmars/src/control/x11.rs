@@ -1,5 +1,7 @@
 extern crate x11;
 
+use std::ptr;
+use std::ffi::*;
 use x11::xlib::{self, XDefaultRootWindow};
 
 use crate::common::error::*;
@@ -23,6 +25,16 @@ impl X11Controller {
         return X11Controller {
             display, root, event_handler,
         };
+    }
+
+    pub fn new() -> Result<X11Controller> {
+        unsafe {
+            let display = xlib::XOpenDisplay(ptr::null());
+            if display.is_null() {
+                return Err(error_x11_open_display());
+            }
+            return Ok(Self::new_from_display(display, None));
+        }
     }
 }
 
@@ -57,12 +69,22 @@ impl WMController<xlib::Window> for X11Controller {
     }
 
     fn fullscreen_window(&self, window: xlib::Window, mode: SettingMode) -> Result<()> {
+        require_ewmh_atom(self.display, NetWMState)?;
         require_ewmh_atom(self.display, NetWMStateFullscreen)?;
         let mut data = xlib::ClientMessageData::new();
         data.set_long(0, i64::from(mode));
         data.set_long(1, NetWMStateFullscreen.to_xlib_atom(self.display) as i64);
         send_client_message(self.display, NetWMState, window, data);
         return Ok(());
+    }
+
+    fn get_active_window(&self) -> Result<xlib::Window> {
+        require_ewmh_atom(self.display, NetActiveWindow)?;
+        let data = self.root.x11_read_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW)
+                .map_err(|msg| error_unknown(msg))?;
+        return data.get(0)
+            .map(|w| *w)
+            .ok_or(error_invalid_response("reading property _NET_ACTIVE_WINDOW"));
     }
 
     fn get_workspace(&self, window: xlib::Window) -> Result<u32> {
@@ -112,11 +134,28 @@ impl WMController<xlib::Window> for X11Controller {
         return Ok(());
     }
 
+    fn set_status(&self, status: String) -> Result<()> {
+        require_ewmh_atom(self.display, MarsStatus)?;
+        let data = vec!(status);
+        self.root.x11_set_text_list_property(self.display, MarsStatus, &data);
+        return Ok(());
+    }
+
     fn switch_workspace(&self, workspace: u32) -> Result<()> {
         require_ewmh_atom(self.display, NetCurrentDesktop)?;
         let mut data = xlib::ClientMessageData::new();
         data.set_long(0, workspace.into());
         send_client_message(self.display, NetCurrentDesktop, 0, data);
+        return Ok(());
+    }
+
+    fn tile_window(&self, window: xlib::Window, mode: SettingMode) -> Result<()> {
+        require_ewmh_atom(self.display, NetWMState)?;
+        require_ewmh_atom(self.display, MarsWMStateTiled)?;
+        let mut data = xlib::ClientMessageData::new();
+        data.set_long(0, i64::from(mode));
+        data.set_long(1, MarsWMStateTiled.to_xlib_atom(self.display) as i64);
+        send_client_message(self.display, NetWMState, window, data);
         return Ok(());
     }
 

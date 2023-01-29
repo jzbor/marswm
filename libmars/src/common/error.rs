@@ -29,6 +29,12 @@ impl Display for MarsError {
     }
 }
 
+impl From<MarsError> for String {
+    fn from(value: MarsError) -> Self {
+        return value.to_string();
+    }
+}
+
 impl Display for MarsErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let name = match self {
