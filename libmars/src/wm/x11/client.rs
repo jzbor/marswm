@@ -221,10 +221,6 @@ impl X11Client {
         self.actively_reparenting = status;
     }
 
-    fn supports_protocol(&self, atom: atoms::X11Atom) -> bool {
-        return self.window.x11_wm_protocols(self.display).contains(&atom);
-    }
-
     pub fn window(&self) -> u64 {
         return self.window;
     }
@@ -256,22 +252,7 @@ impl Client for X11Client {
     }
 
     fn close(&self) {
-        if self.supports_protocol(X11Atom::WMDeleteWindow) {
-            let msg_type = X11Atom::WMProtocols;
-            let mut msg_data = xlib::ClientMessageData::new();
-            msg_data.set_long(0, X11Atom::WMDeleteWindow.to_xlib_atom(self.display) as i64);
-            self.x11_message(self.display, msg_type, 32, msg_data);
-        } else {
-            unsafe {
-                xlib::XGrabServer(self.display);
-                xlib::XSetErrorHandler(Some(on_error_dummy));
-                xlib::XSetCloseDownMode(self.display, xlib::DestroyAll);
-                xlib::XKillClient(self.display, self.window);
-                xlib::XSync(self.display, xlib::False);
-                xlib::XSetErrorHandler(Some(on_error));
-                xlib::XUngrabServer(self.display);
-            }
-        }
+        self.x11_close(self.display, Some(on_error));
     }
 
     fn dont_decorate(&self) -> bool {
@@ -544,6 +525,10 @@ impl X11Window for X11Client {
         return self.window.x11_class_hint(display);
     }
 
+    fn x11_close(&self, display: *mut xlib::Display,
+                 error_handler: Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>) {
+        self.window.x11_close(display, error_handler);
+    }
     fn x11_destroy(&self, display: *mut xlib::Display) {
         println!("Destroying frame for client {}", self.name);
         unsafe {
@@ -600,6 +585,10 @@ impl X11Window for X11Client {
 
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
         return self.window.x11_message(display, msg_type, msg_format, msg_data);
+    }
+
+    fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool {
+        return self.window.x11_supports_protocol(display, protocol);
     }
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {

@@ -18,6 +18,8 @@ pub trait X11Window {
     fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom);
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
+    fn x11_close(&self, display: *mut xlib::Display,
+                 error_handler: Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>);
     fn x11_destroy(&self, display: *mut xlib::Display);
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str>;
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>, &'static str>;
@@ -26,6 +28,7 @@ pub trait X11Window {
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &Vec<String>);
+    fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool;
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>;
     fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<X11Atom>;
@@ -93,6 +96,26 @@ impl X11Window for xlib::Window {
                 }
             } else {
                 return Err("Error getting class hint from window".to_owned());
+            }
+        }
+    }
+
+    fn x11_close(&self, display: *mut xlib::Display,
+                 error_handler: Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>) {
+        if self.x11_supports_protocol(display, X11Atom::WMDeleteWindow) {
+            let msg_type = X11Atom::WMProtocols;
+            let mut msg_data = xlib::ClientMessageData::new();
+            msg_data.set_long(0, X11Atom::WMDeleteWindow.to_xlib_atom(display) as i64);
+            self.x11_message(display, msg_type, 32, msg_data);
+        } else {
+            unsafe {
+                xlib::XGrabServer(display);
+                xlib::XSetErrorHandler(None);
+                xlib::XSetCloseDownMode(display, xlib::DestroyAll);
+                xlib::XKillClient(display, *self);
+                xlib::XSync(display, xlib::False);
+                xlib::XSetErrorHandler(error_handler);
+                xlib::XUngrabServer(display);
             }
         }
     }
@@ -288,6 +311,10 @@ impl X11Window for xlib::Window {
 
             xlib::XSendEvent(display, *self, xlib::False, 0, &mut event);
         }
+    }
+
+    fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool {
+        return self.x11_wm_protocols(display).contains(&protocol);
     }
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {

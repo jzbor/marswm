@@ -146,4 +146,3 @@ pub fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: x
         xlib::XFlush(display);
     }
 }
-

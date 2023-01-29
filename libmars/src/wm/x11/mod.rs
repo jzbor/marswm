@@ -55,7 +55,3 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
 
     return 0;
 }
-
-extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
-    return 0;
-}
