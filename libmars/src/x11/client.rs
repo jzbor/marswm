@@ -469,8 +469,8 @@ impl Client for X11Client {
         if let Some(dimensions) = self.saved_dimensions {
             self.fullscreen = false;
             self.x11_net_wm_state_remove(self.display, NetWMStateFullscreen);
-            self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
             self.restore_decoration();
+            self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
             self.saved_dimensions = None;
         }
     }
