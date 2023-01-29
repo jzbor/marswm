@@ -365,6 +365,21 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_client_list(clients, clients_stacked);
     }
 
+    fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool {
+        if let Some(ws) = self.get_workspace(&client_rc) {
+            if ws.is_floating(&client_rc) {
+                let mut client = client_rc.borrow_mut();
+                let (width, height) = client.size();
+                client.move_resize(x, y, width, height);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
         let mon = self.get_monitor_mut(&client_rc).unwrap();
         if workspace_idx >= mon.workspace_count() {

@@ -184,16 +184,6 @@ impl X11Backend {
         }
     }
 
-    fn handle_resize_request(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, width: u32, height: u32) {
-        let size_changed = wm.resize_request(self, client_rc.clone(), width, height);
-        if !size_changed {
-            // Generate synthetic ConfigureNotify event if nothing as changed.
-            // A real one will have been genereated by a XMoveResize or similar if the wm changed
-            // the size.
-            self.send_configure_notify(client_rc);
-        }
-    }
-
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
@@ -456,6 +446,17 @@ impl X11Backend {
         let inner = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.borrow().inner_dimensions());
         if let Some(client_rc) = client {
             if let Some(inner) = inner {
+                // get dimensions from event
+                let x = if event.value_mask & (xlib::CWX as u64) != 0 {
+                    event.x
+                } else {
+                    inner.x()
+                };
+                let y = if event.value_mask & (xlib::CWY as u64) != 0 {
+                    event.y
+                } else {
+                    inner.y()
+                };
                 let width = if event.value_mask & (xlib::CWWidth as u64) != 0 {
                     event.width as u32
                 } else {
@@ -467,13 +468,34 @@ impl X11Backend {
                     inner.h()
                 };
 
+                let mut window_changed = false;
+
+                // issue move request if size is different
+                if x != inner.x() || y != inner.y() {
+                    let client = client_rc.borrow();
+                    // subtract border to size
+                    let x = x - client.total_bw() as i32;
+                    let y = y - client.total_bw() as i32;
+                    drop(client);
+                    // note that only moving might not generate a real ConfigureNotify
+                    // therefore we ignore the result of a move_request
+                    // window_changed |= wm.move_request(self, client_rc, x, y);
+                    wm.move_request(self, client_rc.clone(), x, y);
+                }
+
+                // issue resize request if size is different
                 if width != inner.w() || height != inner.h() {
                     let client = client_rc.borrow();
                     // add border to size
                     let width = width + 2*client.total_bw();
                     let height = height + 2*client.total_bw();
                     drop(client);
-                    self.handle_resize_request(wm, client_rc, width, height);
+                    window_changed |= wm.resize_request(self, client_rc.clone(), width, height);
+                }
+
+                // send synthetic ConfigureNotify if the dimensions were not changed
+                if !window_changed {
+                    self.send_configure_notify(client_rc);
                 }
             }
         } else {

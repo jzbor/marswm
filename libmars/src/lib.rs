@@ -23,6 +23,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
     fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
+    fn move_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool;
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
     fn resize_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool;
     fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
