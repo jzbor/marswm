@@ -65,6 +65,10 @@ pub fn get_keysym(name: &str) -> xlib::KeySym {
     }
 }
 
+extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
+    return 0;
+}
+
 pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
     unsafe {
         let mut monitors = Vec::new();

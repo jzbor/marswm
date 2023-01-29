@@ -85,7 +85,7 @@ impl X11Window for xlib::Window {
         } else {
             unsafe {
                 xlib::XGrabServer(display);
-                xlib::XSetErrorHandler(None);
+                xlib::XSetErrorHandler(Some(on_error_dummy));
                 xlib::XSetCloseDownMode(display, xlib::DestroyAll);
                 xlib::XKillClient(display, *self);
                 xlib::XSync(display, xlib::False);

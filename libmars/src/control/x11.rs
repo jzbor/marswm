@@ -9,23 +9,43 @@ use crate::common::x11::send_client_message;
 use crate::common::x11::window::X11Window;
 use crate::control::*;
 
+pub type EventHandlerFn = Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>;
 
 pub struct X11Controller {
     display: *mut xlib::Display,
     root: xlib::Window,
+    event_handler: EventHandlerFn,
 }
 
 impl X11Controller {
-    pub fn new_from_display(display: *mut xlib::Display) -> X11Controller {
+    pub fn new_from_display(display: *mut xlib::Display, event_handler: EventHandlerFn) -> X11Controller {
         let root = unsafe { XDefaultRootWindow(display) };
         return X11Controller {
-            display, root,
+            display, root, event_handler,
         };
     }
 }
 
 
 impl WMController<xlib::Window> for X11Controller {
+    fn activate_window(&self, window: xlib::Window) -> Result<()> {
+        require_ewmh_atom(self.display, NetActiveWindow)?;
+        let data = xlib::ClientMessageData::new();
+        send_client_message(self.display, NetActiveWindow, window, data);
+        return Ok(());
+    }
+
+    fn close_window(&self, window: xlib::Window) -> Result<()> {
+        if require_ewmh_atom(self.display, NetCloseWindow).is_ok() {
+            let data = xlib::ClientMessageData::new();
+            send_client_message(self.display, NetCloseWindow, window, data);
+        } else {
+            window.x11_close(self.display, self.event_handler);
+        }
+
+        return Ok(());
+    }
+
     fn current_workspace(&self) -> Result<u32> {
         require_ewmh_atom(self.display, NetCurrentDesktop)?;
         let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
