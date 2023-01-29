@@ -1,16 +1,19 @@
 extern crate x11;
 
+use std::ffi::*;
 use x11::xlib;
+use x11::xrandr;
 use std::ptr;
 use std::slice;
 use std::mem::MaybeUninit;
 
-use crate::*;
-use crate::Dimensioned;
-use crate::x11::*;
-use crate::x11::atoms::*;
-use crate::x11::client::*;
-use crate::x11::window::*;
+use crate::wm::*;
+use crate::wm::x11::*;
+use crate::common::x11::*;
+use crate::common::x11::atoms::*;
+use crate::common::x11::atoms::X11Atom::*;
+use crate::wm::x11::client::*;
+use crate::common::x11::window::*;
 
 
 #[allow(unused_macros)]
@@ -847,5 +850,3 @@ impl Backend<X11Client> for X11Backend {
 fn event_type<T>(_: &T) -> &str {
     return std::any::type_name::<T>();
 }
-
-

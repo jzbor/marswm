@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use x11::xlib;
-use libmars::configuration::read_config_file;
-use libmars::x11::draw::widget::*;
+use libmars::utils::configuration::read_config_file;
+use libmars::draw::widget::*;
 
 use crate::tray::*;
 

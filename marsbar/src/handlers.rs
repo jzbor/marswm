@@ -1,8 +1,8 @@
 extern crate x11;
 
-use libmars::x11::atoms::X11Atom::*;
-use libmars::x11::draw::widget::*;
-use libmars::x11::send_client_message;
+use libmars::common::x11::atoms::X11Atom::*;
+use libmars::common::x11::send_client_message;
+use libmars::draw::widget::*;
 use x11::xlib::ClientMessageData;
 use x11::xlib;
 

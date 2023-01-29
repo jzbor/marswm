@@ -8,8 +8,9 @@ use std::ptr;
 use std::slice;
 use x11::xlib;
 
-use crate::x11::*;
-use crate::x11::atoms::*;
+use crate::common::x11::*;
+use crate::common::x11::atoms::*;
+use crate::common::x11::atoms::X11Atom::*;
 
 
 pub trait X11Window {

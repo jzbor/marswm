@@ -10,9 +10,9 @@ use std::env;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use libmars::*;
-use libmars::configuration::*;
-use libmars::x11::backend::*;
+use libmars::wm::*;
+use libmars::wm::x11::backend::X11Backend;
+use libmars::utils::configuration::*;
 
 use crate::bindings::default_keybindings;
 use crate::marswm::*;

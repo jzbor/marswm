@@ -1,10 +1,11 @@
-use libmars::{ Backend, Client, MonitorConfig };
+use libmars::common::*;
+use libmars::wm::{ Backend, Client };
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::*;
-use crate::workspace::*;
 use crate::config::Configuration;
+use crate::workspace::*;
 
 pub struct Monitor<C: Client> {
     config: MonitorConfig,

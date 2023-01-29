@@ -1,11 +1,12 @@
-use libmars::{ Backend, Client, WindowManager };
+use libmars::common::*;
+use libmars::wm::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
-use std::path::PathBuf;
-use std::rc::Rc;
-use std::process;
-use std::os::unix::process::CommandExt;
 use std::env;
+use std::os::unix::process::CommandExt;
+use std::path::PathBuf;
+use std::process;
+use std::rc::Rc;
 
 use crate::*;
 use crate::bindings::*;
@@ -360,7 +361,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.focus_client(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
-        let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
+        let clients = <marswm::MarsWM<C> as WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
     }
@@ -461,7 +462,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.active_client = None;
         }
 
-        let clients = <marswm::MarsWM<C> as libmars::WindowManager<B, C>>::clients(self).collect();
+        let clients = <marswm::MarsWM<C> as WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
     }

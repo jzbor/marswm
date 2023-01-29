@@ -1,13 +1,12 @@
 extern crate x11;
 
+use libmars::common::x11::get_keysym;
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
 use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask, ControlMask};
 
-use libmars::*;
-use libmars::x11::get_keysym;
 use crate::*;
 use crate::layouts::*;
 

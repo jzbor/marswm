@@ -1,11 +1,10 @@
 extern crate x11;
 
-use libmars::*;
-use libmars::MonitorConfig;
-use libmars::configuration::print_config;
-use libmars::x11::atoms::X11Atom::{self, *};
-use libmars::x11::draw::{self, canvas::Canvas, widget::*};
-use libmars::x11::window::X11Window;
+use libmars::common::*;
+use libmars::common::x11::atoms::X11Atom::{self, *};
+use libmars::common::x11::window::X11Window;
+use libmars::draw::{self, canvas::Canvas, widget::*};
+use libmars::utils::configuration::print_config;
 use std::env;
 use std::ffi::*;
 use std::iter;
@@ -446,7 +445,7 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
             xlib::XNextEvent(bar.display, event.as_mut_ptr());
             let event = event.assume_init();
             if have_xrandr && event.get_type() == xrr_event_base + xrandr::RRNotify {
-                let monitors = libmars::x11::query_monitor_config(display);
+                let monitors = libmars::common::x11::query_monitor_config(display);
                 bar.reconfigure(*monitors.get(0).unwrap());
             } else {
                 bar.handle_xevent(event);
@@ -488,7 +487,7 @@ fn main() {
     };
 
     let status_cmd = config.status_cmd.clone();
-    let monitors = libmars::x11::query_monitor_config(display);
+    let monitors = libmars::common::x11::query_monitor_config(display);
     let mut bar = Bar::create_for_monitor(display, monitors.get(0).unwrap(), config, true).unwrap();
     bar.await_map_notify();
 

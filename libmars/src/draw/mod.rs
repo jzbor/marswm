@@ -3,10 +3,10 @@ use std::mem::MaybeUninit;
 use std::ptr;
 use x11::xlib;
 
-use crate::x11::draw::canvas::*;
-use crate::x11::atoms::X11Atom::*;
-use crate::x11::atoms::X11Atom;
-use crate::x11::window::X11Window;
+use crate::draw::canvas::*;
+use crate::common::x11::atoms::X11Atom::*;
+use crate::common::x11::atoms::X11Atom;
+use crate::common::x11::window::X11Window;
 
 pub mod canvas;
 pub mod widget;

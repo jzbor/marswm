@@ -1,11 +1,13 @@
+extern crate x11;
+
 use std::ffi::*;
 use std::mem::MaybeUninit;
 use x11::xft;
 use x11::xlib;
 use x11::xrender;
 
-use crate::x11::window::X11Window;
-use crate::Dimensioned;
+use crate::common::*;
+use crate::common::x11::window::*;
 
 #[derive(Clone, Copy)]
 struct CanvasStyle {

@@ -1,8 +1,8 @@
 use clap::Parser;
-use libmars::x11::atoms::*;
-use libmars::x11::send_client_message;
-use libmars::x11::atoms::X11Atom::*;
-use libmars::x11::window::X11Window;
+use libmars::common::x11::atoms::*;
+use libmars::common::x11::atoms::X11Atom::*;
+use libmars::common::x11::send_client_message;
+use libmars::common::x11::window::X11Window;
 use std::ptr;
 use x11::xlib;
 

@@ -1,4 +1,5 @@
-use libmars::Client;
+use libmars::common::*;
+use libmars::wm::Client;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;

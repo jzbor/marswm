@@ -1,10 +1,12 @@
-use std::rc::Rc;
+use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use serde::{Serialize, Deserialize};
+use std::rc::Rc;
 
-use libmars::*;
 use crate::config::LayoutConfiguration;
+use libmars::common::*;
+use libmars::enum_with_values;
+use libmars::wm::Client;
 
 
 enum_with_values! {

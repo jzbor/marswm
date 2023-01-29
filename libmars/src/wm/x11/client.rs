@@ -1,12 +1,15 @@
 extern crate x11;
 
-use x11::xlib;
 use std::cmp;
+use std::ffi::*;
+use x11::xlib;
 
-use crate::*;
-use crate::x11::*;
-use crate::x11::atoms::*;
-use crate::x11::window::*;
+use crate::common::x11::*;
+use crate::common::x11::atoms::*;
+use crate::common::x11::atoms::X11Atom::*;
+use crate::common::x11::window::*;
+use crate::wm::*;
+use crate::wm::x11::*;
 
 
 #[derive(PartialEq,Eq)]
@@ -329,12 +332,10 @@ impl Client for X11Client {
     }
 
     fn inner_dimensions(&self) -> Dimensions {
-        return Dimensions {
-            x: self.fw.try_into().unwrap(),
-            y: self.fw.try_into().unwrap(),
-            w: self.w - 2*self.total_bw(),
-            h: self.h - 2*self.total_bw(),
-        };
+        return Dimensions::new(self.fw.try_into().unwrap(),
+                               self.fw.try_into().unwrap(),
+                               self.w - 2*self.total_bw(),
+                               self.h - 2*self.total_bw());
     }
 
     fn is_dialog(&self) -> bool {

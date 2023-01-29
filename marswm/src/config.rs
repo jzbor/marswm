@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use libmars::configuration::*;
+use libmars::utils::configuration::*;
 
 use crate::layouts::LayoutType;
 use crate::layouts::StackPosition;
