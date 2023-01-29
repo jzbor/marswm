@@ -14,8 +14,6 @@ use crate::common::x11::atoms::X11Atom::*;
 
 
 pub trait X11Window {
-    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom);
-    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom);
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String>;
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String>;
     fn x11_close(&self, display: *mut xlib::Display,
@@ -23,6 +21,9 @@ pub trait X11Window {
     fn x11_destroy(&self, display: *mut xlib::Display);
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str>;
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>, &'static str>;
+    fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>, &'static str>;
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom);
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom);
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str>;
     fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String, &'static str>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
@@ -40,32 +41,6 @@ pub trait X11Window {
 }
 
 impl X11Window for xlib::Window {
-    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
-        let states_result = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM);
-        let mut states = match states_result {
-            Ok(states) => states,
-            Err(_) => Vec::new(),
-        };
-
-        let atom = state.to_xlib_atom(display);
-        if !states.contains(&atom) {
-            states.push(atom);
-        }
-        self.x11_replace_property_long(display, NetWMState, xlib::XA_ATOM, &states);
-    }
-
-    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom) {
-        let states_result = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM);
-        let mut states = match states_result {
-            Ok(states) => states,
-            Err(_) => return,
-        };
-
-        let state_atom = state.to_xlib_atom(display);
-        states.retain(|s| *s != state_atom);
-        self.x11_replace_property_long(display, NetWMState, xlib::XA_ATOM, &states);
-    }
-
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         unsafe {
             let mut attributes: MaybeUninit<xlib::XWindowAttributes> = MaybeUninit::uninit();
@@ -157,6 +132,39 @@ impl X11Window for xlib::Window {
                 return Ok(data);
             }
         }
+    }
+
+    fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>, &'static str> {
+        let atoms = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM)?
+            .iter().map(|a| X11Atom::from_xlib_atom(display, *a))
+            .flatten().collect();
+        return Ok(atoms);
+    }
+
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
+        let states_result = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM);
+        let mut states = match states_result {
+            Ok(states) => states,
+            Err(_) => Vec::new(),
+        };
+
+        let atom = state.to_xlib_atom(display);
+        if !states.contains(&atom) {
+            states.push(atom);
+        }
+        self.x11_replace_property_long(display, NetWMState, xlib::XA_ATOM, &states);
+    }
+
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom) {
+        let states_result = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM);
+        let mut states = match states_result {
+            Ok(states) => states,
+            Err(_) => return,
+        };
+
+        let state_atom = state.to_xlib_atom(display);
+        states.retain(|s| *s != state_atom);
+        self.x11_replace_property_long(display, NetWMState, xlib::XA_ATOM, &states);
     }
 
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {

@@ -509,14 +509,6 @@ impl Dimensioned for X11Client {
 }
 
 impl X11Window for X11Client {
-    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
-        self.window.x11_net_wm_state_add(display, state);
-    }
-
-    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom) {
-        self.window.x11_net_wm_state_remove(display, state);
-    }
-
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
         return self.window.x11_attributes(display);
     }
@@ -545,6 +537,18 @@ impl X11Window for X11Client {
 
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>, &'static str> {
         return self.window.x11_get_text_list_property(display, property);
+    }
+
+    fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>, &'static str> {
+        return self.window.x11_net_wm_state(display);
+    }
+
+    fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
+        self.window.x11_net_wm_state_add(display, state);
+    }
+
+    fn x11_net_wm_state_remove(&self, display: *mut xlib::Display, state: X11Atom) {
+        self.window.x11_net_wm_state_remove(display, state);
     }
 
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
