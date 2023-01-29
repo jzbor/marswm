@@ -393,6 +393,7 @@ impl X11Backend {
                     }
                 },
                 NetCloseWindow => {
+                    // TODO close unmanaged windows
                     if let Some(client_rc) = Self::client_by_window(wm, event.window) {
                         client_rc.borrow().close();
                     }

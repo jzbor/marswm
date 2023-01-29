@@ -10,6 +10,7 @@ use std::env;
 use std::ffi::*;
 use std::iter;
 use std::mem::MaybeUninit;
+use std::process;
 use x11::xlib;
 use x11::xrandr;
 
@@ -142,7 +143,7 @@ impl Bar {
                 let mut widget = self.config.style.status
                     .create_text_widget(self.display, self.status_widget.wid())
                     .unwrap();
-                if let Some(callback) = &self.config.callback {
+                if let Some(callback) = &self.config.action_cmd {
                     let event_handler = StatusEventHandler::new(i, callback.clone());
                     widget.register_event_handler(Box::new(event_handler));
                 }
@@ -486,12 +487,28 @@ fn main() {
         (have_xrandr, xrr_event_base, xrr_error_base)
     };
 
+    let status_cmd = config.status_cmd.clone();
     let monitors = libmars::x11::query_monitor_config(display);
     let mut bar = Bar::create_for_monitor(display, monitors.get(0).unwrap(), config, true).unwrap();
     bar.await_map_notify();
 
+    // spawn status command
+    let status_cmd_proc = match &status_cmd {
+        Some(status_cmd) => {
+            match process::Command::new("sh").arg("-c").arg(status_cmd).spawn() {
+                Ok(proc) => Some(proc),
+                Err(e) => { eprintln!("WARNING: unable to create child process ({})", e.to_string()); None },
+            }
+        },
+        None => None,
+    };
+
     eventloop(display, bar, have_xrandr, xrr_event_base);
 
+    // clean up
+    if let Some(mut proc) = status_cmd_proc {
+        let _result = proc.kill();
+    }
     draw::close_display(display);
 }
 

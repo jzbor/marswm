@@ -56,7 +56,8 @@ pub struct ContainerWidgetStyle {
 #[derive(Default,Serialize,Deserialize,PartialEq,Debug,Clone)]
 #[serde(default)]
 pub struct Configuration {
-    pub callback: Option<String>,
+    pub status_cmd: Option<String>,
+    pub action_cmd: Option<String>,
     pub style: BarStyle,
 }
 
