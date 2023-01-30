@@ -25,7 +25,7 @@ pub struct MarsWM<C: Client> {
 
 impl<C: Client> MarsWM<C> {
     pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>) -> MarsWM<C> {
-        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(*mc, &config)).collect();
+        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(mc.clone(), &config)).collect();
 
         // stores exec path to enable reloading after rebuild
         // might have security implications
@@ -317,7 +317,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.current_monitor_mut(backend)
         };
         monitor.attach_client(client_rc.clone());
-        let monitor_conf = *monitor.config();
+        let monitor_conf = monitor.config().clone();
 
         if let Some(workspace) = workspace_preference {
             self.move_to_workspace(backend, client_rc.clone(), workspace);
@@ -487,7 +487,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.monitors.truncate(configs.len());
         } else if configs.len() > self.monitors.len() {
             for i in self.monitors.len()..configs.len() {
-                let monitor = Monitor::new(*configs.get(i).unwrap(), &self.config);
+                let monitor = Monitor::new(configs.get(i).unwrap().clone(), &self.config);
                 self.monitors.push(monitor);
             }
         }
@@ -496,7 +496,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             // let config: MonitorConfig = *configs.get(i).unwrap();
             // self.monitors.get_mut(config.num() as usize).unwrap().update_config(config);
             self.monitors.get_mut(i).unwrap()
-                .update_config(*configs.get(i).unwrap());
+                .update_config(configs.get(i).unwrap().clone());
         }
     }
 }

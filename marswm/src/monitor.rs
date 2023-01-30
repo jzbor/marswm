@@ -100,7 +100,7 @@ impl<C: Client> Monitor<C> {
     pub fn update_config(&mut self, config: MonitorConfig) {
         self.config = config;
         for ws in &mut self.workspaces {
-            ws.update_window_area(config.window_area());
+            ws.update_window_area(self.config.window_area());
         }
     }
 

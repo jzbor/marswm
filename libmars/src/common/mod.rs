@@ -70,8 +70,9 @@ pub struct Dimensions {
     h: u32,
 }
 
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Clone,PartialEq)]
 pub struct MonitorConfig {
+    name: String,
     dims: Dimensions,
     win_area: Dimensions,
 }
@@ -84,8 +85,8 @@ impl Dimensions {
 }
 
 impl MonitorConfig {
-    pub fn new(dimensions: Dimensions, win_area: Dimensions) -> MonitorConfig {
-        return MonitorConfig { dims: dimensions, win_area };
+    pub fn new(name: String, dimensions: Dimensions, win_area: Dimensions) -> MonitorConfig {
+        return MonitorConfig { name, dims: dimensions, win_area };
     }
 
     pub fn add_inset_top(&mut self, inset: u32) {

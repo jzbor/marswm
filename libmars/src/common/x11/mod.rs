@@ -39,17 +39,25 @@ impl From<xinerama::XineramaScreenInfo> for MonitorConfig {
         let area = Dimensions { x: info.x_org.into(), y: info.y_org.into(),
                                 w: info.width.try_into().unwrap(), h: info.height.try_into().unwrap() };
         MonitorConfig {
+            name: format!("output{}", info.screen_number),
             dims: area,
             win_area: area,
         }
     }
 }
 
+impl From<(*mut xrandr::XRROutputInfo, *mut xrandr::XRRCrtcInfo)> for MonitorConfig {
+    fn from((output_info, crtc_info): (*mut xrandr::XRROutputInfo, *mut xrandr::XRRCrtcInfo)) -> Self {
+        let name = unsafe {
+            let name_bytes = slice::from_raw_parts((*output_info).name as *mut u8, (*output_info).nameLen as usize);
+            String::from_utf8_lossy(name_bytes).to_string()
+        };
+        let area = unsafe {
+            Dimensions { x: (*crtc_info).x, y: (*crtc_info).y, w: (*crtc_info).width, h: (*crtc_info).height }
+        };
 
-impl From<xrandr::XRRCrtcInfo> for MonitorConfig {
-    fn from(info: xrandr::XRRCrtcInfo) -> Self {
-        let area = Dimensions { x: info.x, y: info.y, w: info.width, h: info.height };
         MonitorConfig {
+            name,
             dims: area,
             win_area: area,
         }
@@ -57,6 +65,15 @@ impl From<xrandr::XRRCrtcInfo> for MonitorConfig {
 
 }
 
+impl From<*mut xlib::Screen> for MonitorConfig {
+    fn from(screen: *mut xlib::Screen) -> Self {
+        let w = unsafe { xlib::XWidthOfScreen(screen).try_into().unwrap() };
+        let h = unsafe { xlib::XHeightOfScreen(screen).try_into().unwrap() };
+        let dims = Dimensions::new(0, 0, w, h);
+
+        return MonitorConfig { name: "output".to_owned(), dims, win_area: dims };
+    }
+}
 
 pub fn get_keysym(name: &str) -> xlib::KeySym {
     unsafe {
@@ -90,7 +107,7 @@ pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
                     continue;
                 }
 
-                monitors.push(MonitorConfig::from(*crtc_info));
+                monitors.push(MonitorConfig::from((output_info, crtc_info)));
                 xrandr::XRRFreeCrtcInfo(crtc_info);
                 xrandr::XRRFreeOutputInfo(output_info);
             }
@@ -108,14 +125,7 @@ pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
 
         // use whole screen as fallback
         if monitors.is_empty() {
-            let screen = xlib::XDefaultScreenOfDisplay(display);
-            let w = xlib::XWidthOfScreen(screen).try_into().unwrap();
-            let h = xlib::XHeightOfScreen(screen).try_into().unwrap();
-            let dims = Dimensions::new(0, 0, w, h);
-
-            return vec![
-                MonitorConfig { dims, win_area: dims }
-            ];
+            return vec!(MonitorConfig::from(xlib::XDefaultScreenOfDisplay(display)));
          }
 
         return monitors;
