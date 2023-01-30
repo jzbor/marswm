@@ -135,7 +135,6 @@ impl WMController<xlib::Window> for X11Controller {
     }
 
     fn set_status(&self, status: String) -> Result<()> {
-        require_ewmh_atom(self.display, MarsStatus)?;
         let data = vec!(status);
         self.root.x11_set_text_list_property(self.display, MarsStatus, &data);
         return Ok(());
