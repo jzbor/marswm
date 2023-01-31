@@ -137,6 +137,7 @@ impl WMController<xlib::Window> for X11Controller {
     fn set_status(&self, status: String) -> Result<()> {
         let data = vec!(status);
         self.root.x11_set_text_list_property(self.display, MarsStatus, &data);
+        unsafe { xlib::XFlush(self.display); }
         return Ok(());
     }
 
