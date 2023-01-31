@@ -221,9 +221,11 @@ impl Bar {
             self.workspace_widget.truncate_children(nworkspaces);
         }
 
-        // resize widgets to the same width
-        for widget in self.workspace_widget.children_mut() {
-            widget.set_min_size((max_width, MIN_SIZE.1))
+        if self.config.style.expand_workspace_widgets {
+            // resize widgets to the same width
+            for widget in self.workspace_widget.children_mut() {
+                widget.set_min_size((max_width, MIN_SIZE.1))
+            }
         }
 
         self.workspace_widget.rearrange();

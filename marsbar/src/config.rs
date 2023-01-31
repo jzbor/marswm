@@ -26,6 +26,7 @@ pub trait CreateWidget<W: Widget> {
 #[serde(default)]
 pub struct BarStyle {
     pub background: u64,
+    pub expand_workspace_widgets: bool,
     pub workspaces: ContainerWidgetStyle,
     pub title: TextWidgetStyle,
     pub status: ContainerWidgetStyle,
@@ -66,6 +67,7 @@ impl Default for BarStyle {
     fn default() -> Self {
         return BarStyle {
             background: 0x000000,
+            expand_workspace_widgets: false,
             workspaces: ContainerWidgetStyle::default(),
             title: TextWidgetStyle::default(),
             status: ContainerWidgetStyle::default(),
