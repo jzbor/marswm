@@ -26,7 +26,11 @@ impl<C: Client> Monitor<C> {
         } else {
             (0..config.secondary_workspaces)
                 .map(|i| {
-                    let name = format!("{}:{}", monitor_config.name(), i + 1);
+                    let name = if config.secondary_workspaces == 1 {
+                        monitor_config.name().to_owned()
+                    } else {
+                        format!("{}:{}", monitor_config.name(), i + 1)
+                    };
                     Workspace::new(name, workspace_offset + i, monitor_config.window_area(), config.layout)
                 })
                 .collect()
