@@ -11,6 +11,7 @@ use std::rc::Rc;
 use crate::*;
 use crate::bindings::*;
 use crate::monitor::*;
+use crate::rules::*;
 use crate::workspace::*;
 
 
@@ -21,10 +22,12 @@ pub struct MarsWM<C: Client> {
     monitors: Vec<Monitor<C>>,
     clients: Vec<Rc<RefCell<C>>>,
     keybindings: Vec<Keybinding>,
+    rules: Vec<Rule>,
 }
 
 impl<C: Client> MarsWM<C> {
-    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>) -> MarsWM<C> {
+    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>, rules: Vec<Rule>)
+                -> MarsWM<C> {
         // stores exec path to enable reloading after rebuild
         // might have security implications
         let mut wm = MarsWM {
@@ -34,6 +37,7 @@ impl<C: Client> MarsWM<C> {
             clients: Vec::new(),
             monitors: Vec::new(),
             keybindings,
+            rules
         };
 
         let monitor_config = backend.get_monitor_config();
@@ -180,7 +184,8 @@ impl<C: Client> MarsWM<C> {
         self.cleanup(backend);
         backend.shutdown();
 
-        let args = env::args();
+        // get args without exec_path
+        let args = env::args().skip(1);
         eprintln!("Path: {:?}", self.exec_path);
         eprintln!("Args: {:?}", args);
 
@@ -364,6 +369,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         let clients = <marswm::MarsWM<C> as WindowManager<B, C>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
+
+        // apply window rules
+        let actions: Vec<BindingAction> = self.rules.iter()
+            .filter(|r| r.matches(client_rc.clone()))
+            .flat_map(|r| r.actions())
+            .cloned().collect();
+        actions.iter()
+            .for_each(|a| a.execute(self, backend, Some(client_rc.clone())))
     }
 
     fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool {

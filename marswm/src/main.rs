@@ -18,11 +18,12 @@ use crate::bindings::default_keybindings;
 use crate::marswm::*;
 use crate::config::*;
 
+mod bindings;
 mod config;
 mod layouts;
-mod bindings;
 mod marswm;
 mod monitor;
+mod rules;
 mod workspace;
 
 trait ClientList<C: Client> {
@@ -72,8 +73,9 @@ fn main() {
     }
 
     let keybindings = read_keybindings(config.primary_workspaces);
+    let rules = read_rules();
 
     let mut backend = X11Backend::init("marswm").unwrap();
-    let mut wm = MarsWM::new(&mut backend, config, keybindings);
+    let mut wm = MarsWM::new(&mut backend, config, keybindings, rules);
     backend.run(&mut wm);
 }

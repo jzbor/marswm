@@ -227,6 +227,13 @@ impl X11Client {
 }
 
 impl Client for X11Client {
+    fn application(&self) -> String {
+        return match self.x11_class_hint(self.display) {
+            Ok((_name, class)) => class,
+            Err(_) => String::default(),
+        };
+    }
+
     fn bind_button(&mut self, modifiers: u32, button: u32) {
         let mask: u32 = (xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask)
             .try_into().unwrap();
@@ -441,6 +448,10 @@ impl Client for X11Client {
         }
 
         self.visible = true;
+    }
+
+    fn title(&self) -> String {
+        return self.window.x11_wm_name(self.display).unwrap_or_default();
     }
 
     fn total_bw(&self) -> u32 {

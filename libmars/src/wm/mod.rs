@@ -30,6 +30,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
 }
 
 pub trait Client: Eq + Dimensioned {
+    fn application(&self) -> String;
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
     fn center_on_screen(&mut self, monitor_conf: &MonitorConfig);
@@ -59,6 +60,7 @@ pub trait Client: Eq + Dimensioned {
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
     fn show(&mut self);
+    fn title(&self) -> String;
     fn total_bw(&self) -> u32;
     fn unset_fullscreen(&mut self);
     fn warp_pointer_to_center(&self);

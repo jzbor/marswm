@@ -1,14 +1,16 @@
 use serde::{Serialize, Deserialize};
 use libmars::utils::configuration::*;
 
-use crate::layouts::LayoutType;
-use crate::layouts::StackPosition;
-use crate::layouts::StackMode;
 use crate::bindings::*;
+use crate::layouts::LayoutType;
+use crate::layouts::StackMode;
+use crate::layouts::StackPosition;
+use crate::rules::*;
 
 const CONFIG_DIR: &str = "marswm";
 const CONFIG_FILE: &str = "marswm.yaml";
 const KEYBINDINGS_FILE: &str = "keybindings.yaml";
+const RULES_FILE: &str = "rules.yaml";
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
@@ -128,3 +130,15 @@ pub fn read_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
         },
     };
 }
+
+pub fn read_rules() -> Vec<Rule> {
+    let result = read_config_file(CONFIG_DIR, RULES_FILE);
+    return match result {
+        Ok(rules) => rules,
+        Err(msg) => {
+            println!("Unable to read window rules: {}", msg);
+            Vec::new()
+        },
+    };
+}
+
