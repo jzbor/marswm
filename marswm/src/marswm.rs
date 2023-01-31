@@ -25,18 +25,24 @@ pub struct MarsWM<C: Client> {
 
 impl<C: Client> MarsWM<C> {
     pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>) -> MarsWM<C> {
-        let monitors: Vec<Monitor<C>> = backend.get_monitor_config().iter().map(|mc| Monitor::new(mc.clone(), &config)).collect();
-
         // stores exec path to enable reloading after rebuild
         // might have security implications
-        return MarsWM {
+        let mut wm = MarsWM {
             exec_path: env::current_exe().unwrap(),
             config,
             active_client: None,
             clients: Vec::new(),
-            monitors,
+            monitors: Vec::new(),
             keybindings,
         };
+
+        let monitor_config = backend.get_monitor_config();
+        (&mut wm as &mut dyn WindowManager<B, C>).update_monitor_config(backend, monitor_config);
+        backend.export_current_workspace(0);
+
+        backend.handle_existing_windows(&mut wm);
+
+        return wm;
     }
 
     pub fn cleanup<B: Backend<C>>(&mut self, backend: &mut B) {
@@ -106,7 +112,7 @@ impl<C: Client> MarsWM<C> {
     pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
-        let new_workspace_idx = (cur_workspace_idx as i32 + inc) as u32 % self.config.workspaces;
+        let new_workspace_idx = monitor.workspace_offset() + ((cur_workspace_idx as i32 + inc) as u32 % monitor.workspace_count());
         self.switch_workspace(backend, new_workspace_idx);
     }
 
@@ -192,7 +198,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn active_workspace(&self, backend: &mut B) -> u32 {
-        return self.current_monitor(backend).current_workspace_idx();
+        return self.current_monitor(backend).current_workspace().global_index();
     }
 
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
@@ -245,6 +251,8 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.active_client = None;
         }
 
+        let ws = self.active_workspace(backend);
+        backend.export_current_workspace(ws);
         backend.export_active_window(&self.active_client);
     }
 
@@ -296,14 +304,6 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         for action in actions {
             action.execute(self, backend, client_option.clone());
         }
-    }
-
-    fn init(&mut self, backend: &mut B) {
-        let ws_names = self.current_monitor(backend).workspaces().map(|ws| ws.name().to_owned()).collect();
-        backend.export_workspaces(ws_names);
-        backend.export_current_workspace(0);
-
-        backend.handle_existing_windows(self);
     }
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>) {
@@ -394,7 +394,9 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.active_client = None;
 
         backend.export_active_window(&self.active_client);
-        client_rc.borrow().export_workspace(workspace_idx);
+        if let Some(workspace) = self.get_workspace(&client_rc) {
+            client_rc.borrow().export_workspace(workspace.global_index());
+        }
     }
 
     fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool {
@@ -425,7 +427,23 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
-        self.current_monitor_mut(backend).switch_workspace(backend, workspace_idx);
+        let (mon_idx, rel_idx) = if workspace_idx < self.config.primary_workspaces {
+            (0, workspace_idx)
+        } else {
+            let mon_idx = 1 + ((workspace_idx - self.config.primary_workspaces) / self.config.secondary_workspaces);
+            let rel_idx = (workspace_idx - self.config.primary_workspaces) % self.config.secondary_workspaces;
+            (mon_idx as usize, rel_idx)
+        };
+
+        // switch monitor if necessary
+        if mon_idx >= self.monitors.len() {
+            return;
+        } else if mon_idx != self.current_monitor_index(backend) {
+            let (x, y) = self.monitors[mon_idx].config().dimensions().center();
+            backend.warp_pointer(x, y);
+        }
+
+        self.current_monitor_mut(backend).switch_workspace(backend, rel_idx);
         self.active_client = None;
         backend.export_active_window(&self.active_client);
     }
@@ -467,7 +485,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_client_list(clients, clients_stacked);
     }
 
-    fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>) {
+    fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>) {
         if configs.len() == 0 {
             return;
         }
@@ -487,7 +505,14 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.monitors.truncate(configs.len());
         } else if configs.len() > self.monitors.len() {
             for i in self.monitors.len()..configs.len() {
-                let monitor = Monitor::new(configs.get(i).unwrap().clone(), &self.config);
+                let primary = i == 0;
+                let workspace_offset = if primary {
+                    0
+                } else {
+                    self.config.primary_workspaces + (i - 1) as u32 * self.config.secondary_workspaces
+                };
+
+                let monitor = Monitor::new(configs.get(i).unwrap().clone(), &self.config, primary, workspace_offset);
                 self.monitors.push(monitor);
             }
         }
@@ -498,5 +523,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.monitors.get_mut(i).unwrap()
                 .update_config(configs.get(i).unwrap().clone());
         }
+
+        // export desktop settings
+        let workspace_info = self.monitors.iter()
+            .flat_map(|m| m.workspaces().map(|ws| (ws.name().to_owned(), m.dimensions(), m.window_area())))
+            .collect();
+        backend.export_workspaces(workspace_info);
     }
 }

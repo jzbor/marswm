@@ -15,7 +15,6 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
     fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
-    fn init(&mut self, backend: &mut B);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
     fn move_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool;
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
@@ -27,7 +26,7 @@ pub trait WindowManager<B: Backend<C>, C: Client> {
     fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn unfocus_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn update_monitor_config(&mut self, configs: Vec<MonitorConfig>);
+    fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>);
 }
 
 pub trait Client: Eq + Dimensioned {
@@ -76,7 +75,7 @@ pub trait Backend<C: Client> {
     fn export_current_workspace(&self, workspace_idx: u32);
 
     /// Make information about workspaces available to clients
-    fn export_workspaces(&self, workspaces: Vec<String>);
+    fn export_workspaces(&self, workspaces: Vec<(String, Dimensions, Dimensions)>);
 
     /// Get monitor configuration
     fn get_monitor_config(&self) -> Vec<MonitorConfig>;
@@ -100,6 +99,8 @@ pub trait Backend<C: Client> {
 
     /// Set client that receives mouse and keyboard inputs
     fn set_input_focus(&self, client_rc: Rc<RefCell<C>>);
+
+    fn warp_pointer(&self, x: i32, y: i32);
 
     fn shutdown(&mut self);
 }

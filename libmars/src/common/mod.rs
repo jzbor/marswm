@@ -82,6 +82,10 @@ impl Dimensions {
     pub fn new(x: i32, y: i32, w: u32, h: u32) -> Dimensions {
         return Dimensions {x, y, w, h};
     }
+
+    pub fn as_tuple(&self) -> (i32, i32, u32, u32) {
+        return (self.x, self.y, self.w, self.h);
+    }
 }
 
 impl MonitorConfig {
@@ -107,6 +111,10 @@ impl MonitorConfig {
 
     pub fn dimensions(&self) -> Dimensions {
         return self.dims;
+    }
+
+    pub fn name(&self) -> &str {
+        return &self.name;
     }
 
     pub fn remove_insets(&mut self) {

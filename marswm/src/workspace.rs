@@ -5,12 +5,13 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 use crate::*;
-use crate::layouts::*;
 use crate::config::LayoutConfiguration;
+use crate::layouts::*;
 
 #[derive(PartialEq)]
 pub struct Workspace<C: Client> {
-    name: &'static str,
+    name: String,
+    global_index: u32,
     floating_clients: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
     pinned_clients: Vec<Rc<RefCell<C>>>, // sorted by stacking order
     tiled_clients: VecDeque<Rc<RefCell<C>>>, // sorted by user
@@ -26,9 +27,9 @@ pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
 
 
 impl<C: Client> Workspace<C> {
-    pub fn new(name: &'static str, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
+    pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
         return Workspace {
-            name,
+            name, global_index,
             floating_clients: VecDeque::new(),
             pinned_clients: Vec::new(),
             tiled_clients: VecDeque::new(),
@@ -65,6 +66,10 @@ impl<C: Client> Workspace<C> {
         }
     }
 
+    pub fn global_index(&self) -> u32 {
+        return self.global_index;
+    }
+
     pub fn inc_nmain(&mut self, i: i32) {
         self.layout_config.nmain = (self.layout_config.nmain as i32 + i) as u32;
         self.apply_layout();
@@ -74,8 +79,8 @@ impl<C: Client> Workspace<C> {
         return self.floating_clients.contains(client_rc);
     }
 
-    pub fn name(&self) -> &'static str {
-        return self.name;
+    pub fn name(&self) -> &str {
+        return &self.name;
     }
 
     pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {

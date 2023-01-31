@@ -24,7 +24,9 @@ enum_with_values! {
         NetClientListStacking,
         NetCloseWindow,
         NetCurrentDesktop,
+        NetDesktopGeometry,
         NetDesktopNames,
+        NetDesktopViewport,
         NetNumberOfDesktops,
         NetSupported,
         NetSupportingWMCheck,
@@ -36,10 +38,11 @@ enum_with_values! {
         NetWMState,
         NetWMStateFullscreen,
         NetWMWindowType,
-        NetWMWindowTypeDock,
         NetWMWindowTypeDesktop,
         NetWMWindowTypeDialog,
+        NetWMWindowTypeDock,
         NetWMWindowTypeMenu,
+        NetWorkarea,
 
         // Motif
         MotifWMHints,
@@ -72,7 +75,9 @@ impl Display for X11Atom {
             X11Atom::NetClientListStacking => "_NET_CLIENT_LIST_STACKING",
             X11Atom::NetCloseWindow => "_NET_CLOSE_WINDOW",
             X11Atom::NetCurrentDesktop => "_NET_CURRENT_DESKTOP",
+            X11Atom::NetDesktopGeometry => "_NET_DESKTOP_GEOMETRY",
             X11Atom::NetDesktopNames => "_NET_DESKTOP_NAMES",
+            X11Atom::NetDesktopViewport => "_NET_DESKTOP_VIEWPORT",
             X11Atom::NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
             X11Atom::NetSupported => "_NET_SUPPORTED",
             X11Atom::NetSupportingWMCheck => "_NET_SUPPORTING_WM_CHECK",
@@ -88,6 +93,7 @@ impl Display for X11Atom {
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",
             X11Atom::NetWMWindowTypeDialog => "_NET_WM_WINDOW_TYPE_DIALOG",
             X11Atom::NetWMWindowTypeMenu => "_NET_WM_WINDOW_TYPE_MENU",
+            X11Atom::NetWorkarea => "_NET_WORKAREA",
 
             X11Atom::MotifWMHints => "_MOTIF_WM_HINTS",
 

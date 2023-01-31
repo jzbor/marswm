@@ -67,14 +67,13 @@ fn main() {
     let config = read_config();
 
     if env::args().find(|a| a == "print-default-keybindings").is_some() {
-        print_config(&default_keybindings(config.workspaces));
+        print_config(&default_keybindings(config.primary_workspaces));
         return;
     }
 
-    let keybindings = read_keybindings(config.workspaces);
+    let keybindings = read_keybindings(config.primary_workspaces);
 
     let mut backend = X11Backend::init("marswm").unwrap();
     let mut wm = MarsWM::new(&mut backend, config, keybindings);
-    wm.init(&mut backend);
     backend.run(&mut wm);
 }

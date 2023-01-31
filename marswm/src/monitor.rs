@@ -12,30 +12,37 @@ pub struct Monitor<C: Client> {
     workspaces: Vec<Workspace<C>>,
     cur_workspace: u32,
     prev_workspace: u32,
+    workspace_offset: u32,
 }
 
 impl<C: Client> Monitor<C> {
-    pub fn new(monitor_config: MonitorConfig, config: &Configuration) -> Monitor<C> {
-        let workspaces: Vec<Workspace<C>> = WORKSPACE_NAMES.iter().take(config.workspaces as usize)
-            .map(|name| Workspace::new(name, monitor_config.window_area(), config.layout))
-            .collect();
+    pub fn new(monitor_config: MonitorConfig, config: &Configuration, primary: bool, workspace_offset: u32)
+                -> Monitor<C> {
 
-        assert!(workspaces.len() == config.workspaces as usize);
+        let workspaces: Vec<Workspace<C>> = if primary {
+            (0..config.primary_workspaces)
+                .map(|i| Workspace::new((i + 1).to_string(), workspace_offset + i,  monitor_config.window_area(), config.layout))
+                .collect()
+        } else {
+            (0..config.secondary_workspaces)
+                .map(|i| {
+                    let name = format!("{}:{}", monitor_config.name(), i + 1);
+                    Workspace::new(name, workspace_offset + i, monitor_config.window_area(), config.layout)
+                })
+                .collect()
+        };
 
         return Monitor {
             config: monitor_config,
             workspaces,
             cur_workspace: 0,
             prev_workspace: 0,
+            workspace_offset,
         };
     }
 
     pub fn config(&self) -> &MonitorConfig {
         return &self.config;
-    }
-
-    pub fn current_workspace_idx(&self) -> u32 {
-        return self.cur_workspace;
     }
 
     pub fn current_workspace(&self) -> &Workspace<C> {
@@ -44,6 +51,10 @@ impl<C: Client> Monitor<C> {
 
     pub fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
         return &mut self.workspaces[self.cur_workspace as usize];
+    }
+
+    pub fn dimensions(&self) -> Dimensions {
+        return self.config.dimensions();
     }
 
     pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
@@ -72,12 +83,18 @@ impl<C: Client> Monitor<C> {
         return self.workspaces.len() as u32;
     }
 
+    pub fn workspace_offset(&self) -> u32 {
+        return self.workspace_offset
+    }
+
     pub fn switch_prev_workspace(&mut self, backend: &impl Backend<C>) {
         self.switch_workspace(backend, self.prev_workspace);
     }
 
     pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
+            return;
+        } else if workspace_idx >= self.workspace_count() {
             return;
         }
 
@@ -94,7 +111,7 @@ impl<C: Client> Monitor<C> {
         // set new workspace index
         self.prev_workspace = self.cur_workspace;
         self.cur_workspace = workspace_idx;
-        backend.export_current_workspace(workspace_idx);
+        backend.export_current_workspace(self.workspaces[self.cur_workspace as usize].global_index());
     }
 
     pub fn update_config(&mut self, config: MonitorConfig) {
@@ -119,8 +136,9 @@ impl<C: Client> Monitor<C> {
 
 impl<C: Client> ClientList<C> for Monitor<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        client_rc.borrow().export_workspace(self.cur_workspace);
-        self.workspaces[self.cur_workspace as usize].attach_client(client_rc);
+        let workspace = &mut self.workspaces[self.cur_workspace as usize];
+        client_rc.borrow().export_workspace(workspace.global_index());
+        workspace.attach_client(client_rc);
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {

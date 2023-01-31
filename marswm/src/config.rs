@@ -13,8 +13,11 @@ const KEYBINDINGS_FILE: &str = "keybindings.yaml";
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct Configuration {
-    /// number of workspaces for each monitor
-    pub workspaces: u32,
+    /// number of workspaces for primary monitor
+    pub primary_workspaces: u32,
+
+    /// number of workspaces for secondary monitors
+    pub secondary_workspaces: u32,
 
     /// layout configuration
     pub layout: LayoutConfiguration,
@@ -70,7 +73,8 @@ pub struct ThemingConfiguration {
 impl Default for Configuration {
     fn default() -> Self {
         return Configuration {
-            workspaces: 8,
+            primary_workspaces: 8,
+            secondary_workspaces: 2,
             layout: LayoutConfiguration::default(),
             theming: ThemingConfiguration::default(),
         }

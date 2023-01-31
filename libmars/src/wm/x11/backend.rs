@@ -53,7 +53,7 @@ struct XRandrInfo {
 }
 
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 19] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 20] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -68,10 +68,11 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 19] = & [
     NetWMState,
     NetWMStateFullscreen,
     NetWMWindowType,
-    NetWMWindowTypeDock,
     NetWMWindowTypeDesktop,
     NetWMWindowTypeDialog,
+    NetWMWindowTypeDock,
     NetWMWindowTypeMenu,
+    NetWorkarea,
 
     MarsWMStateTiled,
 ];
@@ -192,7 +193,7 @@ impl X11Backend {
             if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
                 self.monitors = query_monitor_config(self.display);
                 self.apply_dock_insets();
-                wm.update_monitor_config(self.monitors.clone());
+                wm.update_monitor_config(self, self.monitors.clone());
                 return;
             }
 
@@ -246,7 +247,7 @@ impl X11Backend {
                     xlib::XMapRaised(self.display, window);
                     self.dock_windows.push(window);
                     self.apply_dock_insets();
-                    wm.update_monitor_config(self.monitors.clone());
+                    wm.update_monitor_config(self, self.monitors.clone());
                     return;
                 },
                 NetWMWindowTypeMenu => unsafe {
@@ -441,7 +442,7 @@ impl X11Backend {
         if event.window == self.root && !self.xrandr.supported {
             self.monitors = query_monitor_config(self.display);
             self.apply_dock_insets();
-            wm.update_monitor_config(self.monitors.clone());
+            wm.update_monitor_config(self, self.monitors.clone());
         }
     }
 
@@ -525,7 +526,7 @@ impl X11Backend {
         if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
             self.dock_windows.swap_remove(index);
             self.apply_dock_insets();
-            wm.update_monitor_config(self.monitors.clone());
+            wm.update_monitor_config(self, self.monitors.clone());
         }
 
         let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
@@ -601,7 +602,7 @@ impl X11Backend {
         if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
             self.dock_windows.swap_remove(index);
             self.apply_dock_insets();
-            wm.update_monitor_config(self.monitors.clone());
+            wm.update_monitor_config(self, self.monitors.clone());
         }
 
         let root = self.root;
@@ -718,14 +719,30 @@ impl Backend<X11Client> for X11Backend {
         self.root.x11_replace_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL, data);
     }
 
-    fn export_workspaces(&self, workspaces: Vec<String>) {
-        // export number of workspaces
+    fn export_workspaces(&self, mut workspaces: Vec<(String, Dimensions, Dimensions)>) {
         let nworkspaces: u64 = workspaces.len().try_into().unwrap();
+        let mut names = Vec::new();
+        let mut workareas = Vec::new();
+
+        for (name, _dimensions, workarea) in workspaces.drain(..) {
+            names.push(name);
+
+            workareas.push(workarea.x() as i64 as u64);
+            workareas.push(workarea.y() as i64 as u64);
+            workareas.push(workarea.w() as u64);
+            workareas.push(workarea.h() as u64);
+        }
+
+        // export number of workspaces
         let data = &[nworkspaces];
         self.root.x11_replace_property_long(self.display, NetNumberOfDesktops, xlib::XA_CARDINAL, data);
 
         // export workspace names
-        self.root.x11_set_text_list_property(self.display, NetDesktopNames, &workspaces);
+        self.root.x11_set_text_list_property(self.display, NetDesktopNames, &names);
+
+        // export workareas
+        let data = workareas.as_slice();
+        self.root.x11_replace_property_long(self.display, NetWorkarea, xlib::XA_CARDINAL, data);
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
@@ -833,6 +850,13 @@ impl Backend<X11Client> for X11Backend {
     fn shutdown(&mut self) {
         unsafe {
             xlib::XCloseDisplay(self.display);
+        }
+    }
+
+    fn warp_pointer(&self, x: i32, y: i32) {
+        unsafe {
+            // this might fail (best effort)
+            xlib::XWarpPointer(self.display, 0, self.root, 0, 0, 0, 0, x, y);
         }
     }
 
