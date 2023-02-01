@@ -86,7 +86,7 @@ extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XE
     return 0;
 }
 
-pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
+pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: bool) -> Vec<MonitorConfig> {
     unsafe {
         let mut monitors = Vec::new();
 
@@ -126,9 +126,25 @@ pub fn query_monitor_config(display: *mut xlib::Display) -> Vec<MonitorConfig> {
         // use whole screen as fallback
         if monitors.is_empty() {
             return vec!(MonitorConfig::from(xlib::XDefaultScreenOfDisplay(display)));
-         }
+        }
 
-        return monitors;
+        if ignore_overlapping {
+            let no_overlap = |m1: &MonitorConfig, m2: &MonitorConfig| {
+                m1.dimensions().right() <= m2.dimensions().x()  // m1 is left of m2
+                    || m1.dimensions().x() >= m2.dimensions().right()  // m1 is right of m2
+                    || m1.dimensions().bottom() <= m2.dimensions().y()  // m1 is on top of m2
+                    || m1.dimensions().y() >= m2.dimensions().bottom()  // m1 is below m2
+            };
+            let mut non_overlapping = Vec::new();
+            for mon in monitors.drain(..) {
+                if non_overlapping.iter().all(|m| no_overlap(m, &mon)) {
+                    non_overlapping.push(mon);
+                }
+            }
+            return non_overlapping;
+        } else {
+            return monitors;
+        }
     }
 }
 

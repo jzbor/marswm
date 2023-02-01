@@ -136,7 +136,7 @@ impl X11Backend {
             }
 
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
-            x11b.monitors = query_monitor_config(display);
+            x11b.monitors = query_monitor_config(display, true);
 
             return Ok(x11b);
         }
@@ -191,7 +191,7 @@ impl X11Backend {
     fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
-                self.monitors = query_monitor_config(self.display);
+                self.monitors = query_monitor_config(self.display, true);
                 self.apply_dock_insets();
                 wm.update_monitor_config(self, self.monitors.clone());
                 return;
@@ -440,7 +440,7 @@ impl X11Backend {
     fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend,X11Client>, event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
         if event.window == self.root && !self.xrandr.supported {
-            self.monitors = query_monitor_config(self.display);
+            self.monitors = query_monitor_config(self.display, true);
             self.apply_dock_insets();
             wm.update_monitor_config(self, self.monitors.clone());
         }
@@ -808,7 +808,7 @@ impl Backend<X11Client> for X11Backend {
     }
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32> {
-        for (i, mon) in query_monitor_config(self.display).iter().enumerate() {
+        for (i, mon) in query_monitor_config(self.display, true).iter().enumerate() {
             if point.0 >= mon.dimensions().x()
                 && point.0 < mon.dimensions().x() + mon.dimensions().w() as i32
                 && point.1 >= mon.dimensions().y()

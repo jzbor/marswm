@@ -447,7 +447,7 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
             xlib::XNextEvent(bar.display, event.as_mut_ptr());
             let event = event.assume_init();
             if have_xrandr && event.get_type() == xrr_event_base + xrandr::RRNotify {
-                let monitors = libmars::common::x11::query_monitor_config(display);
+                let monitors = libmars::common::x11::query_monitor_config(display, true);
                 bar.reconfigure(monitors.get(0).unwrap().clone());
             } else {
                 bar.handle_xevent(event);
@@ -489,7 +489,7 @@ fn main() {
     };
 
     let status_cmd = config.status_cmd.clone();
-    let monitors = libmars::common::x11::query_monitor_config(display);
+    let monitors = libmars::common::x11::query_monitor_config(display, true);
     let mut bar = Bar::create_for_monitor(display, monitors.get(0).unwrap(), config, true).unwrap();
     bar.await_map_notify();
 
