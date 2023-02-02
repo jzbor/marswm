@@ -2,7 +2,7 @@ extern crate x11;
 
 use std::fmt::{Display, Formatter, Result};
 use x11::xlib;
-use std::ffi::CString;
+use std::ffi::*;
 
 use crate::*;
 
@@ -131,3 +131,15 @@ impl X11Atom {
     }
 }
 
+pub fn atom_name(display: *mut xlib::Display, atom: xlib::Atom) -> Option<String> {
+    unsafe {
+        let name_ptr = xlib::XGetAtomName(display, atom);
+        if name_ptr.is_null() {
+            return None;
+        } else {
+            let name = CStr::from_ptr(name_ptr).to_string_lossy().to_string();
+            xlib::XFree(name_ptr as *mut c_void);
+            return Some(name);
+        }
+    }
+}

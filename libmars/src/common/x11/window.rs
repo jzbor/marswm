@@ -9,7 +9,6 @@ use std::slice;
 use x11::xlib;
 
 use crate::common::x11::*;
-use crate::common::x11::atoms::*;
 use crate::common::x11::atoms::X11Atom::*;
 
 
