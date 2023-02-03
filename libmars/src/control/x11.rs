@@ -58,6 +58,16 @@ impl WMController<xlib::Window> for X11Controller {
         return Ok(());
     }
 
+    fn count_workspaces(&self) -> Result<u32> {
+        require_ewmh_atom(self.display, NetNumberOfDesktops)?;
+        let data = self.root.x11_read_property_long(self.display, NetNumberOfDesktops, xlib::XA_CARDINAL)
+            .map_err(|msg| error_unknown(msg))?;
+        let ws_u64 = data.get(0)
+            .ok_or(error_invalid_response("reading property _NET_NUMBER_OF_DESKTOPS"))?;
+        return (*ws_u64).try_into()
+            .map_err(|_| error_failed_conversion(ws_u64, "u64", "u32"));
+    }
+
     fn current_workspace(&self) -> Result<u32> {
         require_ewmh_atom(self.display, NetCurrentDesktop)?;
         let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
@@ -174,6 +184,12 @@ impl WMController<xlib::Window> for X11Controller {
             .map_err(|msg| error_unknown(msg))?
             .contains(&NetWMStateFullscreen);
         return Ok(is_fullscreen);
+    }
+
+    fn workspaces(&self) -> Result<Vec<String>> {
+        require_ewmh_atom(self.display, NetDesktopNames)?;
+        return self.root.x11_get_text_list_property(self.display, NetDesktopNames)
+            .map_err(|msg| error_unknown(msg));
     }
 }
 
