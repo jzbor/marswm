@@ -1,6 +1,7 @@
 extern crate x11;
 
 use clap::Parser;
+use libmars::common::error::MarsError;
 use libmars::control::*;
 use libmars::control::x11::X11Controller;
 use x11::xlib;
@@ -43,6 +44,8 @@ pub enum Command {
     SetStatus,
     SetTiled,
     SwitchDesktop,
+    SwitchDesktopNext,
+    SwitchDesktopPrev,
     ToggleFullscreen,
     ToggleTiled,
     Unpin,
@@ -83,6 +86,8 @@ impl Command {
                 Command::Pin => controller.pin_window(window, SettingMode::Set),
                 Command::SetFullscreen => controller.fullscreen_window(window, SettingMode::Set),
                 Command::SetTiled => controller.tile_window(window, SettingMode::Set),
+                Command::SwitchDesktopNext => Self::switch_workspace_relative(controller, 1),
+                Command::SwitchDesktopPrev => Self::switch_workspace_relative(controller, -1),
                 Command::ToggleFullscreen => controller.fullscreen_window(window, SettingMode::Toggle),
                 Command::ToggleTiled => controller.tile_window(window, SettingMode::Toggle),
                 Command::Unpin => controller.pin_window(window, SettingMode::Unset),
@@ -101,6 +106,13 @@ impl Command {
             Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu".to_owned()); },
         };
         return command.execute(controller, window, args);
+    }
+
+    fn switch_workspace_relative(controller: &impl WMController<xlib::Window>, inc: i32) -> Result<(), MarsError> {
+        let workspace = controller.current_workspace()?;
+        let nworkspaces = controller.count_workspaces()?;
+        let new_workspace = (workspace + (nworkspaces as i32 + inc) as u32) % nworkspaces;
+        return controller.switch_workspace(new_workspace);
     }
 }
 
