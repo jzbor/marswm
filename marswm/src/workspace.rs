@@ -21,11 +21,6 @@ pub struct Workspace<C: Client> {
 }
 
 
-pub const WORKSPACE_NAMES: &'static [&str; 10] = &[
-    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-];
-
-
 impl<C: Client> Workspace<C> {
     pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
         return Workspace {
