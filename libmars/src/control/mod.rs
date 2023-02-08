@@ -1,3 +1,5 @@
+//! This module provides functions to control a running WM from an external program.
+
 use crate::common::error::*;
 
 

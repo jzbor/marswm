@@ -1,3 +1,5 @@
+//! The [Canvas] provides a nice wrapper for drawing onto a window
+
 extern crate x11;
 
 use std::ffi::*;

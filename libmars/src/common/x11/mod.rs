@@ -74,6 +74,9 @@ impl From<*mut xlib::Screen> for MonitorConfig {
     }
 }
 
+/// Convert key names to [xlib::KeySym]
+///
+/// * `name` - Name as defined in `X11/keysymdef.h` (without the 'XK_' prefix)
 pub fn get_keysym(name: &str) -> xlib::KeySym {
     unsafe {
         let cstring = CString::new(name).unwrap();
@@ -85,6 +88,9 @@ extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XE
     return 0;
 }
 
+/// Get the current monitor configuration
+///
+/// * `ignore_overlapping` - Ignore monitors that overlap with other monitors
 pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: bool) -> Vec<MonitorConfig> {
     unsafe {
         let mut monitors = VecDeque::new();
@@ -139,11 +145,13 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
     }
 }
 
+/// Remove unrelated mask bits on button or key events
 pub fn sanitize_modifiers(modifiers: u32) -> u32 {
     return modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod2Mask
                         | xlib::Mod3Mask | xlib::Mod4Mask |xlib::Mod5Mask);
 }
 
+/// Send a ClientMessage to the default root window
 pub fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: xlib::Window, data: xlib::ClientMessageData) {
     let mut event = xlib::XEvent {
         client_message: xlib::XClientMessageEvent {

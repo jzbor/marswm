@@ -1,3 +1,5 @@
+//! Window manager library with the goal to make implementing the window management itself easier.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 

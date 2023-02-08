@@ -1,3 +1,7 @@
+//! A very basic toolkit for creating simple applications and drawing on windows.
+//!
+//! Currently only X11 is supported.
+
 use std::ffi::*;
 use std::mem::MaybeUninit;
 use std::ptr;

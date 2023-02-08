@@ -1,9 +1,12 @@
+//! Loading configuration files using [serde_yaml].
+
 use std::env;
 use std::fs;
 use std::path;
 use serde::{Serialize, Deserialize};
 
-pub fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, (bool, String)> {
+
+fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, (bool, String)> {
     let fs_result = fs::read(path);
     let raw = match fs_result {
         Ok(content) => content,
@@ -16,6 +19,7 @@ pub fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result
     };
 }
 
+/// Print config files to stdout
 pub fn print_config(config: &impl Serialize) {
     let ser = serde_yaml::to_string(config);
     match ser {
@@ -24,6 +28,10 @@ pub fn print_config(config: &impl Serialize) {
     }
 }
 
+/// Read config file
+///
+/// * `config_dir` - The subdirectory name (not the whole path)
+/// * `file_name` - The file name (with extension)
 pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_dir: &str, file_name: &str) -> Result<T, String>{
     // check configuration dir as specified in xdg base dir specification
     if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {

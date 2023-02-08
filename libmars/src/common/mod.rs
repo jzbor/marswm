@@ -3,7 +3,6 @@ use std::cmp;
 
 pub mod error;
 pub mod x11;
-pub mod dimensions;
 
 
 pub trait Dimensioned {
