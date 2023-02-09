@@ -46,7 +46,7 @@ These attributes influence the coloring of window borders:
 * `secondary_color`
 * `background_color`
 
-**Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).**
+*Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
 
 Attributes specifying width are all in pixels:
 * `frame_width`

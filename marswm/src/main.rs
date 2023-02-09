@@ -4,8 +4,6 @@
 //! * [window manager](crate::config::Configuration) (default: `marswm get-default-config`)
 //! * [keybindings](crate::bindings::Keybinding) (default: `marswm get-default-keybindings`)
 
-extern crate x11;
-
 use std::env;
 use std::rc::Rc;
 use std::cell::RefCell;

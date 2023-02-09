@@ -8,7 +8,7 @@ workspace = ".."
 
 [dependencies]
 serde = { version = "1.0.151", features = ["derive"] }
-x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
+x11 = { version = "2.19.1", features = ["xlib"] }
 
 [dependencies.libmars]
 path = "../libmars"
