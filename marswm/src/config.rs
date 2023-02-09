@@ -10,6 +10,7 @@ use crate::rules::*;
 const CONFIG_DIR: &str = "marswm";
 const CONFIG_FILE: &str = "marswm.yaml";
 const KEYBINDINGS_FILE: &str = "keybindings.yaml";
+const KEYBINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
 const RULES_FILE: &str = "rules.yaml";
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
@@ -110,8 +111,7 @@ impl Default for ThemingConfiguration {
 }
 
 pub fn read_config() -> Configuration {
-    let result = read_config_file(CONFIG_DIR, CONFIG_FILE);
-    return match result {
+    return match read_config_file(CONFIG_DIR, CONFIG_FILE) {
         Ok(config) => config,
         Err(msg) => {
             println!("Unable to read configuration: {}", msg);
@@ -121,14 +121,21 @@ pub fn read_config() -> Configuration {
 }
 
 pub fn read_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
-    let result = read_config_file(CONFIG_DIR, KEYBINDINGS_FILE);
-    return match result {
+    // read keybindings file
+    let mut keybindings = match read_config_file(CONFIG_DIR, KEYBINDINGS_FILE) {
         Ok(config) => config,
         Err(msg) => {
             println!("Unable to read key bindings: {}", msg);
             default_keybindings(nworkspaces)
         },
     };
+
+    // read extended keybindings
+    if let Ok(config) = read_config_file::<Vec<Keybinding>>(CONFIG_DIR, KEYBINDINGS_EXT_FILE) {
+        keybindings.extend(config);
+    }
+
+    return keybindings;
 }
 
 pub fn read_rules() -> Vec<Rule> {
