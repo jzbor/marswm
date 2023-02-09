@@ -175,7 +175,7 @@ pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
         Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "f", ToggleFloating),
         Keybinding::new(vec!(DEFAULT_MODKEY), "z", CenterClient),
         Keybinding::new(vec!(DEFAULT_MODKEY), "Tab", PreviousWorkspace),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Return", Execute("buttermilk".to_owned())),
+        Keybinding::new(vec!(DEFAULT_MODKEY), "Return", Execute("$TERMINAL".to_owned())),
         Keybinding::new(vec!(DEFAULT_MODKEY), "d", Execute("rofi -show drun".to_owned())),
         Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "BackSpace", Restart),
         Keybinding::new(vec!(DEFAULT_MODKEY), "Up", SetStackPosition(StackPosition::Top)),
