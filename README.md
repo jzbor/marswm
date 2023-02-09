@@ -17,9 +17,6 @@ Features:
 * IPC using X11 atoms (`mars-relay`)
 * YAML for configuration and key bindings
 
-The documentation is currently just inlined in the code to minimize redundancy.
-At the moment you have to build the documentation yourself with `cargo doc --bin marswm --open`.
-
 ### libmars
 
 `libmars` aims expose xlib's ugly sides through a nice rusty interface that makes it easier to implement custom window managers.
