@@ -17,35 +17,34 @@ mod menu;
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Command to send to window manager
-    #[clap(value_enum, value_parser)]
+    // #[clap(value_enum, value_parser)]
+    #[clap(subcommand)]
     command: Command,
 
     /// Window to execute command on (defaults to currently active window)
     #[clap(short, long)]
     window: Option<xlib::Window>,
-
-    /// Desktop index for switching desktop or changing desktop of clients
-    #[clap(short, long)]
-    desktop: Option<usize>,
-
-    /// String parameter
-    #[clap(short, long)]
-    status: Option<String>
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ArgEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::Args)]
+pub struct Workspace { index: u32 }
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, clap::Args)]
+pub struct Status { text: String }
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, clap::Subcommand)]
 pub enum Command {
     Activate,
     Close,
     Menu,
     Pin,
-    SendToDesktop,
+    SendToWorkspace(Workspace),
     SetFullscreen,
-    SetStatus,
+    SetStatus(Status),
     SetTiled,
-    SwitchDesktop,
-    SwitchDesktopNext,
-    SwitchDesktopPrev,
+    SwitchWorkspace(Workspace),
+    SwitchWorkspaceNext,
+    SwitchWorkspacePrev,
     ToggleFullscreen,
     ToggleTiled,
     Unpin,
@@ -58,43 +57,24 @@ impl Command {
     fn execute(&self, controller: &impl WMController<xlib::Window>, window: xlib::Window, args: Args) -> Result<(), String> {
         if *self == Command::Menu {
             return Self::menu(controller, window, args);
-        } else if *self == Command::SetStatus {
-            if let Some(status) = args.status {
-                return controller.set_status(status)
-                    .map_err(|e| e.to_string());
-            } else {
-                return Err("Please supply a status string".to_owned());
-            }
-        } else if *self == Command::SwitchDesktop {
-            if let Some(ws) = args.desktop {
-                return controller.switch_workspace(ws as u32)
-                    .map_err(|e| e.to_string());
-            } else {
-                return Err("Please supply a workspace".to_owned());
-            }
-        } else if *self == Command::SendToDesktop {
-            if let Some(ws) = args.desktop {
-                return controller.send_window_to_workspace(window, ws as u32)
-                    .map_err(|e| e.to_string());
-            } else {
-                return Err("Please supply a workspace".to_owned());
-            }
         } else {
             let result = match self {
                 Command::Activate => controller.activate_window(window),
                 Command::Close => controller.close_window(window),
                 Command::Pin => controller.pin_window(window, SettingMode::Set),
+                Command::SendToWorkspace(ws) => controller.send_window_to_workspace(window, ws.index),
                 Command::SetFullscreen => controller.fullscreen_window(window, SettingMode::Set),
+                Command::SetStatus(status) => controller.set_status(status.text.to_owned()),
                 Command::SetTiled => controller.tile_window(window, SettingMode::Set),
-                Command::SwitchDesktopNext => Self::switch_workspace_relative(controller, 1),
-                Command::SwitchDesktopPrev => Self::switch_workspace_relative(controller, -1),
+                Command::SwitchWorkspace(ws) => controller.switch_workspace(ws.index),
+                Command::SwitchWorkspaceNext => Self::switch_workspace_relative(controller, 1),
+                Command::SwitchWorkspacePrev => Self::switch_workspace_relative(controller, -1),
                 Command::ToggleFullscreen => controller.fullscreen_window(window, SettingMode::Toggle),
                 Command::ToggleTiled => controller.tile_window(window, SettingMode::Toggle),
                 Command::Unpin => controller.pin_window(window, SettingMode::Unset),
                 Command::UnsetFullscreen => controller.fullscreen_window(window, SettingMode::Unset),
                 Command::UnsetTiled => controller.tile_window(window, SettingMode::Unset),
-                Command::Menu | Command::SendToDesktop | Command::SetStatus
-                    | Command::SwitchDesktop => panic!("unhandled command"),
+                Command::Menu => panic!("unhandled command"),
             };
             return result.map_err(|e| e.to_string());
         }
@@ -127,7 +107,7 @@ fn main() {
         },
     };
 
-    let command = args.command;
+    let command = args.command.clone();
     let window = match args.window {
         Some(window) => window,
         None => match controller.get_active_window() {
