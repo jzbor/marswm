@@ -256,16 +256,18 @@ impl Bar {
         self.canvas.flush();
     }
 
-    fn get_status(&self) -> Result<String, &'static str> {
+    fn get_status(&self) -> Result<String, String> {
         return self.root.x11_read_property_string(self.display, MarsStatus)
-            .or_else(|_| self.root.x11_wm_name(self.display));
+            .or_else(|_| self.root.x11_wm_name(self.display))
+            .map_err(|e| e.to_string());
     }
 
-    fn get_active_workspace(&self) -> Result<u32, &'static str> {
-        let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)?;
+    fn get_active_workspace(&self) -> Result<u32, String> {
+        let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
+            .map_err(|e| e.to_string())?;
         match data.get(0) {
             Some(idx) => return Ok(*idx as u32),
-            None => return Err("unable to convert desktop index to u32"),
+            None => return Err("unable to convert desktop index to u32".to_owned()),
         };
     }
 

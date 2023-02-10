@@ -31,7 +31,7 @@ impl X11Controller {
         unsafe {
             let display = xlib::XOpenDisplay(ptr::null());
             if display.is_null() {
-                return Err(error_x11_open_display());
+                return Err(MarsError::x11_open_display());
             }
             return Ok(Self::new_from_display(display, None));
         }
@@ -61,21 +61,21 @@ impl WMController<xlib::Window> for X11Controller {
     fn count_workspaces(&self) -> Result<u32> {
         require_ewmh_atom(self.display, NetNumberOfDesktops)?;
         let data = self.root.x11_read_property_long(self.display, NetNumberOfDesktops, xlib::XA_CARDINAL)
-            .map_err(|msg| error_unknown(msg))?;
+            .map_err(|msg| MarsError::unknown(msg))?;
         let ws_u64 = data.get(0)
-            .ok_or(error_invalid_response("reading property _NET_NUMBER_OF_DESKTOPS"))?;
+            .ok_or(MarsError::invalid_response("reading property _NET_NUMBER_OF_DESKTOPS"))?;
         return (*ws_u64).try_into()
-            .map_err(|_| error_failed_conversion(ws_u64, "u64", "u32"));
+            .map_err(|_| MarsError::failed_conversion(ws_u64, stringify!(u64), stringify!(u32)));
     }
 
     fn current_workspace(&self) -> Result<u32> {
         require_ewmh_atom(self.display, NetCurrentDesktop)?;
         let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
-            .map_err(|msg| error_unknown(msg))?;
+            .map_err(|msg| MarsError::unknown(msg))?;
         let ws_u64 = data.get(0)
-            .ok_or(error_invalid_response("reading property _NET_CURRENT_DESKTOP"))?;
+            .ok_or(MarsError::invalid_response("reading property _NET_CURRENT_DESKTOP"))?;
         return (*ws_u64).try_into()
-            .map_err(|_| error_failed_conversion(ws_u64, "u64", "u32"));
+            .map_err(|_| MarsError::failed_conversion(ws_u64, stringify!(u64), stringify!(u32)));
     }
 
     fn fullscreen_window(&self, window: xlib::Window, mode: SettingMode) -> Result<()> {
@@ -91,10 +91,10 @@ impl WMController<xlib::Window> for X11Controller {
     fn get_active_window(&self) -> Result<xlib::Window> {
         require_ewmh_atom(self.display, NetActiveWindow)?;
         let data = self.root.x11_read_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW)
-                .map_err(|msg| error_unknown(msg))?;
+                .map_err(|msg| MarsError::unknown(msg))?;
         return data.get(0)
             .map(|w| *w)
-            .ok_or(error_invalid_response("reading property _NET_ACTIVE_WINDOW"));
+            .ok_or(MarsError::invalid_response("reading property _NET_ACTIVE_WINDOW"));
     }
 
     fn get_workspace(&self, window: xlib::Window) -> Result<u32> {
@@ -102,11 +102,11 @@ impl WMController<xlib::Window> for X11Controller {
 
         if self.window_is_pinned(window)? {
             let data = window.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
-                .map_err(|msg| error_unknown(msg))?;
+                .map_err(|msg| MarsError::unknown(msg))?;
             let ws_u64 = data.get(0)
-                .ok_or(error_invalid_response("reading property _NET_WM_DESKTOP"))?;
+                .ok_or(MarsError::invalid_response("reading property _NET_WM_DESKTOP"))?;
             return (*ws_u64).try_into()
-                .map_err(|_| error_failed_conversion(ws_u64, "u64", "u32"));
+                .map_err(|_| MarsError::failed_conversion(ws_u64, stringify!(u64), stringify!(u32)));
         } else {
             return self.current_workspace();
         }
@@ -172,16 +172,16 @@ impl WMController<xlib::Window> for X11Controller {
     fn window_is_pinned(&self, window: xlib::Window) -> Result<bool> {
         require_ewmh_atom(self.display, NetWMDesktop)?;
         let data = window.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
-            .map_err(|msg| error_unknown(msg))?;
+            .map_err(|msg| MarsError::unknown(msg))?;
         let ws_u64 = data.get(0)
-            .ok_or(error_invalid_response("reading property _NET_WM_DESKTOP"))?;
+            .ok_or(MarsError::invalid_response("reading property _NET_WM_DESKTOP"))?;
         return Ok(*ws_u64 == u64::MAX);
     }
 
     fn window_is_fullscreen(&self, window: xlib::Window) -> Result<bool> {
         require_ewmh_atom(self.display, NetWMState)?;
         let is_fullscreen = window.x11_net_wm_state(self.display)
-            .map_err(|msg| error_unknown(msg))?
+            .map_err(|msg| MarsError::unknown(msg))?
             .contains(&NetWMStateFullscreen);
         return Ok(is_fullscreen);
     }
@@ -189,7 +189,7 @@ impl WMController<xlib::Window> for X11Controller {
     fn workspaces(&self) -> Result<Vec<String>> {
         require_ewmh_atom(self.display, NetDesktopNames)?;
         return self.root.x11_get_text_list_property(self.display, NetDesktopNames)
-            .map_err(|msg| error_unknown(msg));
+            .map_err(|msg| MarsError::unknown(msg));
     }
 }
 
@@ -209,11 +209,11 @@ fn require_ewmh_atom(display: *mut xlib::Display, atom: X11Atom) -> Result<()> {
     };
     let xatom = atom.to_xlib_atom(display);
     let supported = root.x11_read_property_long(display, NetSupported, xlib::XA_ATOM)
-        .map_err(|_| error_x11_unsupported_atom(NetSupported))?;
+        .map_err(|_| MarsError::x11_unsupported_atom(NetSupported))?;
 
     if supported.contains(&xatom) {
         return Ok(());
     } else {
-        return Err(error_x11_unsupported_atom(atom));
+        return Err(MarsError::x11_unsupported_atom(atom));
     }
 }

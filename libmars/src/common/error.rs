@@ -5,6 +5,7 @@ use crate::common::x11::atoms::X11Atom;
 
 pub type Result<T> = CoreResult<T, MarsError>;
 
+#[derive(Debug,Clone)]
 pub struct MarsError {
     kind: MarsErrorKind,
     info: Option<String>,
@@ -14,8 +15,62 @@ pub struct MarsError {
 pub enum MarsErrorKind {
     ConnectionFailed,
     IllegalValue,
+    FailedRequest,
+    PropertyUnavailable,
     Unknown,
     UnsupportedProtocol,
+}
+
+
+impl MarsError {
+    pub fn failed_request(call: &str) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::FailedRequest,
+            info: Some(format!("{} failed", call)),
+        }
+    }
+
+    pub fn failed_conversion(value: impl std::fmt::Debug, from: &str, to: &str) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::IllegalValue,
+            info: Some(format!("unable to convert {:?} from {} to {}", value, from, to)),
+        };
+    }
+
+    pub fn invalid_response(request: impl Display) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::IllegalValue,
+            info: Some(format!("invalid response value to request '{}'", request)),
+        };
+    }
+
+    pub fn property_unavailable(property: impl ToString) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::PropertyUnavailable,
+            info: Some(property.to_string()),
+        };
+    }
+
+    pub fn unknown(info: impl ToString) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::Unknown,
+            info: Some(info.to_string()),
+        };
+    }
+
+    pub fn x11_unsupported_atom(atom: X11Atom) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::UnsupportedProtocol,
+            info: Some(atom.to_string()),
+        };
+    }
+
+    pub fn x11_open_display() -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::ConnectionFailed,
+            info: Some("XOpenDisplay".to_owned()),
+        };
+    }
 }
 
 
@@ -42,43 +97,11 @@ impl Display for MarsErrorKind {
             Self::IllegalValue => "Illegal value",
             Self::Unknown => "Unknown error",
             Self::UnsupportedProtocol => "Protocol not supported",
+            Self::PropertyUnavailable => "Property not available",
+            Self::FailedRequest => "Failed request",
         };
         return write!(f, "{}", name);
     }
 }
 
 
-pub fn error_invalid_response(request: &(impl Display + ?Sized)) -> MarsError {
-    return MarsError {
-        kind: MarsErrorKind::IllegalValue,
-        info: Some(format!("invalid response value to request '{}'", request)),
-    };
-}
-
-pub fn error_failed_conversion(value: &(impl Display + ?Sized), from: &str, to: &str) -> MarsError {
-    return MarsError {
-        kind: MarsErrorKind::IllegalValue,
-        info: Some(format!("unable to convert {} from {} to {}", value, from, to)),
-    };
-}
-
-pub fn error_unknown(info: impl ToString) -> MarsError {
-    return MarsError {
-        kind: MarsErrorKind::Unknown,
-        info: Some(info.to_string()),
-    };
-}
-
-pub fn error_x11_unsupported_atom(atom: X11Atom) -> MarsError {
-    return MarsError {
-        kind: MarsErrorKind::UnsupportedProtocol,
-        info: Some(atom.to_string()),
-    };
-}
-
-pub fn error_x11_open_display() -> MarsError {
-    return MarsError {
-        kind: MarsErrorKind::ConnectionFailed,
-        info: Some("XOpenDisplay".to_owned()),
-    };
-}

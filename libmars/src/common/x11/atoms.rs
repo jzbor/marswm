@@ -11,10 +11,12 @@ enum_with_values! {
     vis pub enum X11Atom {
         // ICCCM
         UTF8String,
+        WMClass,
         WMDeleteWindow,
         WMIconName,
         WMIconSize,
         WMName,
+        WMNormalHints,
         WMProtocols,
         WMState,
 
@@ -63,11 +65,13 @@ impl Display for X11Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let string = match self {
             X11Atom::UTF8String => "UTF8_STRING",
+            X11Atom::WMClass => "WM_CLASS",
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
             X11Atom::WMIconName => "WM_ICON_NAME",
             X11Atom::WMIconSize => "WM_ICON_SIZE",
             X11Atom::WMProtocols => "WM_PROTOCOLS",
             X11Atom::WMName => "WM_NAME",
+            X11Atom::WMNormalHints => "WM_NORMAL_HINTS",
             X11Atom::WMState => "WM_STATE",
 
             X11Atom::NetActiveWindow => "_NET_ACTIVE_WINDOW",

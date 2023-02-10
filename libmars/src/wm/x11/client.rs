@@ -4,6 +4,7 @@ use std::cmp;
 use std::ffi::*;
 use x11::xlib;
 
+use crate::common::error::*;
 use crate::common::x11::*;
 use crate::common::x11::atoms::*;
 use crate::common::x11::atoms::X11Atom::*;
@@ -36,7 +37,7 @@ pub struct X11Client {
 }
 
 impl X11Client {
-    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> Result<X11Client, String> {
+    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> Result<X11Client> {
         let attributes = window.x11_attributes(display)?;
         let x = attributes.x;
         let y = attributes.y;
@@ -520,11 +521,11 @@ impl Dimensioned for X11Client {
 }
 
 impl X11Window for X11Client {
-    fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes, String> {
+    fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes> {
         return self.window.x11_attributes(display);
     }
 
-    fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String), String> {
+    fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String)> {
         return self.window.x11_class_hint(display);
     }
 
@@ -542,15 +543,15 @@ impl X11Window for X11Client {
         }
     }
 
-    fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64, &'static str> {
+    fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64> {
         return self.window.x11_get_state(display);
     }
 
-    fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>, &'static str> {
+    fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>> {
         return self.window.x11_get_text_list_property(display, property);
     }
 
-    fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>, &'static str> {
+    fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>> {
         return self.window.x11_net_wm_state(display);
     }
 
@@ -562,11 +563,11 @@ impl X11Window for X11Client {
         self.window.x11_net_wm_state_remove(display, state);
     }
 
-    fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>, &'static str> {
+    fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>> {
         return self.window.x11_read_property_long(display, property, prop_type);
     }
 
-    fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String, &'static str> {
+    fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String> {
         return self.window.x11_read_property_string(display, property);
     }
 
@@ -582,11 +583,11 @@ impl X11Window for X11Client {
         self.window.x11_set_text_list_property(display, property, list);
     }
 
-    fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions, String> {
+    fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions> {
         return self.frame.x11_dimensions(display);
     }
 
-    fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32), String>{
+    fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32)> {
         return self.frame.x11_geometry(display);
     }
 
@@ -610,11 +611,11 @@ impl X11Window for X11Client {
         return self.window.x11_wm_protocols(display);
     }
 
-    fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String, &'static str> {
+    fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {
         return self.window.x11_wm_name(display);
     }
 
-    fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long), String> {
+    fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long)> {
         return self.window.x11_wm_normal_hints(display);
     }
 }
