@@ -54,14 +54,17 @@ pub struct LayoutConfiguration {
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Copy,Clone)]
 #[serde(default)]
 pub struct ThemingConfiguration {
-    /// primary highlight color
-    pub primary_color: u64,
+    /// color for active window frame
+    pub active_color: u64,
 
-    /// secondary highlight color
-    pub secondary_color: u64,
+    /// color for passive window frame
+    pub inactive_color: u64,
 
-    /// default color
-    pub background_color: u64,
+    /// color of inner and outer border
+    pub border_color: u64,
+
+    /// use inverted version of active/inactive color for border
+    pub invert_border_color: bool,
 
     /// width of the frame that client windows are reparented to
     pub frame_width: u32,
@@ -100,9 +103,10 @@ impl Default for LayoutConfiguration {
 impl Default for ThemingConfiguration {
     fn default() -> Self {
         return ThemingConfiguration {
-            primary_color: 0xae0c0c,
-            secondary_color: 0x1f464f,
-            background_color: 0xceccc6,
+            active_color: 0xae0c0c,
+            inactive_color: 0x1f464f,
+            border_color: 0xceccc6,
+            invert_border_color: false,
             frame_width: 4,
             inner_border_width: 1,
             outer_border_width: 1

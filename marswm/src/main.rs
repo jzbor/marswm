@@ -1,8 +1,5 @@
-//! `marswm` is my custom tiling window manager, heavily inspired by dwm.
-//!
-//! The following things can be configured via [YAML](https://yaml.org/):
-//! * [window manager](crate::config::Configuration) (default: `marswm get-default-config`)
-//! * [keybindings](crate::bindings::Keybinding) (default: `marswm get-default-keybindings`)
+#![doc = include_str!("../README.md")]
+
 
 use std::env;
 use std::rc::Rc;

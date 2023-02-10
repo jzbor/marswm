@@ -122,16 +122,26 @@ impl<C: Client> MarsWM<C> {
 
     pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(self.config.theming.background_color);
-        client.set_outer_color(self.config.theming.background_color);
-        client.set_frame_color(self.config.theming.primary_color);
+        if self.config.theming.invert_border_color {
+            client.set_inner_color(self.config.theming.inactive_color);
+            client.set_outer_color(self.config.theming.inactive_color);
+        } else {
+            client.set_inner_color(self.config.theming.border_color);
+            client.set_outer_color(self.config.theming.border_color);
+        }
+        client.set_frame_color(self.config.theming.active_color);
     }
 
     pub fn decorate_inactive(&self, client_rc: Rc<RefCell<C>>) {
         let mut client = (*client_rc).borrow_mut();
-        client.set_inner_color(self.config.theming.background_color);
-        client.set_outer_color(self.config.theming.background_color);
-        client.set_frame_color(self.config.theming.secondary_color);
+        if self.config.theming.invert_border_color {
+            client.set_inner_color(self.config.theming.active_color);
+            client.set_outer_color(self.config.theming.active_color);
+        } else {
+            client.set_inner_color(self.config.theming.border_color);
+            client.set_outer_color(self.config.theming.border_color);
+        }
+        client.set_frame_color(self.config.theming.inactive_color);
     }
 
     pub fn initial_position<B: Backend<C>>(&self, backend: &mut B, client_rc: &Rc<RefCell<C>>) -> (i32, i32) {
