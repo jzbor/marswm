@@ -14,4 +14,4 @@ readme.workspace = true
 [dependencies]
 serde = { workspace = true }
 x11 = { workspace = true }
-libmars = { workspace = true }
+libmars = { workspace = true, features = ["configuration"] }
