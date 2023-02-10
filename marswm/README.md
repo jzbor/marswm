@@ -1,5 +1,5 @@
 # MARSWM
-This file contains the user documentation for the `marswm` window manager.
+A modern window manager featuring dynamic tiling (rusty successor to [moonwm](https://github.com/jzbor/moonwm)).
 
 The [YAML](https://yaml.org/) format is used for configuration with the default file path being `~/.config/marswm/marswm.yaml`.
 You can get the default configuration with `marswm print-default-config`.
@@ -40,18 +40,17 @@ It is configured by these two parameters (also in the `layout` section of the co
 ## Theming
 You can configure different parts of how `marswm` looks in the `theming` section of the configuration file.
 
-
 These attributes influence the coloring of window borders:
-* `primary_color`
-* `secondary_color`
-* `background_color`
+* `active_color` - frame color of currently focused window
+* `inactive_color` - frame color of unfocused windows
+* `border_color` - color of the inner and outer border around the frame
 
 *Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
 
 Attributes specifying width are all in pixels:
-* `frame_width`
-* `inner_border_width`
-* `outer_border_width`
+* `frame_width` - width of the frame (excluding inner and outer borders)
+* `inner_border_width` - inner border between the window content and frame
+* `outer_border_width` - outer border around the window frame
 
 
 ## Keybindings
@@ -61,7 +60,7 @@ Call `marswm print-default-keybindings` to get an overview of them.
 In contrast to the other sections of this manual the keybindings are not configured in the default configuration file.
 Instead they are read from a separate YAML file (usually in `~/.config/marswm/keybindings.yaml`).
 The bindings in that file will overwrite the default bindings.
-If you wish to just extend the default key bindings by some custom ones you can use the file `~/.config/marswm/keybindings.yaml` which will then get merged with the default key bindings.
+If you wish to just extend the default key bindings by some custom ones you can use the file `~/.config/marswm/keybindings_ext.yaml` which will then get merged with the default key bindings.
 
 A key binding entry consists of a list of `modifers`, the `key` you want to bind as well as an `action` to execute as soon as a key is pressed.
 Here is an example:
@@ -73,4 +72,4 @@ Here is an example:
   action: !move-workspace 0
 ```
 
-The actions are sadly not documented yet, but you can take a look at [the source code](src/bindings.rs).
+The actions are sadly not documented yet, but you can take a look at [the source code](https://github.com/jzbor/marswm/tree/master/marswm/src/bindings.rs).
