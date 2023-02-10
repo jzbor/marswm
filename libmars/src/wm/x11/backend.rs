@@ -295,6 +295,11 @@ impl X11Backend {
 
             let boxed_client = Rc::new(RefCell::new(client));
             wm.manage(self, boxed_client.clone(), workspace_req);
+        } else {
+            // Unable to manage window
+            unsafe {
+                xlib::XMapRaised(self.display, window);
+            }
         }
 
         // TODO move transient clients to workspace and monitor of their counterpart
