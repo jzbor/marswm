@@ -1,17 +1,22 @@
 [package]
 name = "libmars"
-version = "0.1.0"
-edition = "2021"
+description = "Library to build window managers and accompanying utilities"
 workspace = ".."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# inherit the following keys from workspace
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license-file.workspace = true
+readme.workspace = true
 
 [dependencies]
-x11 = { version = "2.19.1", features = ["xlib", "xinerama", "xrandr"] }
-serde = { version = "1.0.151", features = ["derive"], optional = true }
-serde_yaml = { version = "0.9.16", optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_yaml = { workspace = true, optional = true }
+x11 = { workspace = true, features = ["xinerama", "xrandr", "xft"] }
 
 [features]
 configuration = ["dep:serde", "dep:serde_yaml"]
-xlib = []
+xlib = []  # TODO implement configuration option
 

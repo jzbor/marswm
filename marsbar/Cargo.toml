@@ -1,16 +1,17 @@
 [package]
 name = "marsbar"
-version = "0.1.0"
-edition = "2021"
+description = "Task bar for marswm (and other EWMH-compliant window managers)"
 workspace = ".."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# inherit the following keys from workspace
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license-file.workspace = true
+readme.workspace = true
 
 [dependencies]
-serde = { version = "1.0.151", features = ["derive"] }
-x11 = { version = "2.19.1", features = ["xlib", "xinerama", "xft"] }
-
-[dependencies.libmars]
-path = "../libmars"
-version = "0.1.0"
-features = ["configuration"]
+serde = { workspace = true }
+x11 = { workspace = true }
+libmars = { workspace = true }

@@ -1,15 +1,17 @@
 [package]
 name = "mars-relay"
-version = "0.1.0"
-edition = "2021"
+description = "Utility to control and automate a window manager"
 workspace = ".."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# inherit the following keys from workspace
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license-file.workspace = true
+readme.workspace = true
 
 [dependencies]
-clap = { version = "3.2.7", features = ["derive"] }
-x11 = { version = "2.19.1", features = ["xlib", "xinerama"] }
-
-[dependencies.libmars]
-path = "../libmars"
-version = "0.1.0"
+clap = { workspace = true }
+x11 = { workspace = true }
+libmars = { workspace = true }
