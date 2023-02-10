@@ -1,7 +1,8 @@
+# MARSWM Project
 `marswm` aims to be the rusty successor to [moonwm](https://github.com/jzbor/moonwm).
 In addition to the window manager this repository also contains the [library](./libmars) it is built on, an accompanying [status bar](./marsbar) and an [ipc client](./mars-relay) to control the window manager from external scripts.
 
-[Find out more on how to configure and use the window manager itself.](./marswm)
+You can find documentation on how to configure the window manger on [crates.io](https://docs.rs/crate/marswm) or in the [Github repo](https://github.com/jzbor/marswm/tree/master/marswm/README.md)
 
 *DISCLAIMER: Although already usable this is still in development. The library API as well as the window manager itself might be subject to frequent changes.*
 
