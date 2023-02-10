@@ -34,21 +34,52 @@ pub struct Status { text: String }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, clap::Subcommand)]
 pub enum Command {
+    /// Activate window
     Activate,
+
+    /// Close window
     Close,
+
+    /// Show quick menu
     Menu,
+
+    /// Pin window so it is visible on all workspaces
     Pin,
+
+    /// Send window to workspace
     SendToWorkspace(Workspace),
+
+    /// Make window fullscreen
     SetFullscreen,
+
+    /// Set status string
     SetStatus(Status),
+
+    /// Tile window
     SetTiled,
+
+    /// Switch current workspace
     SwitchWorkspace(Workspace),
+
+    /// Switch to next workspace
     SwitchWorkspaceNext,
+
+    /// Switch to previous workspace
     SwitchWorkspacePrev,
+
+    /// Toggle fullscreen on window
     ToggleFullscreen,
+
+    /// Toggle tiled state on window
     ToggleTiled,
+
+    /// Unpin window
     Unpin,
+
+    /// Unfullscreen window
     UnsetFullscreen,
+
+    /// Untile window
     UnsetTiled,
 }
 
