@@ -73,3 +73,28 @@ Here is an example:
 ```
 
 The actions are sadly not documented yet, but you can take a look at [the source code](https://github.com/jzbor/marswm/tree/master/marswm/src/bindings.rs).
+
+
+## Window Rules
+It is possible to configure the state of newly mapped windows with window rules.
+The file `~/.config/marswm/rules.yaml` may contain a list of such rules.
+The rules consist of an `identifier` part as well as configuration options and a list of `actions` to apply on matching windows.
+
+For example:
+```YAML
+- identifiers:
+    application: 'thunderbird'
+  actions:
+    - !move-workspace 5
+```
+
+### Identifiers:
+* `application` - name of the application (second string of the `WM_CLASS` property on X11)
+* `title` - window title
+
+### Configuration Options:
+* `actions` - list of binding actions to execute for the new window
+
+*Note: Currently only the `actions` field is supported, although certain properties such as default workspace might be moved to their own fields in the future*
+
+

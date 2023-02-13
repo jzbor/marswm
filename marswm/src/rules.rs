@@ -16,7 +16,10 @@ pub struct Rule {
 #[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
 #[serde(default)]
 struct Identifiers {
+    /// application name - WM class for X11 (exact match)
     application: Option<String>,
+
+    /// title (exact match)
     title: Option<String>,
 }
 
@@ -32,7 +35,7 @@ impl Rule {
 
 impl Identifiers {
     pub fn matches(&self, client_rc: Rc<RefCell<impl Client>>) -> bool {
-        return (self.application.is_none() || self.application == Some(client_rc.borrow().application().to_owned()))
+        return (self.application.is_none() || self.application == Some(client_rc.borrow().application()))
             && (self.title.is_none() || self.title == Some(client_rc.borrow().title()));
     }
 }
