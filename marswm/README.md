@@ -65,9 +65,7 @@ If you wish to just extend the default key bindings by some custom ones you can 
 A key binding entry consists of a list of `modifers`, the `key` you want to bind as well as an `action` to execute as soon as a key is pressed.
 Here is an example:
 ```YAML
-- modifiers:
-  - Mod4
-  - Shift
+- modifiers: [Mod4, Shift]
   key: '1'
   action: !move-workspace 0
 ```
@@ -84,8 +82,7 @@ For example:
 ```YAML
 - identifiers:
     application: 'thunderbird'
-  actions:
-    - !move-workspace 5
+  actions: [ !move-workspace 5 ]
 ```
 
 ### Identifiers:
