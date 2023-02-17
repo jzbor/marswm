@@ -53,7 +53,7 @@ struct XRandrInfo {
 }
 
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 20] = & [
+const SUPPORTED_ATOMS: &'static [X11Atom; 21] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -72,6 +72,7 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 20] = & [
     NetWMWindowTypeDialog,
     NetWMWindowTypeDock,
     NetWMWindowTypeMenu,
+    NetWMWindowTypeNotification,
     NetWorkarea,
 
     MarsWMStateTiled,
@@ -255,6 +256,10 @@ impl X11Backend {
                     xlib::XMapRaised(self.display, window);
                     return;
                 },
+                NetWMWindowTypeNotification => unsafe {
+                    xlib::XMapRaised(self.display, window);
+                    return;
+                }
                 _ => (),
             }
         }

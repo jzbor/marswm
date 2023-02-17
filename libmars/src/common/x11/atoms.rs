@@ -44,6 +44,7 @@ enum_with_values! {
         NetWMWindowTypeDialog,
         NetWMWindowTypeDock,
         NetWMWindowTypeMenu,
+        NetWMWindowTypeNotification,
         NetWorkarea,
 
         // Motif
@@ -97,6 +98,7 @@ impl Display for X11Atom {
             X11Atom::NetWMWindowTypeDesktop => "_NET_WM_WINDOW_TYPE_DESKTOP",
             X11Atom::NetWMWindowTypeDialog => "_NET_WM_WINDOW_TYPE_DIALOG",
             X11Atom::NetWMWindowTypeMenu => "_NET_WM_WINDOW_TYPE_MENU",
+            X11Atom::NetWMWindowTypeNotification => "_NET_WM_WINDOW_TYPE_NOTIFICATION",
             X11Atom::NetWorkarea => "_NET_WORKAREA",
 
             X11Atom::MotifWMHints => "_MOTIF_WM_HINTS",
