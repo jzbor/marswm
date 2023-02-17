@@ -84,7 +84,7 @@ pub fn get_keysym(name: &str) -> xlib::KeySym {
     }
 }
 
-extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
+pub extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
     return 0;
 }
 
