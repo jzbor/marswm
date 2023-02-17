@@ -68,6 +68,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn total_bw(&self) -> (u32, u32, u32, u32);
     fn unset_fullscreen(&mut self);
     fn warp_pointer_to_center(&self);
+    fn warp_pointer_to_corner(&self);
 }
 
 pub trait Backend<A> {

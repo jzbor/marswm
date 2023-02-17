@@ -817,6 +817,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
             return;
         }
 
+        client_rc.borrow_mut().warp_pointer_to_corner();
         self.mouse_action(wm, client_rc, CURSOR_RESIZE, Self::mouse_action_resize);
     }
 

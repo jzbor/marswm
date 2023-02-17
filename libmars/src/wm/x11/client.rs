@@ -499,6 +499,15 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
             xlib::XWarpPointer(self.display, 0, self.frame, 0, 0, 0, 0, x, y);
         }
     }
+
+    fn warp_pointer_to_corner(&self) {
+        unsafe {
+            // let (x, y) = self.center();
+            let (x, y) = (self.w as i32, self.h as i32);
+            // FIXME handle return (return result)
+            xlib::XWarpPointer(self.display, 0, self.frame, 0, 0, 0, 0, x, y);
+        }
+    }
 }
 
 impl<A: PartialEq> Dimensioned for X11Client<A> {
