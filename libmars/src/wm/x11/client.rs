@@ -266,8 +266,8 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
         }
     }
 
-    fn center_on_screen(&mut self, monitor_conf: &MonitorConfig) {
-        let (center_x, center_y) = monitor_conf.window_area().center();
+    fn center_on_screen(&mut self, dimensions: Dimensions) {
+        let (center_x, center_y) = dimensions.center();
         self.move_resize(center_x - (self.w as i32 / 2),
             center_y - (self.h as i32 / 2),
             self.w(), self.h())

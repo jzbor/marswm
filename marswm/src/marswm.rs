@@ -354,7 +354,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
         let mut client = (*client_rc).borrow_mut();
         client.show();
-        client.center_on_screen(&monitor_conf);
+        client.center_on_screen(monitor_conf.window_area());
 
         // configure look
         if !client.dont_decorate() {

@@ -37,7 +37,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn attributes_mut(&mut self) -> &mut A;
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
-    fn center_on_screen(&mut self, monitor_conf: &MonitorConfig);
+    fn center_on_screen(&mut self, dimensions: Dimensions);
     fn close(&self);
     fn dont_decorate(&self) -> bool;
     fn export_pinned(&self, state: bool, workspace_idx: Option<u32>);

@@ -178,6 +178,8 @@ impl<C: Client<Attributes>> Workspace<C> {
             let dimensions_option = client.attributes_mut().floating_dimensions.take();
             if let Some(dimensions) = dimensions_option {
                 client.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+            } else {
+                client.center_on_screen(self.win_area);
             }
             drop(client);
 

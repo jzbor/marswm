@@ -68,7 +68,7 @@ impl BindingAction {
         match self {
             CenterClient => if let Some(client_rc) = client_option {
                 if let Some(mon) = wm.get_monitor(&client_rc) {
-                    client_rc.borrow_mut().center_on_screen(mon.config());
+                    client_rc.borrow_mut().center_on_screen(mon.config().window_area());
                 }
             },
             ChangeMainRatio(f) =>  wm.current_workspace_mut(backend).change_main_ratio(*f),
