@@ -16,7 +16,7 @@ use crate::rules::*;
 use crate::workspace::*;
 
 
-pub struct MarsWM<B: Backend> {
+pub struct MarsWM<B: Backend<Attributes>> {
     backend_phantom: PhantomData<B>,
     exec_path: PathBuf,
     config: Configuration,
@@ -27,7 +27,7 @@ pub struct MarsWM<B: Backend> {
     rules: Vec<Rule>,
 }
 
-impl<B: Backend> MarsWM<B> {
+impl<B: Backend<Attributes>> MarsWM<B> {
     pub fn new(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>, rules: Vec<Rule>)
                 -> MarsWM<B> {
         // stores exec path to enable reloading after rebuild
@@ -44,7 +44,7 @@ impl<B: Backend> MarsWM<B> {
         };
 
         let monitor_config = backend.get_monitor_config();
-        (&mut wm as &mut dyn WindowManager<B>).update_monitor_config(backend, monitor_config);
+        (&mut wm as &mut dyn WindowManager<B, Attributes>).update_monitor_config(backend, monitor_config);
         backend.export_current_workspace(0);
 
         backend.handle_existing_windows(&mut wm);
@@ -210,7 +210,7 @@ impl<B: Backend> MarsWM<B> {
     }
 }
 
-impl<B: Backend> WindowManager<B> for MarsWM<B> {
+impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     fn active_client(&self) -> Option<Rc<RefCell<B::Client>>> {
         return self.active_client.clone();
     }
@@ -390,7 +390,7 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
         self.focus_client(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
-        let clients = <marswm::MarsWM<B> as WindowManager<B>>::clients(self).collect();
+        let clients = <marswm::MarsWM<B> as WindowManager<B, Attributes>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
 
@@ -513,7 +513,7 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
             self.active_client = None;
         }
 
-        let clients = <marswm::MarsWM<B> as WindowManager<B>>::clients(self).collect();
+        let clients = <marswm::MarsWM<B> as WindowManager<B, Attributes>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
     }

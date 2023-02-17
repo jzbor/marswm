@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
 use libmars::wm::Client;
 
+use crate::attributes::*;
 use crate::bindings::*;
 
 
@@ -27,7 +28,7 @@ struct Identifiers {
 }
 
 impl Rule {
-    pub fn matches(&self, client_rc: Rc<RefCell<impl Client>>) -> bool {
+    pub fn matches(&self, client_rc: Rc<RefCell<impl Client<Attributes>>>) -> bool {
         return self.identifiers.matches(client_rc);
     }
 
@@ -41,7 +42,7 @@ impl Rule {
 }
 
 impl Identifiers {
-    pub fn matches(&self, client_rc: Rc<RefCell<impl Client>>) -> bool {
+    pub fn matches(&self, client_rc: Rc<RefCell<impl Client<Attributes>>>) -> bool {
         return (self.application.is_none() || self.application == Some(client_rc.borrow().application()))
             && (self.title.is_none() || self.title == Some(client_rc.borrow().title()));
     }

@@ -34,16 +34,16 @@ macro_rules! print_event {
     }
 }
 
-type WM<'a> = dyn WindowManager<X11Backend> + 'a;
+type WM<'a, A> = dyn WindowManager<X11Backend<A>, A> + 'a;
 
-pub struct X11Backend {
+pub struct X11Backend<A: PartialEq> {
     display: *mut xlib::Display,
     root: u64,
     xrandr: XRandrInfo,
     monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
     dock_windows: Vec<xlib::Window>,
-    last_active: Option<Rc<RefCell<X11Client>>>,
+    last_active: Option<Rc<RefCell<X11Client<A>>>>,
 }
 
 struct XRandrInfo {
@@ -79,9 +79,9 @@ const SUPPORTED_ATOMS: &'static [X11Atom; 21] = & [
 ];
 
 
-impl X11Backend {
+impl<A: PartialEq + Default> X11Backend<A> {
     /// Register window manager and initialize backend with new connection.
-    pub fn init(name: &str) -> Result<X11Backend, String> {
+    pub fn init(name: &str) -> Result<X11Backend<A>, String> {
         // open new connection to x11 server
         let display = unsafe {
             let display = xlib::XOpenDisplay(ptr::null());
@@ -95,7 +95,7 @@ impl X11Backend {
     }
 
     /// Register window manager and create backend from existing connection.
-    pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend, String> {
+    pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend<A>, String> {
         unsafe {
             let root = xlib::XDefaultRootWindow(display);
 
@@ -165,7 +165,7 @@ impl X11Backend {
         }
     }
 
-    fn send_configure_notify(&self, client_rc: Rc<RefCell<X11Client>>) {
+    fn send_configure_notify(&self, client_rc: Rc<RefCell<X11Client<A>>>) {
         let client = client_rc.borrow();
         let inner_dimensions = client.inner_dimensions();
         let ce = xlib::XConfigureEvent {
@@ -189,7 +189,7 @@ impl X11Backend {
         }
     }
 
-    fn handle_xevent(&mut self, wm: &mut WM, event: xlib::XEvent) {
+    fn handle_xevent(&mut self, wm: &mut WM<A>, event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
                 self.monitors = query_monitor_config(self.display, true);
@@ -217,7 +217,7 @@ impl X11Backend {
     }
 
     /// Create a new client for the window and give it to the window manager
-    fn manage(&mut self, wm: &mut WM, window: xlib::Window) {
+    fn manage(&mut self, wm: &mut WM<A>, window: xlib::Window) {
         if window == self.wmcheck_win {
             return;
         }
@@ -310,9 +310,9 @@ impl X11Backend {
         // TODO move transient clients to workspace and monitor of their counterpart
     }
 
-    fn mouse_action(&mut self, wm: &mut dyn WindowManager<X11Backend>,
-                    client_rc: Rc<RefCell<X11Client>>, cursor_type: u32,
-                    action: fn(&mut Self, &Rc<RefCell<X11Client>>, (i32, i32), (u32, u32), (i32, i32))) {
+    fn mouse_action(&mut self, wm: &mut dyn WindowManager<X11Backend<A>, A>,
+                    client_rc: Rc<RefCell<X11Client<A>>>, cursor_type: u32,
+                    action: fn(&mut Self, &Rc<RefCell<X11Client<A>>>, (i32, i32), (u32, u32), (i32, i32))) {
         unsafe {
             // grab pointer
             let cursor = xlib::XCreateFontCursor(self.display, cursor_type);
@@ -362,7 +362,7 @@ impl X11Backend {
         }
     }
 
-    fn mouse_action_move(&mut self, client_rc: &Rc<RefCell<X11Client>>, orig_client_pos: (i32, i32),
+    fn mouse_action_move(&mut self, client_rc: &Rc<RefCell<X11Client<A>>>, orig_client_pos: (i32, i32),
                          _orig_client_size: (u32, u32), delta: (i32, i32)) {
         let dest_x = orig_client_pos.0 + delta.0;
         let dest_y = orig_client_pos.1 + delta.1;
@@ -370,7 +370,7 @@ impl X11Backend {
         client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
     }
 
-    fn mouse_action_resize(&mut self, client_rc: &Rc<RefCell<X11Client>>, _orig_client_pos: (i32, i32),
+    fn mouse_action_resize(&mut self, client_rc: &Rc<RefCell<X11Client<A>>>, _orig_client_pos: (i32, i32),
                          orig_client_size: (u32, u32), delta: (i32, i32)) {
         let dest_w = orig_client_size.0 as i32 + delta.0;
         let dest_h = orig_client_size.1 as i32 + delta.1;
@@ -380,14 +380,14 @@ impl X11Backend {
         client_rc.borrow_mut().move_resize(pos.0, pos.1, dest_w, dest_h);
     }
 
-    fn on_button_press(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XButtonEvent) {
+    fn on_button_press(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XButtonEvent) {
         //print_event!(wm, event);
         let modifiers = sanitize_modifiers(event.state);
         let client = Self::client_by_frame(wm, event.window);
         wm.handle_button(self, modifiers, event.button, client);
     }
 
-    fn on_client_message(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XClientMessageEvent) {
+    fn on_client_message(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XClientMessageEvent) {
         //print_event!(wm, event);
         if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
             match atom {
@@ -447,7 +447,7 @@ impl X11Backend {
         }
     }
 
-    fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XConfigureEvent) {
+    fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
         if event.window == self.root && !self.xrandr.supported {
             self.monitors = query_monitor_config(self.display, true);
@@ -456,7 +456,7 @@ impl X11Backend {
         }
     }
 
-    fn on_configure_request(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XConfigureRequestEvent) {
+    fn on_configure_request(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XConfigureRequestEvent) {
         let client = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.clone());
         let inner = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.borrow().inner_dimensions());
         if let Some(client_rc) = client {
@@ -530,7 +530,7 @@ impl X11Backend {
         }
     }
 
-    fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XDestroyWindowEvent) {
+    fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XDestroyWindowEvent) {
         //print_event!(wm, event);
 
         // unmanage dock window
@@ -549,7 +549,7 @@ impl X11Backend {
         self.unmanage(wm, client_rc);
     }
 
-    fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XCrossingEvent) {
+    fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XCrossingEvent) {
         //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("EnterNotify on frame for client {}", client_rc.borrow().window());
@@ -578,7 +578,7 @@ impl X11Backend {
         }
     }
 
-    fn on_key_press(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XKeyEvent) {
+    fn on_key_press(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XKeyEvent) {
         //print_event!(wm, event);
 
         let keysym = unsafe {
@@ -591,7 +591,7 @@ impl X11Backend {
         wm.handle_key(self, modifiers, key, client_opt)
     }
 
-    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<X11Backend>, _event: xlib::XCrossingEvent) {
+    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<Self, A>, _event: xlib::XCrossingEvent) {
         //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
@@ -607,7 +607,7 @@ impl X11Backend {
         // }
     }
 
-    fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<X11Backend>, event: xlib::XUnmapEvent) {
+    fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XUnmapEvent) {
         //print_event!(wm, event);
         // unmanage dock window
         if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
@@ -640,7 +640,7 @@ impl X11Backend {
         }
     }
 
-    fn on_map_request(&mut self, wm: &mut WM, event: xlib::XMapRequestEvent) {
+    fn on_map_request(&mut self, wm: &mut WM<A>, event: xlib::XMapRequestEvent) {
         //print_event!(wm, event);
         let already_managed = wm.clients().find(|c| c.borrow().window() == event.window).is_some();
         if !already_managed {
@@ -648,7 +648,7 @@ impl X11Backend {
         }
     }
 
-    fn on_map_notify(&mut self, _wm: &mut WM, _event: xlib::XMapEvent) {
+    fn on_map_notify(&mut self, _wm: &mut WM<A>, _event: xlib::XMapEvent) {
         //print_event!(wm, event);
     }
 
@@ -658,7 +658,7 @@ impl X11Backend {
         self.root.x11_replace_property_long(self.display, NetSupported, xlib::XA_ATOM, data)
     }
 
-    fn unmanage(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>) {
+    fn unmanage(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<X11Client<A>>>) {
         // eprintln!("Closing client: {}", client_rc.borrow().name());
 
         // tell window manager to drop client
@@ -683,11 +683,11 @@ impl X11Backend {
         window.x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
     }
 
-    fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {
+    fn client_by_frame<'a>(wm: &'a WM<A>, frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
     }
 
-    fn client_by_window<'a>(wm: &'a WM, window: u64) -> Option<Rc<RefCell<X11Client>>> {
+    fn client_by_window<'a>(wm: &'a WM<A>, window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().window() == window).cloned();
     }
 }
@@ -704,10 +704,10 @@ impl XRandrInfo {
     }
 }
 
-impl Backend for X11Backend {
-    type Client = X11Client;
+impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
+    type Client = X11Client<A>;
 
-    fn export_active_window(&self, client_option: &Option<Rc<RefCell<X11Client>>>) {
+    fn export_active_window(&self, client_option: &Option<Rc<RefCell<Self::Client>>>) {
         let window = match client_option {
             Some(client_rc) => client_rc.borrow().window(),
             None => XLIB_NONE,
@@ -716,7 +716,8 @@ impl Backend for X11Backend {
         self.root.x11_replace_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW, data);
     }
 
-    fn export_client_list(&self, clients: Vec<&Rc<RefCell<X11Client>>>, clients_stacked: Vec<&Rc<RefCell<X11Client>>>) {
+    fn export_client_list(&self, clients: Vec<&Rc<RefCell<Self::Client>>>,
+                          clients_stacked: Vec<&Rc<RefCell<Self::Client>>>) {
         let data_vec: Vec<u64> = clients.iter().map(|c| c.borrow().window()).collect();
         let data_stacked_vec: Vec<u64> = clients_stacked.iter().map(|c| c.borrow().window()).collect();
         let data = data_vec.as_slice();
@@ -762,7 +763,7 @@ impl Backend for X11Backend {
         return self.monitors.clone();
     }
 
-    fn handle_existing_windows(&mut self, wm: &mut WM) {
+    fn handle_existing_windows(&mut self, wm: &mut WM<A>) {
         unsafe {
             xlib::XGrabServer(self.display);
             let mut returned_root: xlib::Window = 0;
@@ -802,7 +803,7 @@ impl Backend for X11Backend {
         }
     }
 
-    fn mouse_move(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+    fn mouse_move(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>, _button: u32) {
         // ignore fullscreen windows
         if client_rc.borrow().is_fullscreen() {
             return;
@@ -811,7 +812,7 @@ impl Backend for X11Backend {
         self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_move);
     }
 
-    fn mouse_resize(&mut self, wm: &mut WM, client_rc: Rc<RefCell<X11Client>>, _button: u32) {
+    fn mouse_resize(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>, _button: u32) {
         // ignore fullscreen windows
         if client_rc.borrow().is_fullscreen() {
             return;
@@ -849,7 +850,7 @@ impl Backend for X11Backend {
         }
     }
 
-    fn set_input_focus(&self, client_rc: Rc<RefCell<X11Client>>) {
+    fn set_input_focus(&self, client_rc: Rc<RefCell<Self::Client>>) {
         let client = (*client_rc).borrow();
         if !client.is_visible() {
             return;
@@ -873,7 +874,7 @@ impl Backend for X11Backend {
         }
     }
 
-    fn run(mut self, wm: &mut WM) {
+    fn run(mut self, wm: &mut WM<A>) {
         loop {
             unsafe {
                 let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();

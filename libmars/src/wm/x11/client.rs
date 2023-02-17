@@ -13,13 +13,14 @@ use crate::wm::*;
 use crate::wm::x11::*;
 
 
-#[derive(PartialEq,Eq)]
-pub struct X11Client {
+#[derive(PartialEq)]
+pub struct X11Client<A: PartialEq> {
     name: String,
     display: *mut xlib::Display,
     root: u64,
     window: u64,
     frame: u64,
+    attributes: A,
 
     orig_pos: (i32, i32), // position prior to reparenting
     x: i32, y: i32, // x, y position
@@ -37,8 +38,8 @@ pub struct X11Client {
     saved_dimensions: Option<Dimensions>,
 }
 
-impl X11Client {
-    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> Result<X11Client> {
+impl<A: Default + PartialEq> X11Client<A> {
+    pub fn new(display: *mut xlib::Display, root: u64, window: xlib::Window, is_dialog: bool) -> Result<X11Client<A>> {
         let attributes = window.x11_attributes(display)?;
         let x = attributes.x;
         let y = attributes.y;
@@ -75,6 +76,8 @@ impl X11Client {
         return Ok( X11Client {
             name,
             display, root, window, frame,
+            attributes: A::default(),
+
             orig_pos: (x, y),
             x, y, w, h,
             ibw: 0,
@@ -91,7 +94,9 @@ impl X11Client {
             saved_dimensions: None,
         } );
     }
+}
 
+impl<A: PartialEq> X11Client<A> {
     pub fn apply_motif_hints(&mut self) {
         let motif_atom = MotifWMHints.to_xlib_atom(self.display);
         if let Ok(hints) = self.x11_read_property_long(self.display, MotifWMHints, motif_atom) {
@@ -229,12 +234,20 @@ impl X11Client {
     }
 }
 
-impl Client for X11Client {
+impl<A: PartialEq> Client<A> for X11Client<A> {
     fn application(&self) -> String {
         return match self.x11_class_hint(self.display) {
             Ok((_name, class)) => class,
             Err(_) => String::default(),
         };
+    }
+
+    fn attributes(&self) -> &A {
+        return &self.attributes;
+    }
+
+    fn attributes_mut(&mut self) -> &mut A {
+        return &mut self.attributes;
     }
 
     fn bind_button(&mut self, modifiers: u32, button: u32) {
@@ -489,7 +502,7 @@ impl Client for X11Client {
     }
 }
 
-impl Dimensioned for X11Client {
+impl<A: PartialEq> Dimensioned for X11Client<A> {
     fn x(&self) -> i32 { self.x }
     fn y(&self) -> i32 { self.y }
     fn w(&self) -> u32 { self.w }
@@ -530,7 +543,7 @@ impl Dimensioned for X11Client {
     fn dimensions(&self) -> Dimensions { Dimensions::new(self.x, self.y, self.w, self.h) }
 }
 
-impl Drop for X11Client {
+impl<A: PartialEq> Drop for X11Client<A> {
     fn drop(&mut self) {
         unsafe {
             // These generate xlib errors if the window is already unmapped
@@ -544,7 +557,9 @@ impl Drop for X11Client {
     }
 }
 
-impl X11Window for X11Client {
+impl<A: PartialEq> Eq for X11Client<A> {}
+
+impl<A: PartialEq> X11Window for X11Client<A> {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes> {
         return self.window.x11_attributes(display);
     }

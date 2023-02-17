@@ -7,7 +7,7 @@ use crate::*;
 use crate::config::Configuration;
 use crate::workspace::*;
 
-pub struct Monitor<C: Client> {
+pub struct Monitor<C: Client<Attributes>> {
     config: MonitorConfig,
     workspaces: Vec<Workspace<C>>,
     cur_workspace: u32,
@@ -15,7 +15,7 @@ pub struct Monitor<C: Client> {
     workspace_offset: u32,
 }
 
-impl<C: Client> Monitor<C> {
+impl<C: Client<Attributes>> Monitor<C> {
     pub fn new(monitor_config: MonitorConfig, config: &Configuration, primary: bool, workspace_offset: u32)
                 -> Monitor<C> {
 
@@ -91,11 +91,11 @@ impl<C: Client> Monitor<C> {
         return self.workspace_offset
     }
 
-    pub fn switch_prev_workspace(&mut self, backend: &impl Backend) {
+    pub fn switch_prev_workspace(&mut self, backend: &impl Backend<Attributes>) {
         self.switch_workspace(backend, self.prev_workspace);
     }
 
-    pub fn switch_workspace(&mut self, backend: &impl Backend, workspace_idx: u32) {
+    pub fn switch_workspace(&mut self, backend: &impl Backend<Attributes>, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
             return;
         } else if workspace_idx >= self.workspace_count() {
@@ -138,7 +138,7 @@ impl<C: Client> Monitor<C> {
     }
 }
 
-impl<C: Client> ClientList<C> for Monitor<C> {
+impl<C: Client<Attributes>> ClientList<C> for Monitor<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         let workspace = &mut self.workspaces[self.cur_workspace as usize];
         client_rc.borrow().export_workspace(workspace.global_index());
@@ -156,7 +156,7 @@ impl<C: Client> ClientList<C> for Monitor<C> {
     }
 }
 
-impl<C: Client> PartialEq for Monitor<C> {
+impl<C: Client<Attributes>> PartialEq for Monitor<C> {
     fn eq(&self, other: &Self) -> bool {
         return self.config == other.config;
     }

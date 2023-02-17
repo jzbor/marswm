@@ -62,7 +62,7 @@ pub struct Keybinding {
 }
 
 impl BindingAction {
-    pub fn execute<B: Backend>(&self, wm: &mut MarsWM<B>, backend: &mut B,
+    pub fn execute<B: Backend<Attributes>>(&self, wm: &mut MarsWM<B>, backend: &mut B,
                                          client_option: Option<Rc<RefCell<B::Client>>>) {
         use BindingAction::*;
         match self {

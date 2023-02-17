@@ -9,7 +9,7 @@ use crate::config::LayoutConfiguration;
 use crate::layouts::*;
 
 #[derive(PartialEq)]
-pub struct Workspace<C: Client> {
+pub struct Workspace<C: Client<Attributes>> {
     name: String,
     global_index: u32,
     floating_clients: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
@@ -21,7 +21,7 @@ pub struct Workspace<C: Client> {
 }
 
 
-impl<C: Client> Workspace<C> {
+impl<C: Client<Attributes>> Workspace<C> {
     pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
         return Workspace {
             name, global_index,
@@ -232,7 +232,7 @@ impl<C: Client> Workspace<C> {
     }
 }
 
-impl<C: Client> ClientList<C> for Workspace<C> {
+impl<C: Client<Attributes>> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         if !client_rc.borrow().is_dialog() {
             client_rc.borrow().export_tiled(true);

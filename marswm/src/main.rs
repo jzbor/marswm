@@ -1,18 +1,19 @@
 #![doc = include_str!("../README.md")]
 
 
-use std::env;
-use std::rc::Rc;
-use std::cell::RefCell;
-
+use libmars::utils::configuration::*;
 use libmars::wm::*;
 use libmars::wm::x11::backend::X11Backend;
-use libmars::utils::configuration::*;
+use std::cell::RefCell;
+use std::env;
+use std::rc::Rc;
 
+use crate::attributes::*;
 use crate::bindings::default_keybindings;
-use crate::marswm::*;
 use crate::config::*;
+use crate::marswm::*;
 
+mod attributes;
 mod bindings;
 mod config;
 mod layouts;
@@ -21,7 +22,7 @@ mod monitor;
 mod rules;
 mod workspace;
 
-trait ClientList<C: Client> {
+trait ClientList<C: Client<Attributes>> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>);

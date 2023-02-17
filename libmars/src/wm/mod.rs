@@ -7,7 +7,7 @@ use crate::common::*;
 
 pub mod x11;
 
-pub trait WindowManager<B: Backend> {
+pub trait WindowManager<B: Backend<A>, A> {
     fn active_client(&self) -> Option<Rc<RefCell<B::Client>>>;
     fn active_workspace(&self, backend: &mut B) -> u32;
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
@@ -31,8 +31,10 @@ pub trait WindowManager<B: Backend> {
     fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>);
 }
 
-pub trait Client: Eq + Dimensioned {
+pub trait Client<A>: Eq + Dimensioned {
     fn application(&self) -> String;
+    fn attributes(&self) -> &A;
+    fn attributes_mut(&mut self) -> &mut A;
     fn bind_button(&mut self, modifiers: u32, button: u32);
     fn bind_key(&mut self, modifiers: u32, key: u32);
     fn center_on_screen(&mut self, monitor_conf: &MonitorConfig);
@@ -68,9 +70,9 @@ pub trait Client: Eq + Dimensioned {
     fn warp_pointer_to_center(&self);
 }
 
-pub trait Backend {
+pub trait Backend<A> {
     /// Associated client type
-    type Client: Client;
+    type Client: Client<A>;
 
     /// Make active window information available to clients
     fn export_active_window(&self, client_option: &Option<Rc<RefCell<Self::Client>>>);
@@ -88,14 +90,14 @@ pub trait Backend {
     fn get_monitor_config(&self) -> Vec<MonitorConfig>;
 
     /// Handle windows existing before initialization
-    fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self>);
+    fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, A>);
 
     /// Move client with mouse
-    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self>,
+    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, A>,
                   client_rc: Rc<RefCell<Self::Client>>, button: u32);
 
     /// Resize client with mouse
-    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self>,
+    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, A>,
                     client_rc: Rc<RefCell<Self::Client>>, button: u32);
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32>;
@@ -104,7 +106,7 @@ pub trait Backend {
     fn pointer_pos(&self) -> (i32, i32);
 
     /// Run window manager event loop
-    fn run(self, wm: &mut (dyn WindowManager<Self>));
+    fn run(self, wm: &mut (dyn WindowManager<Self, A>));
 
     /// Set client that receives mouse and keyboard inputs
     fn set_input_focus(&self, client_rc: Rc<RefCell<Self::Client>>);
