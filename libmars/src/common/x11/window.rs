@@ -1,7 +1,6 @@
 extern crate x11;
 
 use std::ffi::*;
-use std::mem;
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr;

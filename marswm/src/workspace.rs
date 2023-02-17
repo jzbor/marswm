@@ -171,14 +171,32 @@ impl<C: Client<Attributes>> Workspace<C> {
     pub fn set_floating(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
         if state && self.tiled_clients.contains(&client_rc) {
             let index = self.tiled_clients.iter().position(|c| c == &client_rc).unwrap();
+
+            // restore floating dimensions and save stack position
+            let mut client = client_rc.borrow_mut();
+            client.attributes_mut().stack_position = Some(index);
+            let dimensions_option = client.attributes_mut().floating_dimensions.take();
+            if let Some(dimensions) = dimensions_option {
+                client.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+            }
+            drop(client);
+
             let client_rc = self.tiled_clients.remove(index).unwrap();
             client_rc.borrow().export_tiled(false);
             self.floating_clients.push_front(client_rc);
         } else if !state && self.floating_clients.contains(&client_rc) {
+            // save floating dimensions
+            let mut client = client_rc.borrow_mut();
+            let dimensions = Some(client.dimensions());
+            client.attributes_mut().floating_dimensions = dimensions;
+            let insert_index = client.attributes_mut().stack_position.take()
+                .unwrap_or(0);
+            drop(client);
+
             let index = self.floating_clients.iter().position(|c| c == &client_rc).unwrap();
             let client_rc = self.floating_clients.remove(index).unwrap();
             client_rc.borrow().export_tiled(true);
-            self.tiled_clients.push_front(client_rc);
+            self.tiled_clients.insert(insert_index, client_rc);
         }
         self.restack();
     }
