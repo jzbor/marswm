@@ -91,7 +91,5 @@ For example:
 
 ### Configuration Options:
 * `actions` - list of binding actions to execute for the new window
-
-*Note: Currently only the `actions` field is supported, although certain properties such as default workspace might be moved to their own fields in the future*
-
+* `ignore_window` - leads to the window not being managed by the window manager
 

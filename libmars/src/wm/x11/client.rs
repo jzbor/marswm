@@ -21,6 +21,7 @@ pub struct X11Client {
     window: u64,
     frame: u64,
 
+    orig_pos: (i32, i32), // position prior to reparenting
     x: i32, y: i32, // x, y position
     w: u32, h: u32, // width, height
     ibw: u32, obw: u32, // inner and outer border width
@@ -74,6 +75,7 @@ impl X11Client {
         return Ok( X11Client {
             name,
             display, root, window, frame,
+            orig_pos: (x, y),
             x, y, w, h,
             ibw: 0,
             obw: 0,
@@ -528,6 +530,18 @@ impl Dimensioned for X11Client {
     fn dimensions(&self) -> Dimensions { Dimensions::new(self.x, self.y, self.w, self.h) }
 }
 
+impl Drop for X11Client {
+    fn drop(&mut self) {
+        println!("Dropping client {}", self.name);
+        unsafe {
+            // These generate xlib errors if the window is already unmapped
+            xlib::XReparentWindow(self.display, self.window, self.root, self.orig_pos.0, self.orig_pos.1);
+            xlib::XRemoveFromSaveSet(self.display, self.window);
+            xlib::XDestroyWindow(self.display, self.frame);
+        }
+    }
+}
+
 impl X11Window for X11Client {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes> {
         return self.window.x11_attributes(display);
@@ -541,6 +555,7 @@ impl X11Window for X11Client {
                  error_handler: Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>) {
         self.window.x11_close(display, error_handler);
     }
+
     fn x11_destroy(&self, display: *mut xlib::Display) {
         println!("Destroying frame for client {}", self.name);
         unsafe {

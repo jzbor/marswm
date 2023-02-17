@@ -11,6 +11,9 @@ use crate::bindings::*;
 pub struct Rule {
     identifiers: Identifiers,
     actions: Vec<BindingAction>,
+
+    /// do not manage this window
+    ignore_window: bool,
 }
 
 #[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
@@ -30,6 +33,10 @@ impl Rule {
 
     pub fn actions(&self) -> &Vec<BindingAction> {
         return &self.actions;
+    }
+
+    pub fn ignore_window(&self) -> bool {
+        return self.ignore_window;
     }
 }
 

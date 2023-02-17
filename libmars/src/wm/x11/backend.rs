@@ -294,7 +294,7 @@ impl X11Backend {
             };
 
             let boxed_client = Rc::new(RefCell::new(client));
-            wm.manage(self, boxed_client.clone(), workspace_req);
+            wm.manage(self, boxed_client, workspace_req);
         } else {
             // Unable to manage window
             unsafe {
@@ -666,16 +666,16 @@ impl X11Backend {
             }
         }
 
-        let client = client_rc.borrow();
+        let window = client_rc.borrow().window();
 
-        // remove client frame
-        client.destroy_frame();
+        // destroy window frame by dropping the reference
+        debug_assert!(Rc::strong_count(&client_rc) == 1);
+        drop(client_rc);
 
         // set WM_STATE to Withdrawn according to ICCCM
         let data = [WITHDRAWN_STATE as u64, 0];
         let wm_state_atom = WMState.to_xlib_atom(self.display);
-        client.window().x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
-        debug_assert!(Rc::strong_count(&client_rc) == 1);
+        window.x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
     }
 
     fn client_by_frame<'a>(wm: &'a WM, frame: u64) -> Option<Rc<RefCell<X11Client>>> {

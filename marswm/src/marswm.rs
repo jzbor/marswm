@@ -325,6 +325,17 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
     }
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>) {
+        // get rules for client
+        let rules: Vec<Rule> = self.rules.iter()
+            .filter(|r| r.matches(client_rc.clone()))
+            .cloned().collect();
+
+        if rules.iter().any(|r| r.ignore_window()) {
+            // make the window visible, but do not manage it
+            client_rc.borrow_mut().show();
+            return;
+        }
+
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
@@ -349,8 +360,7 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
         if !client.dont_decorate() {
             client.set_inner_bw(self.config.theming.inner_border_width);
             client.set_outer_bw(self.config.theming.outer_border_width);
-            let fw = self.config.theming.frame_width;
-            client.set_frame_width(fw);
+            client.set_frame_width(self.config.theming.frame_width);
         }
 
         // bind buttons
@@ -384,12 +394,8 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
 
-        // apply window rules
-        let actions: Vec<BindingAction> = self.rules.iter()
-            .filter(|r| r.matches(client_rc.clone()))
-            .flat_map(|r| r.actions())
-            .cloned().collect();
-        actions.iter()
+        // apply window rule actions
+        rules.iter().flat_map(|r| r.actions())
             .for_each(|a| a.execute(self, backend, Some(client_rc.clone())))
     }
 
