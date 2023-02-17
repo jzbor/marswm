@@ -3,8 +3,9 @@ extern crate x11;
 use libmars::common::*;
 use libmars::common::x11::atoms::X11Atom::*;
 use libmars::common::x11::window::X11Window;
-use libmars::draw::canvas::*;
-use libmars::draw::widget::*;
+use libmars::draw::*;
+use libmars::draw::x11::canvas::*;
+use libmars::draw::x11::widget::*;
 use std::cmp;
 use std::mem::MaybeUninit;
 use x11::xlib;
@@ -33,7 +34,7 @@ pub struct SystemTrayWidget {
     display: *mut xlib::Display,
     tray_icons: Vec<xlib::Window>,
     window: xlib::Window,
-    canvas: Canvas,
+    canvas: X11Canvas,
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
     width: u32,
     height: u32,
@@ -53,7 +54,7 @@ impl SystemTrayWidget {
         let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = Canvas::new_for_window(display, window)
+        let mut canvas = X11Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         canvas.set_foreground(bg_color)

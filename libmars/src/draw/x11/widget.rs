@@ -5,7 +5,8 @@ use std::cmp;
 
 use crate::common::*;
 use crate::common::x11::window::*;
-use crate::draw::canvas::Canvas;
+use crate::draw::*;
+use crate::draw::x11::canvas::X11Canvas;
 
 
 pub const MIN_SIZE: (u32, u32) = (10, 10);
@@ -33,11 +34,11 @@ pub enum WidgetEvent {
     Redraw(),
 }
 
-pub struct FlowLayoutWidget<W: Widget> {
+pub struct X11FlowLayoutWidget<W: Widget> {
     display: *mut xlib::Display,
     children: Vec<W>,
     window: xlib::Window,
-    canvas: Canvas,
+    canvas: X11Canvas,
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
     width: u32,
     height: u32,
@@ -48,11 +49,11 @@ pub struct FlowLayoutWidget<W: Widget> {
     ipad: u32,
 }
 
-pub struct TextWidget {
+pub struct X11TextWidget {
     display: *mut xlib::Display,
     label: String,
     window: xlib::Window,
-    canvas: Canvas,
+    canvas: X11Canvas,
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
     width: u32,
     height: u32,
@@ -64,19 +65,19 @@ pub struct TextWidget {
     bg_color: u64,
 }
 
-impl<W: Widget> FlowLayoutWidget<W> {
+impl<W: Widget> X11FlowLayoutWidget<W> {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32, ipad: u32,
-               children: Vec<W>, bg_color: u64) -> Result<FlowLayoutWidget<W>, String> {
+               children: Vec<W>, bg_color: u64) -> Result<X11FlowLayoutWidget<W>> {
         let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = Canvas::new_for_window(display, window)
+        let mut canvas = X11Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         canvas.set_foreground(bg_color)
             .and(canvas.set_background(bg_color))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
-        let mut widget = FlowLayoutWidget {
+        let mut widget = X11FlowLayoutWidget {
             display,
             children,
             window, canvas,
@@ -164,13 +165,13 @@ impl<W: Widget> FlowLayoutWidget<W> {
     }
 }
 
-impl TextWidget {
+impl X11TextWidget {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
-               label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<TextWidget, String> {
+               label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<X11TextWidget> {
 
         let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = Canvas::new_for_window(display, window)
+        let mut canvas = X11Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         canvas.set_foreground(fg_color)
@@ -178,7 +179,7 @@ impl TextWidget {
             .and(canvas.set_font(font))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
-        let mut widget = TextWidget {
+        let mut widget = X11TextWidget {
             display,
             label,
             window, canvas,
@@ -221,14 +222,14 @@ impl TextWidget {
         self.canvas.match_resize();
     }
 
-    pub fn set_foreground(&mut self, color: u64) -> Result<(), String> {
+    pub fn set_foreground(&mut self, color: u64) -> Result<()> {
         self.canvas.set_foreground(color)?;
         self.fg_color = color;
         self.redraw();
         return Ok(());
     }
 
-    pub fn set_background(&mut self, color: u64) -> Result<(), String> {
+    pub fn set_background(&mut self, color: u64) -> Result<()> {
         self.canvas.set_background(color)?;
         self.bg_color = color;
         self.redraw();
@@ -242,7 +243,7 @@ impl TextWidget {
     }
 }
 
-impl<W: Widget> Widget for FlowLayoutWidget<W> {
+impl<W: Widget> Widget for X11FlowLayoutWidget<W> {
     fn move_to(&mut self, x: i32, y: i32) {
         unsafe {
             xlib::XMoveWindow(self.display, self.window, x, y);
@@ -314,7 +315,7 @@ impl<W: Widget> Widget for FlowLayoutWidget<W> {
     }
 }
 
-impl Widget for TextWidget {
+impl Widget for X11TextWidget {
     fn move_to(&mut self, x: i32, y: i32) {
         unsafe {
             xlib::XMoveWindow(self.display, self.window, x, y);
@@ -387,19 +388,19 @@ impl Widget for TextWidget {
     }
 }
 
-impl<W: Widget> Drop for FlowLayoutWidget<W> {
+impl<W: Widget> Drop for X11FlowLayoutWidget<W> {
     fn drop(&mut self) {
         self.window.x11_destroy(self.display);
     }
 }
 
-impl Drop for TextWidget {
+impl Drop for X11TextWidget {
     fn drop(&mut self) {
         self.window.x11_destroy(self.display);
     }
 }
 
-pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimensions: Dimensions) -> Result<xlib::Window, String> {
+pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimensions: Dimensions) -> Result<xlib::Window> {
     unsafe {
         let screen = xlib::XDefaultScreen(display);
         let border_width = 0;
@@ -418,7 +419,7 @@ pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, d
         let status = xlib::XReparentWindow(display, win, parent, dimensions.x(), dimensions.y());
         if status == 0 {
             xlib::XDestroyWindow(display, win);
-            return Err("unable to reparent widget".to_owned());
+            return Err(MarsError::failed_request(stringify!(xlib::XReparentWindow)));
         }
 
         // make window visible on screen

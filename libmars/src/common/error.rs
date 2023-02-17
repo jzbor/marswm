@@ -14,8 +14,9 @@ pub struct MarsError {
 #[derive(Debug,Copy,Clone)]
 pub enum MarsErrorKind {
     ConnectionFailed,
-    IllegalValue,
     FailedRequest,
+    IllegalValue,
+    InvalidInput,
     PropertyUnavailable,
     Unknown,
     UnsupportedProtocol,
@@ -34,6 +35,13 @@ impl MarsError {
         return MarsError {
             kind: MarsErrorKind::IllegalValue,
             info: Some(format!("unable to convert {:?} from {} to {}", value, from, to)),
+        };
+    }
+
+    pub fn invalid_input(msg: impl ToString) -> MarsError {
+        return MarsError {
+            kind: MarsErrorKind::InvalidInput,
+            info: Some(msg.to_string()),
         };
     }
 
@@ -94,11 +102,12 @@ impl Display for MarsErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let name = match self {
             Self::ConnectionFailed => "Connection failed",
+            Self::FailedRequest => "Failed request",
             Self::IllegalValue => "Illegal value",
+            Self::InvalidInput => "Invalid input",
+            Self::PropertyUnavailable => "Property not available",
             Self::Unknown => "Unknown error",
             Self::UnsupportedProtocol => "Protocol not supported",
-            Self::PropertyUnavailable => "Property not available",
-            Self::FailedRequest => "Failed request",
         };
         return write!(f, "{}", name);
     }

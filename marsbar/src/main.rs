@@ -3,7 +3,9 @@ extern crate x11;
 use libmars::common::*;
 use libmars::common::x11::atoms::X11Atom::{self, *};
 use libmars::common::x11::window::X11Window;
-use libmars::draw::{self, canvas::Canvas, widget::*};
+use libmars::draw::*;
+use libmars::draw::x11::widget::*;
+use libmars::draw::x11::canvas::*;
 use libmars::utils::configuration::print_config;
 use std::env;
 use std::ffi::*;
@@ -41,13 +43,13 @@ struct Bar {
     display: *mut xlib::Display,
     root: xlib::Window,
     window: xlib::Window,
-    canvas: Canvas,
+    canvas: X11Canvas,
     dimensions: Dimensions,
     config: Configuration,
-    workspace_widget: FlowLayoutWidget<TextWidget>,
-    status_widget: FlowLayoutWidget<TextWidget>,
+    workspace_widget: X11FlowLayoutWidget<X11TextWidget>,
+    status_widget: X11FlowLayoutWidget<X11TextWidget>,
     systray: Option<SystemTrayWidget>,
-    title_widget: TextWidget,
+    title_widget: X11TextWidget,
     active_window: Option<xlib::Window>,
     default_client_event_mask: i64,
 }
@@ -58,7 +60,7 @@ impl Bar {
               default_client_event_mask: i64, create_tray: bool) -> Result<Bar, String> {
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window_type = Some(NetWMWindowTypeDock);
-        let window = draw::create_window(display, dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h(), CLASSNAME, WINDOWNAME, window_type)?;
+        let window = libmars::common::x11::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
         let mut dimensions = dimensions;
         dimensions.set_h(HEIGHT);
 
@@ -68,7 +70,7 @@ impl Bar {
         }
 
         // TODO destroy window on failure
-        let mut canvas = Canvas::new_for_window(display, window)
+        let mut canvas = X11Canvas::new_for_window(display, window)
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
         canvas.set_foreground(config.style.background)
             .and(canvas.set_background(config.style.background))
@@ -435,7 +437,7 @@ impl Bar {
     }
 
     fn await_map_notify(&mut self) {
-        draw::await_map_notify(self.display, self.window);
+        libmars::common::x11::await_map_notify(self.display, self.window);
         self.draw();
         println!("Window mapped: 0x{:x}, {:?}", self.window, self.window.x11_dimensions(self.display));
     }
@@ -471,7 +473,7 @@ fn main() {
     }
 
     // test();
-    let display = draw::open_display().unwrap();
+    let display = libmars::common::x11::open_display().unwrap();
 
     // unsafe {
     //     #[cfg(debug_assertions)]
@@ -512,7 +514,7 @@ fn main() {
     if let Some(mut proc) = status_cmd_proc {
         let _result = proc.kill();
     }
-    draw::close_display(display);
+    libmars::common::x11::close_display(display);
 }
 
 extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEvent) -> c_int {

@@ -2,13 +2,18 @@ extern crate x11;
 
 use std::collections::VecDeque;
 use std::ffi::*;
-use x11::xlib;
-use x11::xinerama;
-use x11::xrandr;
+use std::mem::MaybeUninit;
+use std::ptr;
 use std::slice;
+use x11::xinerama;
+use x11::xlib;
+use x11::xrandr;
 
+use crate::common::error::*;
 use crate::common::*;
 use crate::common::x11::atoms::*;
+use crate::common::x11::atoms::X11Atom::*;
+use crate::common::x11::window::*;
 
 pub mod atoms;
 pub mod window;
@@ -71,6 +76,102 @@ impl From<*mut xlib::Screen> for MonitorConfig {
         let dims = Dimensions::new(0, 0, w, h);
 
         return MonitorConfig { name: "output".to_owned(), dims, win_area: dims };
+    }
+}
+
+
+/// Waits for MapNotify on the specified window.
+/// Discards all events before the MapNotify.
+pub fn await_map_notify(display: *mut xlib::Display, window: xlib::Window) {
+    loop {
+        let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
+        unsafe {
+            xlib::XNextEvent(display, event.as_mut_ptr());
+            let event = event.assume_init();
+            if event.get_type() == xlib::MapNotify
+                    && event.map.window == window {
+                break;
+            }
+        }
+    }
+}
+
+/// Close an X11 connection
+pub fn close_display(display: *mut xlib::Display) {
+    if !display.is_null() {
+        unsafe {
+            xlib::XCloseDisplay(display);
+        }
+    }
+}
+
+/// Creates and maps a top-level window to be used by an application
+pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class: &str, name: &str,
+                     win_type: Option<X11Atom>) -> Result<xlib::Window> {
+    let (x, y, width, height) = dimensions.as_tuple();
+    unsafe {
+        let screen = xlib::XDefaultScreen(display);
+        let border_width = 0;
+
+        let win = xlib::XCreateSimpleWindow(display, xlib::XDefaultRootWindow(display),
+                                       x, y, width, height, border_width,
+                                       xlib::XBlackPixel(display, screen),
+                                       xlib::XWhitePixel(display, screen));
+
+        // subscribe to StructureNotifyMask for MapNotify events
+        // subscribe to ExposureMask for Expose events
+        xlib::XSelectInput(display, win, xlib::StructureNotifyMask | xlib::ExposureMask);
+
+        // set class hint
+        let class_cstring = match CString::new(class) {
+            Ok(cstring) => cstring,
+            Err(_) => return Err(MarsError::failed_conversion(class, stringify!(&str), stringify!(CString))),
+        };
+        let mut class_bytes = class_cstring.into_bytes_with_nul();
+        let mut class_hint = xlib::XClassHint {
+            res_name: class_bytes.as_mut_ptr() as *mut i8,
+            res_class: class_bytes.as_mut_ptr() as *mut i8,
+        };
+        xlib::XSetClassHint(display, win, &mut class_hint);
+
+        // set window title
+        let name_cstring = match CString::new(name) {
+            Ok(cstring) => cstring,
+            Err(_) => return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(CString))),
+        };
+        let mut name_property: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
+        let mut data = [name_cstring.as_ptr() as *mut i8];
+        if xlib::XStringListToTextProperty(data.as_mut_ptr(),
+        1, name_property.as_mut_ptr()) == 0 {
+            return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(xlib::XTextProperty)));
+        };
+        xlib::XSetWMName(display, win, name_property.assume_init_mut());
+
+        // set window type if requested
+        if let Some(win_type) = win_type {
+            let data = [win_type.to_xlib_atom(display)];
+            win.x11_replace_property_long(display, NetWMWindowType, xlib::XA_ATOM, &data);
+        }
+
+        // make window visible on screen
+        xlib::XMapWindow(display, win);
+
+        // sync requests with x11 server
+        xlib::XFlush(display);
+
+        return Ok(win);
+    }
+}
+
+/// Open a new X11 connection
+pub fn open_display() -> Result<*mut xlib::Display> {
+    unsafe {
+        let display = xlib::XOpenDisplay(ptr::null());
+        if display.is_null() {
+            return Err(MarsError::x11_open_display());
+        } else {
+            return Ok(display);
+        }
     }
 }
 

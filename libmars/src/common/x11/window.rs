@@ -9,7 +9,6 @@ use x11::xlib;
 
 use crate::common::error::*;
 use crate::common::x11::*;
-use crate::common::x11::atoms::X11Atom::*;
 
 
 pub trait X11Window {

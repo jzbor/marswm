@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use x11::xlib;
 use libmars::utils::configuration::read_config_file;
-use libmars::draw::widget::*;
+use libmars::draw::x11::widget::*;
 
 use crate::tray::*;
 
@@ -103,27 +103,31 @@ impl Default for TextWidgetStyle {
 
 impl ContainerWidgetStyle {
     pub fn create_flow_layout_widget<W: Widget>(&self, display: *mut xlib::Display, parent: xlib::Window)
-            -> Result<FlowLayoutWidget<W>, String> {
-        return FlowLayoutWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert, self.spacing,
-                                     Vec::new(), self.outer_background);
+            -> Result<X11FlowLayoutWidget<W>, String> {
+        return X11FlowLayoutWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert, self.spacing,
+                                     Vec::new(), self.outer_background)
+            .map_err(|e| e.to_string());
     }
 
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<TextWidget, String> {
-        return TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
-                               "".to_string(), DEFAULT_FONT, self.foreground, self.inner_background);
+    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<X11TextWidget, String> {
+        return X11TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
+                               "".to_string(), DEFAULT_FONT, self.foreground, self.inner_background)
+            .map_err(|e| e.to_string());
     }
 
     pub fn create_systray_widget(&self, display: *mut xlib::Display, parent: xlib::Window, parent_height: u32)
             -> Result<SystemTrayWidget, String> {
         return SystemTrayWidget::new(display, parent, 0, 0, parent_height - 2 * self.spacing, self.padding_horz,
-                                     self.padding_horz, self.padding_vert, self.inner_background);
+                                     self.padding_horz, self.padding_vert, self.inner_background)
+            .map_err(|e| e.to_string());
     }
 }
 
 impl TextWidgetStyle {
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<TextWidget, String> {
-        return TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
-                               "".to_string(), DEFAULT_FONT, self.foreground, self.background);
+    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<X11TextWidget, String> {
+        return X11TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
+                               "".to_string(), DEFAULT_FONT, self.foreground, self.background)
+            .map_err(|e| e.to_string());
     }
 }
 
