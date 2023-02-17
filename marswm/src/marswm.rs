@@ -3,6 +3,7 @@ use libmars::wm::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
 use std::env;
+use std::marker::PhantomData;
 use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 use std::process;
@@ -15,22 +16,24 @@ use crate::rules::*;
 use crate::workspace::*;
 
 
-pub struct MarsWM<C: Client> {
+pub struct MarsWM<B: Backend> {
+    backend_phantom: PhantomData<B>,
     exec_path: PathBuf,
     config: Configuration,
-    active_client: Option<Rc<RefCell<C>>>,
-    monitors: Vec<Monitor<C>>,
-    clients: Vec<Rc<RefCell<C>>>,
+    active_client: Option<Rc<RefCell<B::Client>>>,
+    monitors: Vec<Monitor<B::Client>>,
+    clients: Vec<Rc<RefCell<B::Client>>>,
     keybindings: Vec<Keybinding>,
     rules: Vec<Rule>,
 }
 
-impl<C: Client> MarsWM<C> {
-    pub fn new<B: Backend<C>>(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>, rules: Vec<Rule>)
-                -> MarsWM<C> {
+impl<B: Backend> MarsWM<B> {
+    pub fn new(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>, rules: Vec<Rule>)
+                -> MarsWM<B> {
         // stores exec path to enable reloading after rebuild
         // might have security implications
         let mut wm = MarsWM {
+            backend_phantom: PhantomData::default(),
             exec_path: env::current_exe().unwrap(),
             config,
             active_client: None,
@@ -41,7 +44,7 @@ impl<C: Client> MarsWM<C> {
         };
 
         let monitor_config = backend.get_monitor_config();
-        (&mut wm as &mut dyn WindowManager<B, C>).update_monitor_config(backend, monitor_config);
+        (&mut wm as &mut dyn WindowManager<B>).update_monitor_config(backend, monitor_config);
         backend.export_current_workspace(0);
 
         backend.handle_existing_windows(&mut wm);
@@ -49,18 +52,18 @@ impl<C: Client> MarsWM<C> {
         return wm;
     }
 
-    pub fn cleanup<B: Backend<C>>(&mut self, backend: &mut B) {
+    pub fn cleanup(&mut self, backend: &mut B) {
         for client_rc in self.clients.clone() {
             self.unmanage(backend, client_rc);
         }
     }
 
-    fn clients_stacked_order(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+    fn clients_stacked_order(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_> {
         let clients = self.monitors.iter().flat_map(|m| m.clients());
         return Box::new(clients);
     }
 
-    fn current_monitor_index<B: Backend<C>>(&self, backend: &B) -> usize {
+    fn current_monitor_index(&self, backend: &B) -> usize {
         // TODO save last active monitor to avoid having to use the pointer (avoid backend usage)
         let cursor_pos = backend.pointer_pos();
         let monitor_by_pointer = self.monitors.iter().find(|m| {
@@ -76,25 +79,25 @@ impl<C: Client> MarsWM<C> {
         }
     }
 
-    pub fn current_monitor<B: Backend<C>>(&self, backend: &B) -> &Monitor<C> {
+    pub fn current_monitor(&self, backend: &B) -> &Monitor<B::Client> {
         let index = self.current_monitor_index(backend);
         return self.monitors.get(index).unwrap();
     }
 
-    pub fn current_monitor_mut<B: Backend<C>>(&mut self, backend: &B) -> &mut Monitor<C> {
+    pub fn current_monitor_mut(&mut self, backend: &B) -> &mut Monitor<B::Client> {
         let index = self.current_monitor_index(backend);
         return self.monitors.get_mut(index).unwrap();
     }
 
-    pub fn current_workspace<B: Backend<C>>(&self, backend: &mut B) -> &Workspace<C> {
+    pub fn current_workspace(&self, backend: &mut B) -> &Workspace<B::Client> {
         return self.current_monitor(backend).current_workspace();
     }
 
-    pub fn current_workspace_mut<B: Backend<C>>(&mut self, backend: &mut B) -> &mut Workspace<C> {
+    pub fn current_workspace_mut(&mut self, backend: &mut B) -> &mut Workspace<B::Client> {
         return self.current_monitor_mut(backend).current_workspace_mut();
     }
 
-    pub fn cycle_client<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
+    pub fn cycle_client(&mut self, backend: &mut B, inc: i32) {
         if let Some(active) = &self.active_client {
             if active.borrow().is_fullscreen() {
                 return;
@@ -113,14 +116,14 @@ impl<C: Client> MarsWM<C> {
         }
     }
 
-    pub fn cycle_workspace<B: Backend<C>>(&mut self, backend: &mut B, inc: i32) {
+    pub fn cycle_workspace(&mut self, backend: &mut B, inc: i32) {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
         let new_workspace_idx = monitor.workspace_offset() + ((cur_workspace_idx as i32 + inc) as u32 % monitor.workspace_count());
         self.switch_workspace(backend, new_workspace_idx);
     }
 
-    pub fn decorate_active(&self, client_rc: Rc<RefCell<C>>) {
+    pub fn decorate_active(&self, client_rc: Rc<RefCell<B::Client>>) {
         let mut client = (*client_rc).borrow_mut();
         if self.config.theming.invert_border_color {
             client.set_inner_color(self.config.theming.inactive_color);
@@ -132,7 +135,7 @@ impl<C: Client> MarsWM<C> {
         client.set_frame_color(self.config.theming.active_color);
     }
 
-    pub fn decorate_inactive(&self, client_rc: Rc<RefCell<C>>) {
+    pub fn decorate_inactive(&self, client_rc: Rc<RefCell<B::Client>>) {
         let mut client = (*client_rc).borrow_mut();
         if self.config.theming.invert_border_color {
             client.set_inner_color(self.config.theming.active_color);
@@ -144,7 +147,7 @@ impl<C: Client> MarsWM<C> {
         client.set_frame_color(self.config.theming.inactive_color);
     }
 
-    pub fn initial_position<B: Backend<C>>(&self, backend: &mut B, client_rc: &Rc<RefCell<C>>) -> (i32, i32) {
+    pub fn initial_position(&self, backend: &mut B, client_rc: &Rc<RefCell<B::Client>>) -> (i32, i32) {
         let win_area = self.current_monitor(backend).window_area();
         let mut pos = backend.pointer_pos();
         let client = client_rc.borrow();
@@ -157,39 +160,39 @@ impl<C: Client> MarsWM<C> {
         return pos;
     }
 
-    pub fn is_tiled(&self, client_rc: &Rc<RefCell<C>>) -> bool {
+    pub fn is_tiled(&self, client_rc: &Rc<RefCell<B::Client>>) -> bool {
         let mut tiled_clients = self.monitors.iter()
             .flat_map(|m| m.workspaces())
             .flat_map(|ws| ws.tiled_clients());
         return tiled_clients.find(|c| *c == client_rc).is_some();
     }
 
-    pub fn get_monitor(&self, client_rc: &Rc<RefCell<C>>) -> Option<&Monitor<C>> {
+    pub fn get_monitor(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Monitor<B::Client>> {
         return self.monitors.iter().find(|m| m.contains(client_rc));
     }
 
-    pub fn get_monitor_mut(&mut self, client_rc: &Rc<RefCell<C>>) -> Option<&mut Monitor<C>> {
+    pub fn get_monitor_mut(&mut self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&mut Monitor<B::Client>> {
         return self.monitors.iter_mut().find(|m| m.contains(client_rc));
     }
 
-    pub fn get_workspace(&self, client_rc: &Rc<RefCell<C>>) -> Option<&Workspace<C>> {
+    pub fn get_workspace(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Workspace<B::Client>> {
         return self.monitors.iter().flat_map(|m| m.workspaces())
             .find(|ws| ws.contains(client_rc));
     }
 
-    pub fn get_workspace_mut(&mut self, client_rc: &Rc<RefCell<C>>) -> Option<&mut Workspace<C>> {
+    pub fn get_workspace_mut(&mut self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&mut Workspace<B::Client>> {
         return self.monitors.iter_mut().flat_map(|m| m.workspaces_mut())
             .find(|ws| ws.contains(client_rc));
     }
 
-    pub fn exit<B: Backend<C>>(&mut self, backend: &mut B) {
+    pub fn exit(&mut self, backend: &mut B) {
         println!("Shutting down");
         self.cleanup(backend);
         backend.shutdown();
         process::exit(0);
     }
 
-    pub fn restart<B: Backend<C>>(&mut self, backend: &mut B) {
+    pub fn restart(&mut self, backend: &mut B) {
         println!("Restarting");
         self.cleanup(backend);
         backend.shutdown();
@@ -207,8 +210,8 @@ impl<C: Client> MarsWM<C> {
     }
 }
 
-impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
-    fn active_client(&self) -> Option<Rc<RefCell<C>>> {
+impl<B: Backend> WindowManager<B> for MarsWM<B> {
+    fn active_client(&self) -> Option<Rc<RefCell<B::Client>>> {
         return self.active_client.clone();
     }
 
@@ -216,7 +219,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         return self.current_monitor(backend).current_workspace().global_index();
     }
 
-    fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let monitor = self.get_monitor_mut(&client_rc).unwrap();
 
         // switch workspace
@@ -236,11 +239,11 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.focus_client(backend, Some(client_rc));
     }
 
-    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_> {
         return Box::new(self.clients.iter());
     }
 
-    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32) {
+    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<B::Client>>, monitor: u32) {
         for mon in &mut self.monitors {
             mon.detach_client(&client_rc)
         }
@@ -252,7 +255,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>) {
+    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<B::Client>>>) {
         if let Some(client_rc) = client_option {
             // if let Some(focused_rc) = &self.active_client {
             //     self.decorate_inactive(focused_rc.clone());
@@ -271,7 +274,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_active_window(&self.active_client);
     }
 
-    fn fullscreen_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+    fn fullscreen_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool) {
         if let Some(mon) = self.get_monitor_mut(&client_rc) {
             if state {
                 client_rc.borrow_mut().set_fullscreen(mon.config());
@@ -285,7 +288,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>) {
+    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<B::Client>>>) {
         if let Some(client) = client_option {
             if let Some(ws) = self.get_workspace_mut(&client) {
                 ws.raise_client(&client);
@@ -313,7 +316,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>) {
+    fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<B::Client>>>) {
         let actions: Vec<BindingAction> = self.keybindings.iter().filter(|kb| kb.matches(modifiers, key))
             .map(|kb| kb.action()).collect();
         for action in actions {
@@ -321,7 +324,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>) {
+    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>) {
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
@@ -376,7 +379,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         self.focus_client(backend, Some(client_rc.clone()));
         client_rc.borrow_mut().warp_pointer_to_center();
 
-        let clients = <marswm::MarsWM<C> as WindowManager<B, C>>::clients(self).collect();
+        let clients = <marswm::MarsWM<B> as WindowManager<B>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
 
@@ -389,7 +392,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             .for_each(|a| a.execute(self, backend, Some(client_rc.clone())))
     }
 
-    fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool {
+    fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool {
         if let Some(ws) = self.get_workspace(&client_rc) {
             if ws.is_floating(&client_rc) {
                 let mut client = client_rc.borrow_mut();
@@ -404,7 +407,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
+    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_idx: u32) {
         let mon = self.get_monitor_mut(&client_rc).unwrap();
         if workspace_idx >= mon.workspace_count() {
             return;
@@ -422,7 +425,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool {
+    fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool {
         if let Some(ws) = self.get_workspace(&client_rc) {
             if ws.is_floating(&client_rc) {
                 let mut client = client_rc.borrow_mut();
@@ -437,13 +440,13 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         }
     }
 
-    fn set_client_pinned(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+    fn set_client_pinned(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool) {
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
             ws.set_pinned(client_rc, state);
         }
     }
 
-    fn tile_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool) {
+    fn tile_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool) {
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
             ws.set_floating(client_rc, !state);
         }
@@ -471,22 +474,22 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
         backend.export_active_window(&self.active_client);
     }
 
-    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let old_state = client_rc.borrow().is_fullscreen();
         self.fullscreen_client(backend, client_rc, !old_state)
     }
 
-    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let is_tiled = self.is_tiled(&client_rc);
         self.tile_client(backend, client_rc, !is_tiled);
     }
 
-    fn unfocus_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn unfocus_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         self.decorate_inactive(client_rc);
         self.active_client = None;
     }
 
-    fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>) {
+    fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         // remove from clients list
         let index_option = self.clients.iter().position(|c| c == &client_rc);
         if let Some(index) = index_option {
@@ -503,7 +506,7 @@ impl<B: Backend<C>, C: Client> WindowManager<B, C> for MarsWM<C> {
             self.active_client = None;
         }
 
-        let clients = <marswm::MarsWM<C> as WindowManager<B, C>>::clients(self).collect();
+        let clients = <marswm::MarsWM<B> as WindowManager<B>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();
         backend.export_client_list(clients, clients_stacked);
     }

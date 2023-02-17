@@ -91,11 +91,11 @@ impl<C: Client> Monitor<C> {
         return self.workspace_offset
     }
 
-    pub fn switch_prev_workspace(&mut self, backend: &impl Backend<C>) {
+    pub fn switch_prev_workspace(&mut self, backend: &impl Backend) {
         self.switch_workspace(backend, self.prev_workspace);
     }
 
-    pub fn switch_workspace(&mut self, backend: &impl Backend<C>, workspace_idx: u32) {
+    pub fn switch_workspace(&mut self, backend: &impl Backend, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
             return;
         } else if workspace_idx >= self.workspace_count() {

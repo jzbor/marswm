@@ -7,27 +7,27 @@ use crate::common::*;
 
 pub mod x11;
 
-pub trait WindowManager<B: Backend<C>, C: Client> {
-    fn active_client(&self) -> Option<Rc<RefCell<C>>>;
+pub trait WindowManager<B: Backend> {
+    fn active_client(&self) -> Option<Rc<RefCell<B::Client>>>;
     fn active_workspace(&self, backend: &mut B) -> u32;
-    fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<C>>, monitor: u32);
-    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
-    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<C>>>);
-    fn fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
-    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<C>>>);
-    fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<C>>>);
-    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_preference: Option<u32>);
-    fn move_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, x: i32, y: i32) -> bool;
-    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, workspace_idx: u32);
-    fn resize_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, width: u32, height: u32) -> bool;
-    fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
+    fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
+    fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<B::Client>>, monitor: u32);
+    fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_>;
+    fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<B::Client>>>);
+    fn fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool);
+    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<B::Client>>>);
+    fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<B::Client>>>);
+    fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>);
+    fn move_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool;
+    fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_idx: u32);
+    fn resize_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool;
+    fn set_client_pinned(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool);
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32);
-    fn tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>, state: bool);
-    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn unfocus_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
-    fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<C>>);
+    fn tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool);
+    fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
+    fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
+    fn unfocus_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
+    fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
     fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>);
 }
 
@@ -68,12 +68,15 @@ pub trait Client: Eq + Dimensioned {
     fn warp_pointer_to_center(&self);
 }
 
-pub trait Backend<C: Client> {
+pub trait Backend {
+    /// Associated client type
+    type Client: Client;
+
     /// Make active window information available to clients
-    fn export_active_window(&self, client_option: &Option<Rc<RefCell<C>>>);
+    fn export_active_window(&self, client_option: &Option<Rc<RefCell<Self::Client>>>);
 
     /// Make client list information available to clients
-    fn export_client_list<'a>(&self, clients: Vec<&Rc<RefCell<C>>>, clients_stacked: Vec<&Rc<RefCell<C>>>);
+    fn export_client_list<'a>(&self, clients: Vec<&Rc<RefCell<Self::Client>>>, clients_stacked: Vec<&Rc<RefCell<Self::Client>>>);
 
     /// Make currently active workspace available to clients
     fn export_current_workspace(&self, workspace_idx: u32);
@@ -85,13 +88,15 @@ pub trait Backend<C: Client> {
     fn get_monitor_config(&self) -> Vec<MonitorConfig>;
 
     /// Handle windows existing before initialization
-    fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, C>);
+    fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self>);
 
     /// Move client with mouse
-    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>, button: u32);
+    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self>,
+                  client_rc: Rc<RefCell<Self::Client>>, button: u32);
 
     /// Resize client with mouse
-    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, C>, client_rc: Rc<RefCell<C>>, button: u32);
+    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self>,
+                    client_rc: Rc<RefCell<Self::Client>>, button: u32);
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32>;
 
@@ -99,10 +104,10 @@ pub trait Backend<C: Client> {
     fn pointer_pos(&self) -> (i32, i32);
 
     /// Run window manager event loop
-    fn run(self, wm: &mut (dyn WindowManager<Self, C>));
+    fn run(self, wm: &mut (dyn WindowManager<Self>));
 
     /// Set client that receives mouse and keyboard inputs
-    fn set_input_focus(&self, client_rc: Rc<RefCell<C>>);
+    fn set_input_focus(&self, client_rc: Rc<RefCell<Self::Client>>);
 
     fn warp_pointer(&self, x: i32, y: i32);
 

@@ -62,8 +62,8 @@ pub struct Keybinding {
 }
 
 impl BindingAction {
-    pub fn execute<B: Backend<C>, C: Client>(&self, wm: &mut MarsWM<C>, backend: &mut B,
-                                         client_option: Option<Rc<RefCell<C>>>) {
+    pub fn execute<B: Backend>(&self, wm: &mut MarsWM<B>, backend: &mut B,
+                                         client_option: Option<Rc<RefCell<B::Client>>>) {
         use BindingAction::*;
         match self {
             CenterClient => if let Some(client_rc) = client_option {
