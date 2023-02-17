@@ -24,7 +24,7 @@ pub struct X11Client {
     x: i32, y: i32, // x, y position
     w: u32, h: u32, // width, height
     ibw: u32, obw: u32, // inner and outer border width
-    fw: u32,        // frame width
+    fw: (u32, u32, u32, u32),        // frame width
 
     actively_reparenting: bool,
     dont_decorate: bool,
@@ -32,7 +32,7 @@ pub struct X11Client {
     is_dialog: bool,
     visible: bool,
 
-    saved_decorations: Option<(u32, u32, u32)>,
+    saved_decorations: Option<(u32, u32, (u32, u32, u32, u32))>,
     saved_dimensions: Option<Dimensions>,
 }
 
@@ -77,7 +77,7 @@ impl X11Client {
             x, y, w, h,
             ibw: 0,
             obw: 0,
-            fw: 0,
+            fw: (0, 0, 0, 0),
 
             actively_reparenting: false,
             dont_decorate: false,
@@ -201,7 +201,7 @@ impl X11Client {
             self.saved_decorations = Some((self.ibw, self.obw, self.fw));
             self.set_inner_bw(0);
             self.set_outer_bw(0);
-            self.set_frame_width(0);
+            self.set_frame_width((0, 0, 0, 0));
         }
     }
 
@@ -287,7 +287,7 @@ impl Client for X11Client {
         self.window.x11_replace_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL, data);
     }
 
-    fn frame_width(&self) -> u32 {
+    fn frame_width(&self) -> (u32, u32, u32, u32) {
         return self.fw;
     }
 
@@ -321,10 +321,12 @@ impl Client for X11Client {
     }
 
     fn inner_dimensions(&self) -> Dimensions {
-        return Dimensions::new(self.fw.try_into().unwrap(),
-                               self.fw.try_into().unwrap(),
-                               self.w - 2*self.total_bw(),
-                               self.h - 2*self.total_bw());
+        let (fw_north, fw_east, _, _) = self.fw;
+        let (bw_north, bw_east, bw_south, bw_west) = self.total_bw();
+        return Dimensions::new(fw_east.try_into().unwrap(),
+                               fw_north.try_into().unwrap(),
+                               self.w - bw_east - bw_west,
+                               self.h - bw_north - bw_south);
     }
 
     fn is_dialog(&self) -> bool {
@@ -354,13 +356,13 @@ impl Client for X11Client {
         self.w = width;
         self.h = height;
 
+        let inner_dimensions = self.inner_dimensions();
         unsafe {
             xlib::XMoveResizeWindow(self.display, self.frame, self.x, self.y,
                                     self.w - 2*self.obw, self.h - 2 * self.obw);
             xlib::XMoveResizeWindow(self.display, self.window,
-                                    self.fw.try_into().unwrap(), self.fw.try_into().unwrap(),
-                                    self.w - 2*self.total_bw(),
-                                    self.h - 2*self.total_bw());
+                                    inner_dimensions.x(), inner_dimensions.y(),
+                                    inner_dimensions.w(), inner_dimensions.h());
         }
     }
 
@@ -386,10 +388,13 @@ impl Client for X11Client {
         }
     }
 
-    fn set_frame_width(&mut self, width: u32) {
-        let diff = (width as i32) - (self.fw as i32);
+    fn set_frame_width(&mut self, width: (u32, u32, u32, u32)) {
+        let diff_north = (width.0 as i32) - (self.fw.0 as i32);
+        let diff_east = (width.1 as i32) - (self.fw.1 as i32);
+        let diff_south = (width.2 as i32) - (self.fw.2 as i32);
+        let diff_west = (width.3 as i32) - (self.fw.3 as i32);
         self.fw = width;
-        self.move_resize(self.x - diff, self.y - diff, (self.w as i32 + 2 * diff) as u32, (self.h as i32 + 2 * diff) as u32);
+        self.move_resize(self.x - diff_west, self.y - diff_north, (self.w as i32 + diff_east + diff_west) as u32, (self.h as i32 + diff_north + diff_south) as u32);
     }
 
     fn set_fullscreen(&mut self, monitor_conf: &MonitorConfig) {
@@ -455,8 +460,11 @@ impl Client for X11Client {
         return self.window.x11_wm_name(self.display).unwrap_or_default();
     }
 
-    fn total_bw(&self) -> u32 {
-        return self.ibw + self.fw + self.obw;
+    fn total_bw(&self) -> (u32, u32, u32, u32) {
+        return (self.ibw + self.fw.0 + self.obw,
+                self.ibw + self.fw.1 + self.obw,
+                self.ibw + self.fw.2 + self.obw,
+                self.ibw + self.fw.3 + self.obw);
     }
 
     fn unset_fullscreen(&mut self) {

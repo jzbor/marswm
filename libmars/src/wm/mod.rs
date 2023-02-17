@@ -41,7 +41,7 @@ pub trait Client: Eq + Dimensioned {
     fn export_pinned(&self, state: bool, workspace_idx: Option<u32>);
     fn export_tiled(&self, state: bool);
     fn export_workspace(&self, workspace_idx: u32);
-    fn frame_width(&self) -> u32;
+    fn frame_width(&self) -> (u32, u32, u32, u32);
     fn hide(&mut self);
     fn inner_bw(&self) -> u32;
     // dimensions excluding all borders
@@ -54,7 +54,7 @@ pub trait Client: Eq + Dimensioned {
     fn outer_bw(&self) -> u32;
     fn raise(&self);
     fn set_frame_color(&mut self, color: u64);
-    fn set_frame_width(&mut self, width: u32);
+    fn set_frame_width(&mut self, width: (u32, u32, u32, u32));
     fn set_fullscreen(&mut self, monitor_conf: &MonitorConfig);
     fn set_height(&mut self, height: u32);
     fn set_inner_bw(&mut self, bw: u32);
@@ -63,7 +63,7 @@ pub trait Client: Eq + Dimensioned {
     fn set_outer_color(&mut self, color: u64);
     fn show(&mut self);
     fn title(&self) -> String;
-    fn total_bw(&self) -> u32;
+    fn total_bw(&self) -> (u32, u32, u32, u32);
     fn unset_fullscreen(&mut self);
     fn warp_pointer_to_center(&self);
 }

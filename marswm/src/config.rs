@@ -67,7 +67,7 @@ pub struct ThemingConfiguration {
     pub invert_border_color: bool,
 
     /// width of the frame that client windows are reparented to
-    pub frame_width: u32,
+    pub frame_width: (u32, u32, u32, u32),
 
     /// width of the border around the inner window
     pub inner_border_width: u32,
@@ -107,7 +107,7 @@ impl Default for ThemingConfiguration {
             inactive_color: 0x1f464f,
             border_color: 0xceccc6,
             invert_border_color: false,
-            frame_width: 4,
+            frame_width: (4, 4, 4, 4),
             inner_border_width: 1,
             outer_border_width: 1
         };

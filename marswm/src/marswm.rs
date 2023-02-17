@@ -349,7 +349,8 @@ impl<B: Backend> WindowManager<B> for MarsWM<B> {
         if !client.dont_decorate() {
             client.set_inner_bw(self.config.theming.inner_border_width);
             client.set_outer_bw(self.config.theming.outer_border_width);
-            client.set_frame_width(self.config.theming.frame_width);
+            let fw = self.config.theming.frame_width;
+            client.set_frame_width(fw);
         }
 
         // bind buttons

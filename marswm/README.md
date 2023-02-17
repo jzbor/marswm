@@ -48,7 +48,7 @@ These attributes influence the coloring of window borders:
 *Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
 
 Attributes specifying width are all in pixels:
-* `frame_width` - width of the frame (excluding inner and outer borders)
+* `frame_width` - tuple describing the width of the frame on each side (excluding inner and outer borders)
 * `inner_border_width` - inner border between the window content and frame
 * `outer_border_width` - outer border around the window frame
 

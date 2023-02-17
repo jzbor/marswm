@@ -479,13 +479,14 @@ impl X11Backend {
                 };
 
                 let mut window_changed = false;
+                let (bw_north, bw_east, bw_south, bw_west) = client_rc.borrow().total_bw();
 
                 // issue move request if size is different
                 if x != inner.x() || y != inner.y() {
                     let client = client_rc.borrow();
                     // subtract border to size
-                    let x = x - client.total_bw() as i32;
-                    let y = y - client.total_bw() as i32;
+                    let x = x - bw_east as i32;
+                    let y = y - bw_north as i32;
                     drop(client);
                     // note that only moving might not generate a real ConfigureNotify
                     // therefore we ignore the result of a move_request
@@ -497,8 +498,8 @@ impl X11Backend {
                 if width != inner.w() || height != inner.h() {
                     let client = client_rc.borrow();
                     // add border to size
-                    let width = width + 2*client.total_bw();
-                    let height = height + 2*client.total_bw();
+                    let width = width + bw_east + bw_west;
+                    let height = height + bw_north + bw_south;
                     drop(client);
                     window_changed |= wm.resize_request(self, client_rc.clone(), width, height);
                 }
