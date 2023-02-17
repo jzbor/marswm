@@ -78,7 +78,7 @@ pub trait Backend<A> {
     fn export_active_window(&self, client_option: &Option<Rc<RefCell<Self::Client>>>);
 
     /// Make client list information available to clients
-    fn export_client_list<'a>(&self, clients: Vec<&Rc<RefCell<Self::Client>>>, clients_stacked: Vec<&Rc<RefCell<Self::Client>>>);
+    fn export_client_list(&self, clients: Vec<&Rc<RefCell<Self::Client>>>, clients_stacked: Vec<&Rc<RefCell<Self::Client>>>);
 
     /// Make currently active workspace available to clients
     fn export_current_workspace(&self, workspace_idx: u32);

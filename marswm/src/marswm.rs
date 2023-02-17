@@ -519,7 +519,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>) {
-        if configs.len() == 0 {
+        if configs.is_empty() {
             return;
         }
 

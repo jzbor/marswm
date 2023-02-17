@@ -28,7 +28,7 @@ trait ClientList<C: Client<Attributes>> {
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>);
 
     fn contains(&self, client_rc: &Rc<RefCell<C>>) -> bool {
-        return self.clients().find(|&c| c == client_rc).is_some();
+        return self.clients().any(|c| c == client_rc);
     }
 
     fn detach_all(&mut self) -> Vec<Rc<RefCell<C>>> {
@@ -56,14 +56,14 @@ trait ClientList<C: Client<Attributes>> {
 }
 
 fn main() {
-    if env::args().find(|a| a == "print-default-config").is_some() {
+    if env::args().any(|a| a == "print-default-config") {
         print_config(&Configuration::default());
         return;
     }
 
     let config = read_config();
 
-    if env::args().find(|a| a == "print-default-keybindings").is_some() {
+    if env::args().any(|a| a == "print-default-keybindings") {
         print_config(&default_keybindings(config.primary_workspaces));
         return;
     }

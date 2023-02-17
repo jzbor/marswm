@@ -77,7 +77,7 @@ impl<C: Client<Attributes>> Layout<C> {
 }
 
 fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
-    let mut config = config.clone();
+    let mut config = *config;
     config.stack_position = StackPosition::Bottom;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
@@ -130,7 +130,7 @@ fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &V
 }
 
 fn apply_layout_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
-    let mut config = config.clone();
+    let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
@@ -142,7 +142,7 @@ fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl
 }
 
 fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client<Attributes>>>>, config: &LayoutConfiguration) {
-    let mut config = config.clone();
+    let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Deck;
     apply_layout_dynamic(win_area, clients, &config);

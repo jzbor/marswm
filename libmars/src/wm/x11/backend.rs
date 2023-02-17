@@ -53,7 +53,7 @@ struct XRandrInfo {
 }
 
 
-const SUPPORTED_ATOMS: &'static [X11Atom; 21] = & [
+const SUPPORTED_ATOMS: &[X11Atom; 21] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -326,10 +326,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
             let orig_client_pos = client_rc.borrow().pos();
             let orig_client_size = client_rc.borrow().size();
             let orig_pointer_pos = self.pointer_pos();
-            let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
+            let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
 
             loop {
-                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, &mut event);
+                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, event.as_mut_ptr());
+                let event = event.assume_init();
 
                 if event.get_type() == xlib::MotionNotify {
                     // @TODO add max framerate (see moonwm)
@@ -343,7 +344,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                     action(self, &client_rc, orig_client_pos, orig_client_size, delta);
                     if let Some(old_mon) = old_mon {
                         let new_center = client_rc.borrow().center();
-                        if let Some(new_mon) = self.point_to_monitor(new_center).clone() {
+                        if let Some(new_mon) = self.point_to_monitor(new_center) {
                             if old_mon != new_mon {
                                 wm.client_switches_monitor(client_rc.clone(), new_mon);
                             }
@@ -457,7 +458,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
     fn on_configure_request(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XConfigureRequestEvent) {
-        let client = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.clone());
+        let client = wm.clients().find(|c| c.borrow().window() == event.window).cloned();
         let inner = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.borrow().inner_dimensions());
         if let Some(client_rc) = client {
             if let Some(inner) = inner {
@@ -619,13 +620,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
         let root = self.root;
         let client_option = if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             Some(client_rc)
-        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-            Some(client_rc)
         } else {
-            None
+            Self::client_by_window(wm, event.window)
         };
         let client_rc = match client_option {
-            Some(client_rc) => client_rc.clone(),
+            Some(client_rc) => client_rc,
             None => return,
         };
 
@@ -642,7 +641,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
 
     fn on_map_request(&mut self, wm: &mut WM<A>, event: xlib::XMapRequestEvent) {
         //print_event!(wm, event);
-        let already_managed = wm.clients().find(|c| c.borrow().window() == event.window).is_some();
+        let already_managed = wm.clients().any(|c| c.borrow().window() == event.window);
         if !already_managed {
             self.manage(wm, event.window);
         }
@@ -683,11 +682,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
         window.x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
     }
 
-    fn client_by_frame<'a>(wm: &'a WM<A>, frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
+    fn client_by_frame(wm: &WM<A>, frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
     }
 
-    fn client_by_window<'a>(wm: &'a WM<A>, window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
+    fn client_by_window(wm: &WM<A>, window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().window() == window).cloned();
     }
 }
@@ -877,9 +876,9 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
     fn run(mut self, wm: &mut WM<A>) {
         loop {
             unsafe {
-                let mut event: xlib::XEvent = MaybeUninit::uninit().assume_init();
-                xlib::XNextEvent(self.display, &mut event);
-                self.handle_xevent(wm, event);
+                let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
+                xlib::XNextEvent(self.display, event.as_mut_ptr());
+                self.handle_xevent(wm, event.assume_init());
             };
         }
     }

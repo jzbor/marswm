@@ -52,7 +52,7 @@ pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_dir: &str, file_name:
     // check local working directory
     let path = path::Path::new(file_name);
     if path.is_file() {
-        return deserialize_file(&path).map_err(|(_, msg)| msg);
+        return deserialize_file(path).map_err(|(_, msg)| msg);
     } else {
         return Err(format!("configuration {} not found", file_name));
     }

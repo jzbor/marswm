@@ -4,7 +4,7 @@ use std::thread;
 
 use crate::*;
 
-const MENU_PROGRAM: &'static str = "xmenu";
+const MENU_PROGRAM: &str = "xmenu";
 
 fn menu_input() -> String {
     let mut string = String::new();

@@ -175,7 +175,7 @@ impl TextWidget {
 
         canvas.set_foreground(fg_color)
             .and(canvas.set_background(bg_color))
-            .and(canvas.set_font(&font))
+            .and(canvas.set_font(font))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         let mut widget = TextWidget {

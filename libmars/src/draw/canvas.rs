@@ -180,7 +180,7 @@ impl Canvas {
         let descent = unsafe { (*font).descent };
         let th = ascent + descent;
 
-        let y = y + th + (height as i32 - th as i32) / 2 - descent;
+        let y = y + th + (height as i32 - th) / 2 - descent;
 
         unsafe {
             let visual = xlib::XDefaultVisual(self.display, self.screen);

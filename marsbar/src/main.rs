@@ -25,10 +25,10 @@ mod tray;
 
 
 const HEIGHT: u32 = 31;
-const CLASSNAME: &'static str = "bar";
-const WINDOWNAME: &'static str = "Bar Window";
+const CLASSNAME: &str = "bar";
+const WINDOWNAME: &str = "Bar Window";
 // const FONT: &'static str = "Noto Serif:size=12";
-const FONT: &'static str = "serif";
+const FONT: &str = "serif";
 // const TEXT_BASE_HPAD: u32 = 5;
 // const TEXT_BASE_VPAD: u32 = 0;
 // const TRAY_BASE_HPAD: u32 = 2;
@@ -265,7 +265,7 @@ impl Bar {
     fn get_active_workspace(&self) -> Result<u32, String> {
         let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
             .map_err(|e| e.to_string())?;
-        match data.get(0) {
+        match data.first() {
             Some(idx) => return Ok(*idx as u32),
             None => return Err("unable to convert desktop index to u32".to_owned()),
         };
@@ -277,7 +277,7 @@ impl Bar {
             Ok(data) => data,
             Err(_) => return None,
         };
-        match data.get(0) {
+        match data.first() {
             Some(0) | None => return None,
             Some(window) => return Some(*window),
         };
@@ -450,7 +450,7 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
             let event = event.assume_init();
             if have_xrandr && event.get_type() == xrr_event_base + xrandr::RRNotify {
                 let monitors = libmars::common::x11::query_monitor_config(display, true);
-                bar.reconfigure(monitors.get(0).unwrap().clone());
+                bar.reconfigure(monitors.first().unwrap().clone());
             } else {
                 bar.handle_xevent(event);
             }
@@ -459,7 +459,7 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
 }
 
 fn main() {
-    if env::args().find(|a| a == "print-default-config").is_some() {
+    if env::args().any(|a| a == "print-default-config") {
         print_config(&Configuration::default());
         return;
     }
@@ -492,7 +492,7 @@ fn main() {
 
     let status_cmd = config.status_cmd.clone();
     let monitors = libmars::common::x11::query_monitor_config(display, true);
-    let mut bar = Bar::create_for_monitor(display, monitors.get(0).unwrap(), config, true).unwrap();
+    let mut bar = Bar::create_for_monitor(display, monitors.first().unwrap(), config, true).unwrap();
     bar.await_map_notify();
 
     // spawn status command
@@ -500,7 +500,7 @@ fn main() {
         Some(status_cmd) => {
             match process::Command::new("sh").arg("-c").arg(status_cmd).spawn() {
                 Ok(proc) => Some(proc),
-                Err(e) => { eprintln!("WARNING: unable to create child process ({})", e.to_string()); None },
+                Err(e) => { eprintln!("WARNING: unable to create child process ({})", e); None },
             }
         },
         None => None,

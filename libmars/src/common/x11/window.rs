@@ -28,7 +28,7 @@ pub trait X11Window {
     fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String>;
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]);
     fn x11_set_state(&self, display: *mut xlib::Display, state: i32);
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &Vec<String>);
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &[String]);
     fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool;
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions>;
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32)>;
@@ -137,8 +137,7 @@ impl X11Window for xlib::Window {
 
     fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>> {
         let atoms = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM)?
-            .iter().map(|a| X11Atom::from_xlib_atom(display, *a))
-            .flatten().collect();
+            .iter().filter_map(|a| X11Atom::from_xlib_atom(display, *a)).collect();
         return Ok(atoms);
     }
 
@@ -229,13 +228,13 @@ impl X11Window for xlib::Window {
 
         unsafe {
             xlib::XChangeProperty(display, *self, state_atom, state_atom,
-                                  32, xlib::PropModeReplace, mem::transmute(&data), 1);
+                                  32, xlib::PropModeReplace, &data as *const i32 as *const u8, 1);
         }
     }
 
 
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &Vec<String>) {
-        let mut pointers: Vec<*mut i8> = list.iter().map(|s| CString::new(s.clone())).flatten()
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &[String]) {
+        let mut pointers: Vec<*mut i8> = list.iter().flat_map(|s| CString::new(s.clone()))
             .map(|s| s.into_raw()).collect();
         let slice = &mut pointers;
         let mut text: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
@@ -286,7 +285,7 @@ impl X11Window for xlib::Window {
                 types = temp.to_vec();
             }
         }
-        return types.iter().map(|xa| X11Atom::from_xlib_atom(display, *xa)).flatten().collect();
+        return types.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect();
     }
 
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {
@@ -333,8 +332,7 @@ impl X11Window for xlib::Window {
                 supported_atoms.push(*n);
             }
         }
-        return supported_atoms.iter().map(|xa| X11Atom::from_xlib_atom(display, *xa))
-            .flatten().collect();
+        return supported_atoms.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect();
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {

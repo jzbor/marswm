@@ -138,6 +138,6 @@ impl Dimensioned for Dimensions {
     fn set_h(&mut self, h: u32) { self.h = h; }
     fn set_pos(&mut self, pos: (i32, i32)) { (self.x, self.y) = pos; }
     fn set_size(&mut self, size: (u32, u32)) { (self.w, self.h) = size; }
-    fn dimensions(&self) -> Dimensions { self.clone() }
+    fn dimensions(&self) -> Dimensions { *self }
 }
 

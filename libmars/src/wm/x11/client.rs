@@ -100,12 +100,11 @@ impl<A: PartialEq> X11Client<A> {
     pub fn apply_motif_hints(&mut self) {
         let motif_atom = MotifWMHints.to_xlib_atom(self.display);
         if let Ok(hints) = self.x11_read_property_long(self.display, MotifWMHints, motif_atom) {
-            if hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0 {
-                if hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL == 0
-                        && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER == 0
-                        && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE == 0 {
-                    self.dont_decorate = true;
-                }
+            if hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0
+                    && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL == 0
+                    && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER == 0
+                    && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE == 0 {
+                self.dont_decorate = true;
             }
         }
     }
@@ -619,7 +618,7 @@ impl<A: PartialEq> X11Window for X11Client<A> {
         self.window.x11_set_state(display, state);
     }
 
-    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &Vec<String>) {
+    fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &[String]) {
         self.window.x11_set_text_list_property(display, property, list);
     }
 

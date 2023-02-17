@@ -105,7 +105,7 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
                 if xrr_monitor.primary != 0 {
                     monitors.push_front(MonitorConfig::from((display, xrr_monitor)));
                 } else {
-                    monitors.push_front(MonitorConfig::from((display, xrr_monitor)));
+                    monitors.push_back(MonitorConfig::from((display, xrr_monitor)));
                 }
             }
         }
