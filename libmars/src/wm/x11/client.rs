@@ -9,17 +9,18 @@ use crate::common::x11::*;
 use crate::common::x11::atoms::*;
 use crate::common::x11::atoms::X11Atom::*;
 use crate::common::x11::window::*;
+use crate::draw::x11::widget::*;
 use crate::wm::*;
 use crate::wm::x11::*;
 
 
-#[derive(PartialEq)]
 pub struct X11Client<A: PartialEq> {
     name: String,
     display: *mut xlib::Display,
     root: u64,
     window: u64,
     frame: u64,
+    title_widget: Option<X11TextWidget>,
     attributes: A,
 
     orig_pos: (i32, i32), // position prior to reparenting
@@ -34,6 +35,7 @@ pub struct X11Client<A: PartialEq> {
     is_dialog: bool,
     visible: bool,
 
+    frame_color: u64,
     saved_decorations: Option<(u32, u32, (u32, u32, u32, u32))>,
     saved_dimensions: Option<Dimensions>,
 }
@@ -62,7 +64,7 @@ impl<A: Default + PartialEq> X11Client<A> {
         };
 
         unsafe {
-            xlib::XSelectInput(display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask);
+            xlib::XSelectInput(display, window, xlib::EnterWindowMask | xlib::LeaveWindowMask | xlib::PropertyChangeMask);
         }
 
         let name = match window.x11_class_hint(display) {
@@ -76,6 +78,7 @@ impl<A: Default + PartialEq> X11Client<A> {
         return Ok( X11Client {
             name,
             display, root, window, frame,
+            title_widget: None,
             attributes: A::default(),
 
             orig_pos: (x, y),
@@ -90,6 +93,7 @@ impl<A: Default + PartialEq> X11Client<A> {
             is_dialog,
             visible: false,
 
+            frame_color: 0x000000,
             saved_decorations: None,
             saved_dimensions: None,
         } );
@@ -220,6 +224,13 @@ impl<A: PartialEq> X11Client<A> {
         }
     }
 
+    pub fn update_title(&mut self) {
+        let title = self.title();
+        if let Some(title_widget) = &mut self.title_widget {
+            title_widget.set_label(title);
+        }
+    }
+
     pub fn is_reparenting(&self) -> bool {
         return self.actively_reparenting;
     }
@@ -228,12 +239,29 @@ impl<A: PartialEq> X11Client<A> {
         self.actively_reparenting = status;
     }
 
+    pub fn title_window(&self) -> Option<u64> {
+        return self.title_widget.as_ref().map(|w| w.wid());
+    }
+
     pub fn window(&self) -> u64 {
         return self.window;
     }
 }
 
 impl<A: PartialEq> Client<A> for X11Client<A> {
+    fn add_title(&mut self, font: &str, hpad: u32, vpad: u32, color: u64) -> Result<()> {
+        let title = self.title();
+        let mut widget = X11TextWidget::new(self.display, self.frame, 0, 0, hpad, vpad,
+                                        title.clone(), font, color, self.frame_color)?;
+        unsafe {
+            xlib::XLowerWindow(self.display, widget.wid());
+            widget.set_label(title);
+        }
+
+        self.title_widget = Some(widget);
+        return Ok(());
+    }
+
     fn application(&self) -> String {
         return match self.x11_class_hint(self.display) {
             Ok((_name, class)) => class,
@@ -400,6 +428,11 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
             xlib::XClearWindow(self.display, self.frame);
             xlib::XSync(self.display, xlib::False);
         }
+        self.frame_color = color;
+
+        if let Some(title_widget) = &mut self.title_widget {
+            let _ignore_result = title_widget.set_background(color);
+        }
     }
 
     fn set_frame_width(&mut self, width: (u32, u32, u32, u32)) {
@@ -452,6 +485,12 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     fn set_outer_color(&mut self, color: u64) {
         unsafe {
             xlib::XSetWindowBorder(self.display, self.frame, color);
+        }
+    }
+
+    fn set_title_color(&mut self, color: u64) {
+        if let Some(title_widget) = &mut self.title_widget {
+            let _ignore_result = title_widget.set_foreground(color);
         }
     }
 
@@ -566,6 +605,16 @@ impl<A: PartialEq> Drop for X11Client<A> {
 }
 
 impl<A: PartialEq> Eq for X11Client<A> {}
+
+impl<A: PartialEq> PartialEq for X11Client<A> {
+    fn eq(&self, other: &Self) -> bool {
+        return self.frame == other.frame;
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        return !self.eq(other);
+    }
+}
 
 impl<A: PartialEq> X11Window for X11Client<A> {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes> {

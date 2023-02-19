@@ -81,21 +81,14 @@ const SUPPORTED_ATOMS: &[X11Atom; 21] = & [
 
 impl<A: PartialEq + Default> X11Backend<A> {
     /// Register window manager and initialize backend with new connection.
-    pub fn init(name: &str) -> Result<X11Backend<A>, String> {
+    pub fn init(name: &str) -> Result<X11Backend<A>> {
         // open new connection to x11 server
-        let display = unsafe {
-            let display = xlib::XOpenDisplay(ptr::null());
-            if display.is_null() {
-                return Err("XOpenDisplay failed".to_owned());
-            }
-            display
-        };
-
+        let display = open_display()?;
         return Self::init_with_connection(display, name);
     }
 
     /// Register window manager and create backend from existing connection.
-    pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend<A>, String> {
+    pub fn init_with_connection(display: *mut xlib::Display, name: &str) -> Result<X11Backend<A>> {
         unsafe {
             let root = xlib::XDefaultRootWindow(display);
 
@@ -210,6 +203,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                 xlib::MapRequest => self.on_map_request(wm, event.map_request),
                 xlib::MapNotify => self.on_map_notify(wm, event.map),
                 xlib::UnmapNotify => self.on_unmap_notify(wm, event.unmap),
+                xlib::PropertyNotify => self.on_property_notify(wm, event.property),
                 _ => (),
                 // _ => { print!("."); stdout().flush().unwrap(); },
             }
@@ -651,6 +645,17 @@ impl<A: PartialEq + Default> X11Backend<A> {
         //print_event!(wm, event);
     }
 
+    pub fn on_property_notify(&mut self, wm: &mut WM<A>, event: xlib::XPropertyEvent) {
+        if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom) {
+                match atom {
+                    WMName => client_rc.borrow_mut().update_title(),
+                    _ => (),
+                }
+            }
+        }
+    }
+
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
         let atom_vec: Vec<xlib::Atom> = (*supported_atoms).iter().map(|a| a.to_xlib_atom(self.display)).collect();
         let data = atom_vec.as_slice();
@@ -682,8 +687,9 @@ impl<A: PartialEq + Default> X11Backend<A> {
         window.x11_replace_property_long(self.display, WMState, wm_state_atom, &data);
     }
 
+
     fn client_by_frame(wm: &WM<A>, frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
-        return wm.clients().find(|c| c.borrow().frame() == frame).cloned();
+        return wm.clients().find(|c| c.borrow().frame() == frame || c.borrow().title_window() == Some(frame)).cloned();
     }
 
     fn client_by_window(wm: &WM<A>, window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {

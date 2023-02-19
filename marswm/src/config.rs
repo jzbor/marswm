@@ -13,7 +13,7 @@ const KEYBINDINGS_FILE: &str = "keybindings.yaml";
 const KEYBINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
 const RULES_FILE: &str = "rules.yaml";
 
-#[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
+#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
 #[serde(default)]
 pub struct Configuration {
     /// number of workspaces for primary monitor
@@ -51,7 +51,7 @@ pub struct LayoutConfiguration {
     pub stack_mode: StackMode,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Copy,Clone)]
+#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
 #[serde(default)]
 pub struct ThemingConfiguration {
     /// color for active window frame
@@ -74,6 +74,18 @@ pub struct ThemingConfiguration {
 
     /// width of the border around the frame
     pub outer_border_width: u32,
+
+    /// show title stirng at the top of the frame
+    pub show_title: bool,
+
+    /// vertical padding of title
+    pub title_vpadding: u32,
+
+    /// horizontal padding of title
+    pub title_hpadding: u32,
+
+    /// font to use for title
+    pub font: String,
 }
 
 impl Default for Configuration {
@@ -109,7 +121,11 @@ impl Default for ThemingConfiguration {
             invert_border_color: false,
             frame_width: (4, 4, 4, 4),
             inner_border_width: 1,
-            outer_border_width: 1
+            outer_border_width: 1,
+            show_title: false,
+            title_vpadding: 1,
+            title_hpadding: 5,
+            font: "serif".to_owned(),
         };
     }
 }

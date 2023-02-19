@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::*;
+use crate::common::error::*;
 
 pub mod x11;
 
@@ -32,6 +33,7 @@ pub trait WindowManager<B: Backend<A>, A> {
 }
 
 pub trait Client<A>: Eq + Dimensioned {
+    fn add_title(&mut self, font: &str, hpad: u32, vpad: u32, color: u64) -> Result<()>;
     fn application(&self) -> String;
     fn attributes(&self) -> &A;
     fn attributes_mut(&mut self) -> &mut A;
@@ -63,6 +65,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn set_inner_color(&mut self, color: u64);
     fn set_outer_bw(&mut self, bw: u32);
     fn set_outer_color(&mut self, color: u64);
+    fn set_title_color(&mut self, color: u64);
     fn show(&mut self);
     fn title(&self) -> String;
     fn total_bw(&self) -> (u32, u32, u32, u32);

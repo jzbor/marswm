@@ -47,10 +47,16 @@ These attributes influence the coloring of window borders:
 
 *Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
 
+To show a window's title at the top of its frame use these settings:
+* `show_title` - a boolean value determining whether the title is shown or not
+* `font` - the font that is used for drawing the title
+
 Attributes specifying width are all in pixels:
 * `frame_width` - tuple describing the width of the frame on each side (excluding inner and outer borders)
 * `inner_border_width` - inner border between the window content and frame
 * `outer_border_width` - outer border around the window frame
+* `title_vpadding` - vertical padding for title
+* `title_hpadding` - horizontal padding for title
 
 
 ## Keybindings

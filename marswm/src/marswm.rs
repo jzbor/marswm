@@ -132,6 +132,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
             client.set_inner_color(self.config.theming.border_color);
             client.set_outer_color(self.config.theming.border_color);
         }
+        client.set_title_color(self.config.theming.inactive_color);
         client.set_frame_color(self.config.theming.active_color);
     }
 
@@ -144,6 +145,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
             client.set_inner_color(self.config.theming.border_color);
             client.set_outer_color(self.config.theming.border_color);
         }
+        client.set_title_color(self.config.theming.active_color);
         client.set_frame_color(self.config.theming.inactive_color);
     }
 
@@ -361,6 +363,12 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client.set_inner_bw(self.config.theming.inner_border_width);
             client.set_outer_bw(self.config.theming.outer_border_width);
             client.set_frame_width(self.config.theming.frame_width);
+            if self.config.theming.show_title {
+                let _ignore_result = client.add_title(&self.config.theming.font,
+                                                      self.config.theming.title_hpadding,
+                                                      self.config.theming.title_vpadding,
+                                                      self.config.theming.active_color);
+            }
         }
 
         // bind buttons
