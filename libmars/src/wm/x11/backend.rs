@@ -198,6 +198,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                 xlib::ConfigureRequest => self.on_configure_request(wm, event.configure_request),
                 xlib::DestroyNotify => self.on_destroy_notify(wm, event.destroy_window),
                 xlib::EnterNotify => self.on_enter_notify(wm, event.crossing),
+                xlib::Expose => self.on_expose_event(wm, event.expose),
                 xlib::KeyPress => self.on_key_press(wm, event.key),
                 xlib::LeaveNotify => self.on_leave_notify(wm, event.crossing),
                 xlib::MapRequest => self.on_map_request(wm, event.map_request),
@@ -566,10 +567,20 @@ impl<A: PartialEq + Default> X11Backend<A> {
 
         if let Some(client_rc) = client_option {
             if let Some(last_active_client) = &self.last_active {
-                wm.unfocus_client(self, last_active_client.clone());
+                if &client_rc != last_active_client {
+                    wm.unfocus_client(self, last_active_client.clone());
+                    wm.focus_client(self, Some(client_rc.clone()));
+                }
+            } else {
+                wm.focus_client(self, Some(client_rc.clone()));
             }
-            wm.focus_client(self, Some(client_rc.clone()));
             self.last_active = Some(client_rc);
+        }
+    }
+
+    fn on_expose_event(&mut self, wm: &mut WM<A>, event: xlib::XExposeEvent) {
+        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            client_rc.borrow_mut().update_title();
         }
     }
 
