@@ -9,7 +9,7 @@ use std::env;
 use std::rc::Rc;
 
 use crate::attributes::*;
-use crate::bindings::default_keybindings;
+use crate::bindings::*;
 use crate::config::*;
 use crate::marswm::*;
 
@@ -63,15 +63,21 @@ fn main() {
 
     let config = read_config();
 
-    if env::args().any(|a| a == "print-default-keybindings") {
-        print_config(&default_keybindings(config.primary_workspaces));
+    if env::args().any(|a| a == "print-default-keys") {
+        print_config(&default_key_bindings(config.primary_workspaces));
         return;
     }
 
-    let keybindings = read_keybindings(config.primary_workspaces);
+    if env::args().any(|a| a == "print-default-buttons") {
+        print_config(&default_button_bindings());
+        return;
+    }
+
+    let key_bindings = read_key_bindings(config.primary_workspaces);
+    let button_bindings = read_button_bindings();
     let rules = read_rules();
 
     let mut backend = X11Backend::init("marswm").unwrap();
-    let mut wm = MarsWM::new(&mut backend, config, keybindings, rules);
+    let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);
     backend.run(&mut wm);
 }

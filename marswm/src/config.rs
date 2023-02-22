@@ -7,10 +7,12 @@ use crate::layouts::StackMode;
 use crate::layouts::StackPosition;
 use crate::rules::*;
 
+const BUTTON_BINDINGS_FILE: &str = "buttonbindings.yaml";
+const BUTTON_BINDINGS_EXT_FILE: &str = "buttonbindings_ext.yaml";
 const CONFIG_DIR: &str = "marswm";
 const CONFIG_FILE: &str = "marswm.yaml";
-const KEYBINDINGS_FILE: &str = "keybindings.yaml";
-const KEYBINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
+const KEY_BINDINGS_FILE: &str = "keybindings.yaml";
+const KEY_BINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
 const RULES_FILE: &str = "rules.yaml";
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
@@ -130,6 +132,24 @@ impl Default for ThemingConfiguration {
     }
 }
 
+pub fn read_button_bindings() -> Vec<ButtonBinding> {
+    // read keybindings file
+    let mut button_bindings = match read_config_file(CONFIG_DIR, BUTTON_BINDINGS_FILE) {
+        Ok(config) => config,
+        Err(msg) => {
+            println!("Unable to read button bindings: {}", msg);
+            default_button_bindings()
+        },
+    };
+
+    // read extended keybindings
+    if let Ok(config) = read_config_file::<Vec<ButtonBinding>>(CONFIG_DIR, BUTTON_BINDINGS_EXT_FILE) {
+        button_bindings.extend(config);
+    }
+
+    return button_bindings;
+}
+
 pub fn read_config() -> Configuration {
     return match read_config_file(CONFIG_DIR, CONFIG_FILE) {
         Ok(config) => config,
@@ -140,18 +160,18 @@ pub fn read_config() -> Configuration {
     };
 }
 
-pub fn read_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
+pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     // read keybindings file
-    let mut keybindings = match read_config_file(CONFIG_DIR, KEYBINDINGS_FILE) {
+    let mut keybindings = match read_config_file(CONFIG_DIR, KEY_BINDINGS_FILE) {
         Ok(config) => config,
         Err(msg) => {
             println!("Unable to read key bindings: {}", msg);
-            default_keybindings(nworkspaces)
+            default_key_bindings(nworkspaces)
         },
     };
 
     // read extended keybindings
-    if let Ok(config) = read_config_file::<Vec<Keybinding>>(CONFIG_DIR, KEYBINDINGS_EXT_FILE) {
+    if let Ok(config) = read_config_file::<Vec<KeyBinding>>(CONFIG_DIR, KEY_BINDINGS_EXT_FILE) {
         keybindings.extend(config);
     }
 

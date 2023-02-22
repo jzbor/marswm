@@ -10,7 +10,6 @@ use std::process;
 use std::rc::Rc;
 
 use crate::*;
-use crate::bindings::*;
 use crate::monitor::*;
 use crate::rules::*;
 use crate::workspace::*;
@@ -23,13 +22,14 @@ pub struct MarsWM<B: Backend<Attributes>> {
     active_client: Option<Rc<RefCell<B::Client>>>,
     monitors: Vec<Monitor<B::Client>>,
     clients: Vec<Rc<RefCell<B::Client>>>,
-    keybindings: Vec<Keybinding>,
+    key_bindings: Vec<KeyBinding>,
+    button_bindings: Vec<ButtonBinding>,
     rules: Vec<Rule>,
 }
 
 impl<B: Backend<Attributes>> MarsWM<B> {
-    pub fn new(backend: &mut B, config: Configuration, keybindings: Vec<Keybinding>, rules: Vec<Rule>)
-                -> MarsWM<B> {
+    pub fn new(backend: &mut B, config: Configuration, key_bindings: Vec<KeyBinding>,
+               button_bindings: Vec<ButtonBinding>, rules: Vec<Rule>) -> MarsWM<B> {
         // stores exec path to enable reloading after rebuild
         // might have security implications
         let mut wm = MarsWM {
@@ -39,7 +39,8 @@ impl<B: Backend<Attributes>> MarsWM<B> {
             active_client: None,
             clients: Vec::new(),
             monitors: Vec::new(),
-            keybindings,
+            key_bindings,
+            button_bindings,
             rules
         };
 
@@ -292,36 +293,26 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         }
     }
 
-    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<B::Client>>>) {
-        if let Some(client) = client_option {
+    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, target: ButtonTarget,
+                     client_option: Option<Rc<RefCell<B::Client>>>) {
+        if let Some(client) = client_option.clone() {
             if let Some(ws) = self.get_workspace_mut(&client) {
                 ws.raise_client(&client);
             } else {
                 // this might be the case for pinned windows for example
                 client.borrow().raise();
             };
+        }
 
-            match button {
-                1 => {
-                    backend.mouse_move(self, client, button);
-                    self.current_monitor_mut(backend).restack_current();
-                },
-                2 => if modifiers & Modifier::Shift.mask() != 0 {
-                    client.borrow().close();
-                } else if let Some(ws) = self.get_workspace_mut(&client) {
-                    ws.toggle_floating(client);
-                },
-                3 => {
-                    backend.mouse_resize(self, client, button);
-                    self.current_monitor_mut(backend).restack_current();
-                },
-                _ => (),
-            }
+        let actions: Vec<BindingAction> = self.button_bindings.iter().filter(|bb| bb.matches(modifiers, button, target))
+            .map(|kb| kb.action()).collect();
+        for action in actions {
+            action.execute(self, backend, client_option.clone());
         }
     }
 
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<B::Client>>>) {
-        let actions: Vec<BindingAction> = self.keybindings.iter().filter(|kb| kb.matches(modifiers, key))
+        let actions: Vec<BindingAction> = self.key_bindings.iter().filter(|kb| kb.matches(modifiers, key))
             .map(|kb| kb.action()).collect();
         for action in actions {
             action.execute(self, backend, client_option.clone());
@@ -373,15 +364,16 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             }
         }
 
-        // bind buttons
-        client.bind_button(DEFAULT_MODKEY.mask(), 1);
-        client.bind_button(DEFAULT_MODKEY.mask(), 2);
-        client.bind_button(DEFAULT_MODKEY.mask() | Modifier::Shift.mask(), 2);
-        client.bind_button(DEFAULT_MODKEY.mask(), 3);
-
-        // bind keys
-        for keybinding in &self.keybindings {
-            client.bind_key(keybinding.modifiers(), keybinding.key());
+        // bind keys and buttons
+        for key_binding in &self.key_bindings {
+            client.bind_key(key_binding.modifiers(), key_binding.key());
+        }
+        for button_binding in &self.button_bindings {
+            for target in button_binding.targets() {
+                if *target != ButtonTarget::Root {
+                    client.bind_button(button_binding.modifiers(), button_binding.button(), *target);
+                }
+            }
         }
 
         drop(client);

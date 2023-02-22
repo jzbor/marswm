@@ -29,7 +29,7 @@ All of the following options belong in the `layout` section:
 * `main_ratio` - share of space that the main windows take on the screen
 * `nmain` - how many windows the main area contains on a new workspace
 
-Some of these values can be changed at runtime through respective keybindings.
+Some of these values can be changed at runtime through respective key bindings.
 
 ### The `dynamic` Layout
 As the name suggest the dynamic layout can be used to implement a variety of different layouts.
@@ -59,9 +59,9 @@ Attributes specifying width are all in pixels:
 * `title_hpadding` - horizontal padding for title
 
 
-## Keybindings
+## Key Bindings
 `marswm` comes with a set of default key bindings.
-Call `marswm print-default-keybindings` to get an overview of them.
+Call `marswm print-default-keys` to get an overview of them.
 
 In contrast to the other sections of this manual the keybindings are not configured in the default configuration file.
 Instead they are read from a separate YAML file (usually in `~/.config/marswm/keybindings.yaml`).
@@ -77,6 +77,22 @@ Here is an example:
 ```
 
 The actions are sadly not documented yet, but you can take a look at [the source code](https://github.com/jzbor/marswm/tree/master/marswm/src/bindings.rs).
+
+## Button Bindings
+Button actions can be configured similarly to key bindings in the files `~/.config/marswm/buttonbindings.yaml` and `~/.config/marswm/buttonbindings_ext.yaml` respectively.
+`marswm print-default-buttons` tells you the button bindings installed by default.
+
+The `targets` field specifies which window areas should be used for the button event.
+Possible values are `window`, `frame` and `root`.
+The `action`s are the same as used for key bindings.
+
+Here is an example:
+```YAML
+- modifiers: [Mod4, Shift]
+  button: 2
+  targets: [WindowFrame, ClientWindow]
+  action: close-client
+```
 
 
 ## Window Rules

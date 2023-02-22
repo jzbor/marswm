@@ -16,7 +16,8 @@ pub trait WindowManager<B: Backend<A>, A> {
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_>;
     fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<B::Client>>>);
     fn fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool);
-    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, client_option: Option<Rc<RefCell<B::Client>>>);
+    fn handle_button(&mut self, backend: &mut B, modifiers: u32, button: u32, target: ButtonTarget,
+                     client_option: Option<Rc<RefCell<B::Client>>>);
     fn handle_key(&mut self, backend: &mut B, modifiers: u32, key: u32, client_option: Option<Rc<RefCell<B::Client>>>);
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>);
     fn move_request(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool;
@@ -36,7 +37,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn application(&self) -> String;
     fn attributes(&self) -> &A;
     fn attributes_mut(&mut self) -> &mut A;
-    fn bind_button(&mut self, modifiers: u32, button: u32);
+    fn bind_button(&mut self, modifiers: u32, button: u32, target: ButtonTarget);
     fn bind_key(&mut self, modifiers: u32, key: u32);
     fn center_on_screen(&mut self, dimensions: Dimensions);
     fn close(&self);
@@ -96,12 +97,10 @@ pub trait Backend<A> {
     fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, A>);
 
     /// Move client with mouse
-    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, A>,
-                  client_rc: Rc<RefCell<Self::Client>>, button: u32);
+    fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, A>, client_rc: Rc<RefCell<Self::Client>>);
 
     /// Resize client with mouse
-    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, A>,
-                    client_rc: Rc<RefCell<Self::Client>>, button: u32);
+    fn mouse_resize(&mut self, wm: &mut dyn WindowManager<Self, A>, client_rc: Rc<RefCell<Self::Client>>);
 
     fn point_to_monitor(&self, point: (i32, i32)) -> Option<u32>;
 
@@ -117,4 +116,14 @@ pub trait Backend<A> {
     fn warp_pointer(&self, x: i32, y: i32);
 
     fn shutdown(&mut self);
+}
+
+
+#[derive(Clone,Copy,PartialEq,Eq,Debug)]
+#[cfg_attr(feature = "configuration", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "configuration", serde(rename_all = "kebab-case"))]
+pub enum ButtonTarget {
+    Window,
+    Root,
+    Frame,
 }

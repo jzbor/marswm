@@ -121,7 +121,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
             // select events
             let mut attributes: MaybeUninit<xlib::XSetWindowAttributes> = MaybeUninit::uninit();
             (*attributes.as_mut_ptr()).cursor = xlib::XCreateFontCursor(display, CURSOR_NORMAL);
-            (*attributes.as_mut_ptr()).event_mask = xlib::SubstructureRedirectMask | xlib::SubstructureNotifyMask | xlib::StructureNotifyMask | xlib::KeyPressMask;
+            (*attributes.as_mut_ptr()).event_mask = xlib::SubstructureRedirectMask |
+                xlib::SubstructureNotifyMask | xlib::StructureNotifyMask | xlib::KeyPressMask | xlib::ButtonPressMask;
             xlib::XChangeWindowAttributes(display, root, xlib::CWEventMask | xlib::CWCursor, attributes.as_mut_ptr());
             xlib::XSync(display, xlib::False);
             xlib::XSetErrorHandler(Some(on_error));
@@ -380,8 +381,14 @@ impl<A: PartialEq + Default> X11Backend<A> {
     fn on_button_press(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XButtonEvent) {
         //print_event!(wm, event);
         let modifiers = sanitize_modifiers(event.state);
-        let client = Self::client_by_frame(wm, event.window);
-        wm.handle_button(self, modifiers, event.button, client);
+
+        if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
+            wm.handle_button(self, modifiers, event.button, ButtonTarget::Frame, Some(client_rc));
+        } else if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+            wm.handle_button(self, modifiers, event.button, ButtonTarget::Window, Some(client_rc));
+        } else if event.window == self.root {
+            wm.handle_button(self, modifiers, event.button, ButtonTarget::Root, None);
+        }
     }
 
     fn on_client_message(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XClientMessageEvent) {
@@ -803,7 +810,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
         }
     }
 
-    fn mouse_move(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>, _button: u32) {
+    fn mouse_move(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>) {
         // ignore fullscreen windows
         if client_rc.borrow().is_fullscreen() {
             return;
@@ -812,7 +819,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
         self.mouse_action(wm, client_rc, CURSOR_MOVE, Self::mouse_action_move);
     }
 
-    fn mouse_resize(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>, _button: u32) {
+    fn mouse_resize(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<Self::Client>>) {
         // ignore fullscreen windows
         if client_rc.borrow().is_fullscreen() {
             return;

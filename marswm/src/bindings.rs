@@ -10,7 +10,23 @@ use x11::xlib::{Mod1Mask, Mod4Mask, ShiftMask, ControlMask};
 use crate::*;
 use crate::layouts::*;
 
+
 pub const DEFAULT_MODKEY: Modifier = Modifier::Mod4;
+
+
+macro_rules! client_button_binding {
+    ($button:expr, $action:expr $(, ($($add_mods:ident ),*))?) => {
+        ButtonBinding::new(vec![DEFAULT_MODKEY $(, $($add_mods),*)?], $button, vec![Window, Frame], $action)
+    }
+}
+
+macro_rules! frame_button_binding {
+    ($button:expr, $action:expr) => {
+        ButtonBinding::new(vec![], $button, vec![Frame], $action)
+    }
+}
+
+
 
 #[derive(Serialize,Deserialize,Clone,Debug,PartialEq)]
 #[serde(rename_all = "kebab-case")]
@@ -28,6 +44,8 @@ pub enum BindingAction {
     IncNMain(i32),
     MoveWorkspace(u32),
     PreviousWorkspace,
+    MouseMove,
+    MouseResize,
     MoveMain,
     Restart,
     SetLayout(LayoutType),
@@ -48,7 +66,7 @@ pub enum Modifier {
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
-pub struct Keybinding {
+pub struct KeyBinding {
     /// list of modifiers that apply to this binding
     modifiers: Vec<Modifier>,
 
@@ -56,6 +74,21 @@ pub struct Keybinding {
     /// [keysymdef.h](https://cgit.freedesktop.org/xorg/proto/x11proto/tree/keysymdef.h) without
     /// the leading "XK_")
     key: String,
+
+    /// action to execute on key press
+    action: BindingAction,
+}
+
+#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
+pub struct ButtonBinding {
+    /// list of modifiers that apply to this binding
+    modifiers: Vec<Modifier>,
+
+    /// button index (1, 2, 3 for left, middle, right)
+    button: u32,
+
+    /// button target
+    targets: Vec<ButtonTarget>,
 
     /// action to execute on key press
     action: BindingAction,
@@ -89,6 +122,14 @@ impl BindingAction {
                 wm.exit(backend);
             },
             IncNMain(i) => wm.current_workspace_mut(backend).inc_nmain(*i),
+            MouseMove => if let Some(client_rc) = client_option {
+                backend.mouse_move(wm, client_rc);
+                wm.current_monitor_mut(backend).restack_current();
+            },
+            MouseResize => if let Some(client_rc) = client_option {
+                backend.mouse_resize(wm, client_rc);
+                wm.current_monitor_mut(backend).restack_current();
+            },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
                 wm.move_to_workspace(backend, client_rc, *ws);
             },
@@ -117,9 +158,9 @@ impl BindingAction {
     }
 }
 
-impl Keybinding {
-    pub fn new(modifiers: Vec<Modifier>, key: &str, action: BindingAction) -> Keybinding {
-        return Keybinding { modifiers, key: key.to_owned(), action };
+impl KeyBinding {
+    pub fn new(modifiers: Vec<Modifier>, key: &str, action: BindingAction) -> Self {
+        return KeyBinding { modifiers, key: key.to_owned(), action };
     }
 
     pub fn action(&self) -> BindingAction {
@@ -139,6 +180,32 @@ impl Keybinding {
     }
 }
 
+impl ButtonBinding {
+    pub fn new(modifiers: Vec<Modifier>, button: u32, targets: Vec<ButtonTarget>, action: BindingAction) -> Self {
+        return ButtonBinding { modifiers, button, targets, action };
+    }
+
+    pub fn action(&self) -> BindingAction {
+        return self.action.clone();
+    }
+
+    pub fn button(&self) -> u32 {
+        return self.button;
+    }
+
+    pub fn matches(&self, modifiers: u32, button: u32, target: ButtonTarget) -> bool {
+        return modifiers == self.modifiers() && button == self.button && self.targets.iter().any(|t| *t == target);
+    }
+
+    pub fn modifiers(&self) -> u32 {
+        return self.modifiers.iter().fold(0, |a, b| a | b.mask());
+    }
+
+    pub fn targets(&self) -> &[ButtonTarget] {
+        return &self.targets;
+    }
+}
+
 impl Modifier {
     pub fn mask(&self) -> u32 {
         match self {
@@ -150,49 +217,66 @@ impl Modifier {
     }
 }
 
-pub fn default_keybindings(nworkspaces: u32) -> Vec<Keybinding> {
+pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     use BindingAction::*;
+    use Modifier::*;
     let mut bindings = vec![
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Delete", CloseClient),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "n", CycleLayout),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "t", SetLayout(LayoutType::Stack)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "t", SetLayout(LayoutType::BottomStack)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "c", SetLayout(LayoutType::Deck)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "m", SetLayout(LayoutType::Monocle)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "t", SetLayout(LayoutType::Dynamic)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "f", SetLayout(LayoutType::Floating)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "BackSpace", MoveMain),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "a", IncNMain(1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "x", IncNMain(-1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "a", ChangeMainRatio(0.10)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "x", ChangeMainRatio(-0.10)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "j", CycleClient(1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "k", CycleClient(-1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "j", StackMove(1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "k", StackMove(-1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "period", CycleWorkspace(1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "comma", CycleWorkspace(-1)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "f", ToggleFullscreen),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), "space", ToggleFloating),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "z", CenterClient),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Tab", PreviousWorkspace),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Return", Execute("$TERMINAL".to_owned())),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "d", Execute("rofi -show drun".to_owned())),
-        Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Control), "BackSpace", Restart),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Up", SetStackPosition(StackPosition::Top)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Right", SetStackPosition(StackPosition::Right)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Down", SetStackPosition(StackPosition::Bottom)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "Left", SetStackPosition(StackPosition::Left)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "semicolon", SetStackMode(StackMode::Split)),
-        Keybinding::new(vec!(DEFAULT_MODKEY), "apostrophe", SetStackMode(StackMode::Deck)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Delete", CloseClient),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "n", CycleLayout),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "t", SetLayout(LayoutType::Stack)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Control], "t", SetLayout(LayoutType::BottomStack)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "c", SetLayout(LayoutType::Deck)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "m", SetLayout(LayoutType::Monocle)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "t", SetLayout(LayoutType::Dynamic)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "f", SetLayout(LayoutType::Floating)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "BackSpace", MoveMain),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "a", IncNMain(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "x", IncNMain(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Control], "a", ChangeMainRatio(0.10)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Control], "x", ChangeMainRatio(-0.10)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "j", CycleClient(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "k", CycleClient(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "j", StackMove(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "k", StackMove(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "period", CycleWorkspace(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "comma", CycleWorkspace(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "f", ToggleFullscreen),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "space", ToggleFloating),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "z", CenterClient),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Tab", PreviousWorkspace),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Return", Execute("$TERMINAL".to_owned())),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "d", Execute("rofi -show drun".to_owned())),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Control], "BackSpace", Restart),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Up", SetStackPosition(StackPosition::Top)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Right", SetStackPosition(StackPosition::Right)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Down", SetStackPosition(StackPosition::Bottom)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Left", SetStackPosition(StackPosition::Left)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "semicolon", SetStackMode(StackMode::Split)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "apostrophe", SetStackMode(StackMode::Deck)),
     ];
 
     for i in 0..cmp::min(nworkspaces, 9) {
         let key_name = format!("{}", i + 1);
-        bindings.push(Keybinding::new(vec!(DEFAULT_MODKEY), &key_name, SwitchWorkspace(i)));
-        bindings.push(Keybinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), &key_name, MoveWorkspace(i)));
+        bindings.push(KeyBinding::new(vec!(DEFAULT_MODKEY), &key_name, SwitchWorkspace(i)));
+        bindings.push(KeyBinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), &key_name, MoveWorkspace(i)));
     }
 
+    return bindings;
+}
+
+pub fn default_button_bindings() -> Vec<ButtonBinding> {
+    use BindingAction::*;
+    use ButtonTarget::*;
+    use Modifier::*;
+    let bindings = vec![
+        frame_button_binding!(1, MouseMove),
+        client_button_binding!(1, MouseMove),
+        frame_button_binding!(2, Execute("mars-relay menu".to_owned())),
+        client_button_binding!(2, Execute("mars-relay menu".to_owned())),
+        client_button_binding!(2, CloseClient, (Shift)),
+        frame_button_binding!(3, MouseResize),
+        client_button_binding!(3, MouseResize),
+    ];
     return bindings;
 }
 

@@ -277,12 +277,20 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
         return &mut self.attributes;
     }
 
-    fn bind_button(&mut self, modifiers: u32, button: u32) {
+    fn bind_button(&mut self, modifiers: u32, button: u32, target: ButtonTarget) {
         let mask: u32 = (xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask)
             .try_into().unwrap();
+
+        let window = match target {
+            ButtonTarget::Window => self.window,
+            // ButtonTarget::Frame => self.frame,
+            ButtonTarget::Frame => return,  // already grabbed as we own the window
+            ButtonTarget::Root => panic!("You can't bind actions to the root window through a client window"),
+        };
+
         unsafe {
-            xlib::XGrabButton(self.display, button, modifiers, self.frame, xlib::False, mask,
-                              xlib::GrabModeAsync, xlib::GrabModeAsync, self.frame, 0);
+            xlib::XGrabButton(self.display, button, modifiers, window, xlib::False, mask,
+                              xlib::GrabModeAsync, xlib::GrabModeAsync, window, 0);
         }
     }
 
