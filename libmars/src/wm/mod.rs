@@ -27,7 +27,6 @@ pub trait WindowManager<B: Backend<A>, A> {
     fn tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool);
     fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
     fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
-    fn unfocus_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
     fn update_monitor_config(&mut self, backend: &mut B, configs: Vec<MonitorConfig>);
 }

@@ -1,11 +1,12 @@
 extern crate x11;
 
+use core::marker::PhantomData;
 use std::ffi::*;
-use x11::xlib;
-use x11::xrandr;
+use std::mem::MaybeUninit;
 use std::ptr;
 use std::slice;
-use std::mem::MaybeUninit;
+use x11::xlib;
+use x11::xrandr;
 
 use crate::wm::*;
 use crate::wm::x11::*;
@@ -37,13 +38,13 @@ macro_rules! print_event {
 type WM<'a, A> = dyn WindowManager<X11Backend<A>, A> + 'a;
 
 pub struct X11Backend<A: PartialEq> {
+    attribute_phantom: PhantomData<A>,
     display: *mut xlib::Display,
     root: u64,
     xrandr: XRandrInfo,
     monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
     dock_windows: Vec<xlib::Window>,
-    last_active: Option<Rc<RefCell<X11Client<A>>>>,
 }
 
 struct XRandrInfo {
@@ -93,13 +94,13 @@ impl<A: PartialEq + Default> X11Backend<A> {
             let root = xlib::XDefaultRootWindow(display);
 
             let mut x11b = X11Backend {
+                attribute_phantom: PhantomData::default(),
                 display,
                 root,
                 xrandr: XRandrInfo::query(display),
                 monitors: Vec::new(),
                 wmcheck_win: 0,
                 dock_windows: Vec::new(),
-                last_active: None,
             };
 
             // For debugging:
@@ -565,17 +566,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
             None
         };
 
-        if let Some(client_rc) = client_option {
-            if let Some(last_active_client) = &self.last_active {
-                if &client_rc != last_active_client {
-                    wm.unfocus_client(self, last_active_client.clone());
-                    wm.focus_client(self, Some(client_rc.clone()));
-                }
-            } else {
-                wm.focus_client(self, Some(client_rc.clone()));
-            }
-            self.last_active = Some(client_rc);
-        }
+        wm.focus_client(self, client_option.clone());
     }
 
     fn on_expose_event(&mut self, wm: &mut WM<A>, event: xlib::XExposeEvent) {
@@ -678,13 +669,6 @@ impl<A: PartialEq + Default> X11Backend<A> {
 
         // tell window manager to drop client
         wm.unmanage(self, client_rc.clone());
-
-        // drop reference from last active field
-        if let Some(last_active) = &self.last_active {
-            if &client_rc == last_active {
-                self.last_active = None;
-            }
-        }
 
         let window = client_rc.borrow().window();
 

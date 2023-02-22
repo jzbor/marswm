@@ -237,7 +237,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             // this might be the case for pinned clients
             client_rc.borrow().raise();
         }
-        // client_rc.borrow().warp_pointer_to_center();
+
         self.focus_client(backend, Some(client_rc));
     }
 
@@ -258,13 +258,15 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<B::Client>>>) {
-        if let Some(client_rc) = client_option {
-            // if let Some(focused_rc) = &self.active_client {
-            //     self.decorate_inactive(focused_rc.clone());
-            // }
-
+        if client_option == self.active_client {
+            return;
+        } else if let Some(client_rc) = client_option {
             self.decorate_active(client_rc.clone());
             backend.set_input_focus(client_rc.clone());
+
+            if let Some(old_client_rc) = self.active_client.take() {
+                self.decorate_inactive(old_client_rc);
+            }
 
             self.active_client = Some(client_rc);
         } else {
@@ -497,11 +499,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     fn toggle_tile_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let is_tiled = self.is_tiled(&client_rc);
         self.tile_client(backend, client_rc, !is_tiled);
-    }
-
-    fn unfocus_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
-        self.decorate_inactive(client_rc);
-        self.active_client = None;
     }
 
     fn unmanage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
