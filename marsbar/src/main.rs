@@ -97,6 +97,7 @@ impl Bar {
         };
 
         bar.arrange();
+        bar.draw();
 
         return Ok(bar);
     }

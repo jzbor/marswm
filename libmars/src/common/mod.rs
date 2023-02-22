@@ -69,7 +69,7 @@ pub struct Dimensions {
     h: u32,
 }
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,PartialEq,Debug)]
 pub struct MonitorConfig {
     name: String,
     dims: Dimensions,
