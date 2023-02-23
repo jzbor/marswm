@@ -184,7 +184,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn handle_xevent(&mut self, wm: &mut WM<A>, event: xlib::XEvent) {
+    fn handle_xevent(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XEvent) {
         unsafe {  // unsafe because of access to union field
             if self.xrandr.supported && event.get_type() == self.xrandr.event_base + xrandr::RRNotify {
                 self.monitors = query_monitor_config(self.display, true);
@@ -214,7 +214,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
     /// Create a new client for the window and give it to the window manager
-    fn manage(&mut self, wm: &mut WM<A>, window: xlib::Window) {
+    fn manage(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), window: xlib::Window) {
         if window == self.wmcheck_win {
             return;
         }
@@ -307,69 +307,16 @@ impl<A: PartialEq + Default> X11Backend<A> {
         // TODO move transient clients to workspace and monitor of their counterpart
     }
 
-    fn mouse_action(&mut self, wm: &mut dyn WindowManager<X11Backend<A>, A>,
-                    client_rc: Rc<RefCell<X11Client<A>>>, cursor_type: u32,
-                    action: fn(&mut Self, &Rc<RefCell<X11Client<A>>>, (i32, i32), (u32, u32), (i32, i32))) {
-        unsafe {
-            // grab pointer
-            let cursor = xlib::XCreateFontCursor(self.display, cursor_type);
-            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK as u32,
-                    xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
-            if success != xlib::GrabSuccess {
-                xlib::XFreeCursor(self.display, cursor);
-                return;
-            }
-
-            let orig_client_pos = client_rc.borrow().pos();
-            let orig_client_size = client_rc.borrow().size();
-            let orig_pointer_pos = self.pointer_pos();
-            let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
-
-            loop {
-                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, event.as_mut_ptr());
-                let event = event.assume_init();
-
-                if event.get_type() == xlib::MotionNotify {
-                    // @TODO add max framerate (see moonwm)
-                    // cast event to XMotionEvent
-                    let event = event.motion;
-                    let delta = (event.x_root - orig_pointer_pos.0,
-                                 event.y_root - orig_pointer_pos.1);
-
-                    let old_center = client_rc.borrow().center();
-                    let old_mon = self.point_to_monitor(old_center);
-                    action(self, &client_rc, orig_client_pos, orig_client_size, delta);
-                    if let Some(old_mon) = old_mon {
-                        let new_center = client_rc.borrow().center();
-                        if let Some(new_mon) = self.point_to_monitor(new_center) {
-                            if old_mon != new_mon {
-                                wm.client_switches_monitor(client_rc.clone(), new_mon);
-                            }
-                        }
-                    }
-                } else if event.get_type() == xlib::ButtonRelease {
-                    break;
-                } else {
-                    self.handle_xevent(wm, event);
-                }
-            }
-
-            // Ungrab pointer and clean up
-            xlib::XUngrabPointer(self.display, xlib::CurrentTime);
-            xlib::XFreeCursor(self.display, cursor);
-        }
-    }
-
-    fn mouse_action_move(&mut self, client_rc: &Rc<RefCell<X11Client<A>>>, orig_client_pos: (i32, i32),
-                         _orig_client_size: (u32, u32), delta: (i32, i32)) {
+    fn mouse_action_move(&mut self, _wm: &mut (impl WindowManager<Self, A> + ?Sized), client_rc: &Rc<RefCell<X11Client<A>>>,
+                         orig_client_pos: (i32, i32), _orig_client_size: (u32, u32), delta: (i32, i32)) {
         let dest_x = orig_client_pos.0 + delta.0;
         let dest_y = orig_client_pos.1 + delta.1;
         let size = client_rc.borrow().size();
         client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
     }
 
-    fn mouse_action_resize(&mut self, client_rc: &Rc<RefCell<X11Client<A>>>, _orig_client_pos: (i32, i32),
-                         orig_client_size: (u32, u32), delta: (i32, i32)) {
+    fn mouse_action_resize(&mut self, _wm: &mut (impl WindowManager<Self, A> + ?Sized), client_rc: &Rc<RefCell<X11Client<A>>>,
+                           _orig_client_pos: (i32, i32), orig_client_size: (u32, u32), delta: (i32, i32)) {
         let dest_w = orig_client_size.0 as i32 + delta.0;
         let dest_h = orig_client_size.1 as i32 + delta.1;
         let pos = client_rc.borrow().pos();
@@ -378,7 +325,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         client_rc.borrow_mut().move_resize(pos.0, pos.1, dest_w, dest_h);
     }
 
-    fn on_button_press(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XButtonEvent) {
+    fn on_button_press(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XButtonEvent) {
         //print_event!(wm, event);
         let modifiers = sanitize_modifiers(event.state);
 
@@ -391,7 +338,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_client_message(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XClientMessageEvent) {
+    fn on_client_message(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XClientMessageEvent) {
         //print_event!(wm, event);
         if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.message_type) {
             match atom {
@@ -451,7 +398,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_configure_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XConfigureEvent) {
+    fn on_configure_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XConfigureEvent) {
         //print_event!(wm, event);
         if event.window == self.root && !self.xrandr.supported {
             self.monitors = query_monitor_config(self.display, true);
@@ -460,7 +407,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_configure_request(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XConfigureRequestEvent) {
+    fn on_configure_request(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XConfigureRequestEvent) {
         let client = wm.clients().find(|c| c.borrow().window() == event.window).cloned();
         let inner = wm.clients().find(|c| c.borrow().window() == event.window).map(|c| c.borrow().inner_dimensions());
         if let Some(client_rc) = client {
@@ -534,7 +481,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_destroy_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XDestroyWindowEvent) {
+    fn on_destroy_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XDestroyWindowEvent) {
         //print_event!(wm, event);
 
         // unmanage dock window
@@ -553,7 +500,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         self.unmanage(wm, client_rc);
     }
 
-    fn on_enter_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XCrossingEvent) {
+    fn on_enter_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XCrossingEvent) {
         //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("EnterNotify on frame for client {}", client_rc.borrow().window());
@@ -576,13 +523,13 @@ impl<A: PartialEq + Default> X11Backend<A> {
         wm.focus_client(self, client_option.clone());
     }
 
-    fn on_expose_event(&mut self, wm: &mut WM<A>, event: xlib::XExposeEvent) {
+    fn on_expose_event(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XExposeEvent) {
         if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
             client_rc.borrow_mut().update_title();
         }
     }
 
-    fn on_key_press(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XKeyEvent) {
+    fn on_key_press(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XKeyEvent) {
         //print_event!(wm, event);
 
         let keysym = unsafe {
@@ -595,7 +542,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         wm.handle_key(self, modifiers, key, client_opt)
     }
 
-    fn on_leave_notify(&mut self, _wm: &mut dyn WindowManager<Self, A>, _event: xlib::XCrossingEvent) {
+    fn on_leave_notify(&mut self, _wm: &mut (impl WindowManager<Self, A> + ?Sized), _event: xlib::XCrossingEvent) {
         //print_event!(wm, event);
         // if let Some(client_rc) = Self::client_by_frame(wm, event.window) {
         //     println!("LeaveNotify on frame for client {}", client_rc.borrow().window());
@@ -611,7 +558,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         // }
     }
 
-    fn on_unmap_notify(&mut self, wm: &mut dyn WindowManager<Self, A>, event: xlib::XUnmapEvent) {
+    fn on_unmap_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XUnmapEvent) {
         //print_event!(wm, event);
         // unmanage dock window
         if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
@@ -642,7 +589,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_map_request(&mut self, wm: &mut WM<A>, event: xlib::XMapRequestEvent) {
+    fn on_map_request(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XMapRequestEvent) {
         //print_event!(wm, event);
         let already_managed = wm.clients().any(|c| c.borrow().window() == event.window);
         if !already_managed {
@@ -650,11 +597,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
         }
     }
 
-    fn on_map_notify(&mut self, _wm: &mut WM<A>, _event: xlib::XMapEvent) {
+    fn on_map_notify(&mut self, _wm: &mut (impl WindowManager<Self, A> + ?Sized), _event: xlib::XMapEvent) {
         //print_event!(wm, event);
     }
 
-    pub fn on_property_notify(&mut self, wm: &mut WM<A>, event: xlib::XPropertyEvent) {
+    pub fn on_property_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XPropertyEvent) {
         if let Some(client_rc) = Self::client_by_window(wm, event.window) {
             if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom) {
                 match atom {
@@ -671,7 +618,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         self.root.x11_replace_property_long(self.display, NetSupported, xlib::XA_ATOM, data)
     }
 
-    fn unmanage(&mut self, wm: &mut WM<A>, client_rc: Rc<RefCell<X11Client<A>>>) {
+    fn unmanage(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), client_rc: Rc<RefCell<X11Client<A>>>) {
         // eprintln!("Closing client: {}", client_rc.borrow().name());
 
         // tell window manager to drop client
@@ -690,11 +637,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
 
-    fn client_by_frame(wm: &WM<A>, frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
+    fn client_by_frame(wm: &(impl WindowManager<Self, A> + ?Sized), frame: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().frame() == frame || c.borrow().title_window() == Some(frame)).cloned();
     }
 
-    fn client_by_window(wm: &WM<A>, window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
+    fn client_by_window(wm: &(impl WindowManager<Self, A> + ?Sized), window: u64) -> Option<Rc<RefCell<X11Client<A>>>> {
         return wm.clients().find(|c| c.borrow().window() == window).cloned();
     }
 }
@@ -807,6 +754,58 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
 
             xlib::XFree(top_level_windows as *mut c_void);
             xlib::XUngrabServer(self.display);
+        }
+    }
+
+    fn mouse_action<WM: WindowManager<Self, A> + ?Sized>(&mut self, wm: &mut WM, client_rc: Rc<RefCell<Self::Client>>,
+                                         cursor_type: u32, action: MouseActionFn<Self, WM, Self::Client>) {
+        unsafe {
+            // grab pointer
+            let cursor = xlib::XCreateFontCursor(self.display, cursor_type);
+            let success = xlib::XGrabPointer(self.display, self.root, xlib::False, MOUSEMASK as u32,
+                    xlib::GrabModeAsync, xlib::GrabModeAsync, XLIB_NONE, cursor, xlib::CurrentTime);
+            if success != xlib::GrabSuccess {
+                xlib::XFreeCursor(self.display, cursor);
+                return;
+            }
+
+            let orig_client_pos = client_rc.borrow().pos();
+            let orig_client_size = client_rc.borrow().size();
+            let orig_pointer_pos = self.pointer_pos();
+            let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
+
+            loop {
+                xlib::XMaskEvent(self.display, MOUSEMASK | xlib::ExposureMask | xlib::SubstructureRedirectMask, event.as_mut_ptr());
+                let event = event.assume_init();
+
+                if event.get_type() == xlib::MotionNotify {
+                    // @TODO add max framerate (see moonwm)
+                    // cast event to XMotionEvent
+                    let event = event.motion;
+                    let delta = (event.x_root - orig_pointer_pos.0,
+                                 event.y_root - orig_pointer_pos.1);
+
+                    let old_center = client_rc.borrow().center();
+                    let old_mon = self.point_to_monitor(old_center);
+                    action(self, wm, &client_rc, orig_client_pos, orig_client_size, delta);
+                    if let Some(old_mon) = old_mon {
+                        let new_center = client_rc.borrow().center();
+                        if let Some(new_mon) = self.point_to_monitor(new_center) {
+                            if old_mon != new_mon {
+                                wm.client_switches_monitor(client_rc.clone(), new_mon);
+                            }
+                        }
+                    }
+                } else if event.get_type() == xlib::ButtonRelease {
+                    break;
+                } else {
+                    self.handle_xevent(wm, event);
+                }
+            }
+
+            // Ungrab pointer and clean up
+            xlib::XUngrabPointer(self.display, xlib::CurrentTime);
+            xlib::XFreeCursor(self.display, cursor);
         }
     }
 

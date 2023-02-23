@@ -74,6 +74,8 @@ pub trait Client<A>: Eq + Dimensioned {
     fn warp_pointer_to_corner(&self);
 }
 
+type MouseActionFn<B, WM, C> = fn(&mut B, &mut WM, &Rc<RefCell<C>>, (i32, i32), (u32, u32), (i32, i32));
+
 pub trait Backend<A> {
     /// Associated client type
     type Client: Client<A>;
@@ -95,6 +97,11 @@ pub trait Backend<A> {
 
     /// Handle windows existing before initialization
     fn handle_existing_windows(&mut self, wm: &mut dyn WindowManager<Self, A>);
+
+    fn mouse_action<WM: WindowManager<Self, A> + ?Sized>(&mut self, wm: &mut WM,
+                    client_rc: Rc<RefCell<Self::Client>>, cursor_type: u32,
+                    action: MouseActionFn<Self, WM, Self::Client>)
+        where Self: Sized;
 
     /// Move client with mouse
     fn mouse_move(&mut self, wm: &mut dyn WindowManager<Self, A>, client_rc: Rc<RefCell<Self::Client>>);
