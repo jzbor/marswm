@@ -54,6 +54,7 @@ struct XRandrInfo {
 }
 
 
+const MAX_FRAMERATE: u64 = 120;
 const SUPPORTED_ATOMS: &[X11Atom; 21] = & [
     NetActiveWindow,
     NetClientList,
@@ -769,6 +770,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                 return;
             }
 
+            let last_time = 0;
             let orig_client_pos = client_rc.borrow().pos();
             let orig_client_size = client_rc.borrow().size();
             let orig_pointer_pos = self.pointer_pos();
@@ -779,7 +781,11 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                 let event = event.assume_init();
 
                 if event.get_type() == xlib::MotionNotify {
-                    // @TODO add max framerate (see moonwm)
+                    // limit frame rate
+                    if (event.motion.time - last_time) <= (1000 / MAX_FRAMERATE) {
+                        continue;
+                    }
+
                     // cast event to XMotionEvent
                     let event = event.motion;
                     let delta = (event.x_root - orig_pointer_pos.0,

@@ -51,6 +51,13 @@ pub trait Dimensioned {
         return (center_x, center_y);
     }
 
+    fn contains_point(&self, point: (i32, i32)) -> bool {
+        return point.0 >= self.x()
+            && point.0 < self.x() + self.w() as i32
+            && point.1 >= self.y()
+            && point.1 < self.y() + self.h() as i32;
+    }
+
     fn bottom(&self) -> i32 {
         return self.y() + self.h() as i32;
     }
@@ -102,10 +109,7 @@ impl MonitorConfig {
     }
 
     pub fn contains_point(&self, point: (i32, i32)) -> bool {
-        return point.0 >= self.dims.x()
-            && point.0 < self.dims.x() + self.dims.w() as i32
-            && point.1 >= self.dims.y()
-            && point.1 < self.dims.y() + self.dims.h() as i32;
+        return self.dims.contains_point(point);
     }
 
     pub fn dimensions(&self) -> Dimensions {

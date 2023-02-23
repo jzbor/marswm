@@ -195,6 +195,34 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         process::exit(0);
     }
 
+    pub fn mouse_action_place(_backend: &mut B, wm: &mut Self, client_rc: &Rc<RefCell<B::Client>>,
+                         orig_client_pos: (i32, i32), _orig_client_size: (u32, u32), delta: (i32, i32)) {
+        let dest_x = orig_client_pos.0 + delta.0;
+        let dest_y = orig_client_pos.1 + delta.1;
+        let size = client_rc.borrow().size();
+        client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
+        let client_center = client_rc.borrow().center();
+
+        if let Some(workspace) = wm.get_workspace_mut(&client_rc) {
+            let other_index_option = workspace.tiled_clients()
+                .enumerate()
+                .find(|(_, c)| *c != client_rc && c.borrow().dimensions().contains_point(client_center))
+                .map(|(i, _)| i);
+            if let Some(index) = other_index_option {
+                workspace.stack_set_pos(client_rc.clone(), index);
+                workspace.apply_layout();
+            }
+        }
+    }
+
+    pub fn mouse_place(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
+        client_rc.borrow_mut().attributes_mut().is_moving = true;
+        client_rc.borrow().raise();
+        backend.mouse_action(self, client_rc.clone(), 52, Self::mouse_action_place);
+        client_rc.borrow_mut().attributes_mut().is_moving = false;
+        self.current_workspace_mut(backend).restack();
+    }
+
     fn relative_workspace_idx(&self, absolute_idx: u32) -> (usize, u32) {
         if absolute_idx < self.config.primary_workspaces {
             return (0, absolute_idx);
@@ -412,15 +440,11 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool {
-        if let Some(ws) = self.get_workspace(&client_rc) {
-            if ws.is_floating(&client_rc) {
-                let mut client = client_rc.borrow_mut();
-                let (width, height) = client.size();
-                client.move_resize(x, y, width, height);
-                return true;
-            } else {
-                return false;
-            }
+        if client_rc.borrow().attributes().is_floating {
+            let mut client = client_rc.borrow_mut();
+            let (width, height) = client.size();
+            client.move_resize(x, y, width, height);
+            return true;
         } else {
             return false;
         }
@@ -467,15 +491,11 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool {
-        if let Some(ws) = self.get_workspace(&client_rc) {
-            if ws.is_floating(&client_rc) {
-                let mut client = client_rc.borrow_mut();
-                let (x, y) = client.pos();
-                client.move_resize(x, y, width, height);
-                return true;
-            } else {
-                return false;
-            }
+        if client_rc.borrow().attributes().is_floating {
+            let mut client = client_rc.borrow_mut();
+            let (x, y) = client.pos();
+            client.move_resize(x, y, width, height);
+            return true;
         } else {
             return false;
         }

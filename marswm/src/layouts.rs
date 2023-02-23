@@ -3,7 +3,6 @@ use libmars::enum_with_values;
 use libmars::wm::Client;
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
-use std::collections::VecDeque;
 use std::rc::Rc;
 
 use crate::attributes::*;
@@ -44,7 +43,7 @@ enum_with_values! {
 }
 
 pub struct Layout<C: Client<Attributes>> {
-    apply: fn(Dimensions, &VecDeque<Rc<RefCell<C>>>, &LayoutConfiguration),
+    apply: fn(Dimensions, &Vec<Rc<RefCell<C>>>, &LayoutConfiguration),
 }
 
 impl<C: Client<Attributes>> Layout<C> {
@@ -71,19 +70,19 @@ impl<C: Client<Attributes>> Layout<C> {
         }
     }
 
-    pub fn apply_layout(&self, win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+    pub fn apply_layout(&self, win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
         (self.apply)(win_area, clients, config);
     }
 }
 
-fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Bottom;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
 }
 
-fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
     let nclients: u32 = clients.len().try_into().unwrap();
     let mut clients = clients.iter();
     let main_clients = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
@@ -129,19 +128,19 @@ fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &V
     }
 }
 
-fn apply_layout_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
 }
 
-fn apply_layout_monocle(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client<Attributes>>>>, _config: &LayoutConfiguration) {
+fn apply_layout_monocle(win_area: Dimensions, clients: &Vec<Rc<RefCell<impl Client<Attributes>>>>, _config: &LayoutConfiguration) {
     let clients = clients.iter().collect();
     stack_clients_ontop(win_area, clients);
 }
 
-fn apply_layout_deck(win_area: Dimensions, clients: &VecDeque<Rc<RefCell<impl Client<Attributes>>>>, config: &LayoutConfiguration) {
+fn apply_layout_deck(win_area: Dimensions, clients: &Vec<Rc<RefCell<impl Client<Attributes>>>>, config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Deck;
@@ -238,7 +237,11 @@ fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Cl
             let x: i32 = area.x() + (i as i32 * (width + gap_width) as i32);
             let y: i32 = area.y();
             let width_adjustment = if i as u32 == nclients - 1 { width_remainder } else { 0 };
-            client_rc.borrow_mut().move_resize(x, y, width + width_adjustment, height);
+
+            let mut client = client_rc.borrow_mut();
+            if !client.attributes().is_moving {
+                client.move_resize(x, y, width + width_adjustment, height);
+            }
         }
     }
 }
@@ -257,15 +260,20 @@ fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Clie
             let x: i32 = area.x();
             let y: i32 = area.y() + (i as i32 * (height + gap_width) as i32);
             let height_adjustment = if i as u32 == nclients - 1 { height_remainder } else { 0 };
-            client_rc.borrow_mut().move_resize(x, y, width, height + height_adjustment);
+
+            let mut client = client_rc.borrow_mut();
+            if !client.attributes().is_moving {
+                client.move_resize(x, y, width, height + height_adjustment);
+            }
         }
     }
 }
 
 fn stack_clients_ontop(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client<Attributes>>>>) {
     for client_rc in clients {
-        if !client_rc.borrow().is_fullscreen() {
-            client_rc.borrow_mut().move_resize(area.x(), area.y(), area.w(), area.h());
+        let mut client = client_rc.borrow_mut();
+        if !client.is_fullscreen() && !client.attributes().is_moving {
+            client.move_resize(area.x(), area.y(), area.w(), area.h());
         }
     }
 }

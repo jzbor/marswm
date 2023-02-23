@@ -2,15 +2,21 @@ use libmars::common::Dimensions;
 
 #[derive(PartialEq)]
 pub struct Attributes {
+    pub is_floating: bool,
+    pub is_moving: bool,
+    pub is_pinned: bool,
+
     pub floating_dimensions: Option<Dimensions>,
-    pub stack_position: Option<usize>,
 }
 
 impl Default for Attributes {
     fn default() -> Self {
         return Attributes {
+            is_floating: false,
+            is_moving: false,
+            is_pinned: false,
+
             floating_dimensions: None,
-            stack_position: None,
         };
     }
 }

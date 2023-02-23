@@ -45,6 +45,7 @@ pub enum BindingAction {
     MoveWorkspace(u32),
     PreviousWorkspace,
     MouseMove,
+    MousePlace,
     MouseResize,
     MoveMain,
     Restart,
@@ -125,6 +126,9 @@ impl BindingAction {
             MouseMove => if let Some(client_rc) = client_option {
                 backend.mouse_move(wm, client_rc);
                 wm.current_monitor_mut(backend).restack_current();
+            },
+            MousePlace => if let Some(client_rc) = client_option {
+                wm.mouse_place(backend, client_rc);
             },
             MouseResize => if let Some(client_rc) = client_option {
                 backend.mouse_resize(wm, client_rc);
@@ -271,8 +275,8 @@ pub fn default_button_bindings() -> Vec<ButtonBinding> {
     use ButtonTarget::*;
     use Modifier::*;
     let bindings = vec![
-        frame_button_binding!(1, MouseMove),
-        client_button_binding!(1, MouseMove),
+        frame_button_binding!(1, MousePlace),
+        client_button_binding!(1, MousePlace),
         frame_button_binding!(2, Execute("mars-relay menu".to_owned())),
         client_button_binding!(2, Execute("mars-relay menu".to_owned())),
         client_button_binding!(2, CloseClient, (Shift)),

@@ -12,9 +12,8 @@ use crate::layouts::*;
 pub struct Workspace<C: Client<Attributes>> {
     name: String,
     global_index: u32,
-    floating_clients: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
-    pinned_clients: Vec<Rc<RefCell<C>>>, // sorted by stacking order
-    tiled_clients: VecDeque<Rc<RefCell<C>>>, // sorted by user
+    clients: VecDeque<Rc<RefCell<C>>>,  // sorted by user
+    clients_stack: VecDeque<Rc<RefCell<C>>>,  // sorted by stacking order
     win_area: Dimensions,
     cur_layout: LayoutType,
     layout_config: LayoutConfiguration,
@@ -25,9 +24,8 @@ impl<C: Client<Attributes>> Workspace<C> {
     pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
         return Workspace {
             name, global_index,
-            floating_clients: VecDeque::new(),
-            pinned_clients: Vec::new(),
-            tiled_clients: VecDeque::new(),
+            clients: VecDeque::new(),
+            clients_stack: VecDeque::new(),
             win_area,
             cur_layout: layout_config.default,
             layout_config,
@@ -35,7 +33,8 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn apply_layout(&self) {
-        Layout::get(self.cur_layout).apply_layout(self.win_area, &self.tiled_clients, &self.layout_config);
+        let tiled_clients = self.clients.iter().filter(|c| !c.borrow().attributes().is_floating).cloned().collect();
+        Layout::get(self.cur_layout).apply_layout(self.win_area, &tiled_clients, &self.layout_config);
     }
 
     pub fn change_main_ratio(&mut self, i: f32) {
@@ -70,10 +69,6 @@ impl<C: Client<Attributes>> Workspace<C> {
         self.apply_layout();
     }
 
-    pub fn is_floating(&self, client_rc: &Rc<RefCell<C>>) -> bool {
-        return self.floating_clients.contains(client_rc);
-    }
-
     pub fn name(&self) -> &str {
         return &self.name;
     }
@@ -81,15 +76,15 @@ impl<C: Client<Attributes>> Workspace<C> {
     pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {
         let nmain = self.layout_config.nmain.try_into().unwrap();
         let mut index_option = None;
-        if let Some(index) = self.tiled_clients.iter().position(|c| c == &client_rc) {
+        if let Some(index) = self.clients.iter().position(|c| c == &client_rc) {
             index_option = Some(index);
         }
         if let Some(index) = index_option {
-            self.tiled_clients.remove(index);
+            self.clients.remove(index);
             if index < nmain {
-                self.tiled_clients.insert(nmain, client_rc);
+                self.clients.insert(nmain, client_rc);
             } else {
-                self.tiled_clients.push_front(client_rc);
+                self.clients.push_front(client_rc);
             }
             self.apply_layout();
         }
@@ -97,44 +92,48 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn pull_pinned(&mut self) -> Vec<Rc<RefCell<C>>> {
         let mut vec = Vec::new();
-        while let Some(client) = self.pinned_clients.pop() {
-            // pull client from tiled clients
-            let index_option = self.tiled_clients.iter().position(|c| c == &client);
+
+        while let Some(client_rc) = self.clients.iter().find(|c| c.borrow().attributes().is_pinned).cloned() {
+            // pull client from clients
+            let index_option = self.clients.iter().position(|c| *c == client_rc);
             if let Some(index) = index_option {
-                self.tiled_clients.remove(index);
+                self.clients.remove(index);
             }
 
-            // pull client from floating clients
-            let index_option = self.floating_clients.iter().position(|c| c == &client);
+            // pull client from clients stack
+            let index_option = self.clients_stack.iter().position(|c| *c == client_rc);
             if let Some(index) = index_option {
-                self.floating_clients.remove(index);
+                self.clients_stack.remove(index);
             }
 
-            vec.push(client);
+            vec.push(client_rc);
         }
+
         self.restack();
         return vec;
     }
 
     pub fn push_pinned(&mut self, clients: Vec<Rc<RefCell<C>>>) {
-        self.floating_clients.extend(clients.iter().cloned());
-        self.pinned_clients.extend(clients);
+        self.clients.extend(clients.iter().cloned());
+        self.clients_stack.extend(clients);
         self.restack();
     }
 
     pub fn raise_client(&mut self, client_rc: &Rc<RefCell<C>>) {
-        if self.floating_clients.contains(client_rc)
-                || self.tiled_clients.contains(client_rc) {
-            client_rc.borrow().raise();
+        if !self.contains(&client_rc) {
+            return;
         }
 
-        // push to front if client is floating (floating clients are sorted by stacking order)
-        let index_option = self.floating_clients.iter().position(|c| c == client_rc);
+        let index_option = self.clients_stack.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
-            let client_rc = self.floating_clients.remove(index).unwrap();
-            self.floating_clients.push_front(client_rc);
+            let client_rc = self.clients_stack.remove(index).unwrap();
+            self.clients_stack.push_front(client_rc);
+        }
+
+        let is_floating = client_rc.borrow().attributes().is_floating;
+        if is_floating {
+            client_rc.borrow().raise();
         } else {
-            // if the raised client was a tiled client a restack is necessary
             self.restack();
         }
     }
@@ -154,9 +153,10 @@ impl<C: Client<Attributes>> Workspace<C> {
 
         self.apply_layout();
 
-        for client in self.floating_clients.iter().rev() {
-            client.borrow().raise();
-        }
+        self.clients_stack.iter()
+            .filter(|c| c.borrow().attributes().is_floating)
+            .rev()
+            .for_each(|c| c.borrow().raise());
 
         if let Some(client) = fullscreen_client {
             client.borrow().raise();
@@ -169,51 +169,36 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn set_floating(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
-        if state && self.tiled_clients.contains(&client_rc) {
-            let index = self.tiled_clients.iter().position(|c| c == &client_rc).unwrap();
+        if !self.contains(&client_rc) {
+            return;
+        }
 
+        let is_currently_floating = client_rc.borrow().attributes().is_floating;
+        if state && !is_currently_floating {
             // restore floating dimensions and save stack position
             let mut client = client_rc.borrow_mut();
-            client.attributes_mut().stack_position = Some(index);
             let dimensions_option = client.attributes_mut().floating_dimensions.take();
             if let Some(dimensions) = dimensions_option {
                 client.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
             } else {
                 client.center_on_screen(self.win_area);
             }
-            drop(client);
-
-            let client_rc = self.tiled_clients.remove(index).unwrap();
-            client_rc.borrow().export_tiled(false);
-            self.floating_clients.push_front(client_rc);
-        } else if !state && self.floating_clients.contains(&client_rc) {
+        } else if !state && is_currently_floating {
             // save floating dimensions
             let mut client = client_rc.borrow_mut();
             let dimensions = Some(client.dimensions());
             client.attributes_mut().floating_dimensions = dimensions;
-            let insert_index = client.attributes_mut().stack_position.take()
-                .unwrap_or(0);
-            drop(client);
-
-            let index = self.floating_clients.iter().position(|c| c == &client_rc).unwrap();
-            let client_rc = self.floating_clients.remove(index).unwrap();
-            client_rc.borrow().export_tiled(true);
-            self.tiled_clients.insert(insert_index, client_rc);
+        } else {
+            return;  // client already has desired state
         }
+
+        client_rc.borrow().export_tiled(state);
+        client_rc.borrow_mut().attributes_mut().is_floating = state;
         self.restack();
     }
 
     pub fn set_pinned(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
-        if state {
-            if !self.pinned_clients.contains(&client_rc) {
-                self.pinned_clients.push(client_rc);
-            }
-        } else {
-            let index_option = self.pinned_clients.iter().position(|c| c == &client_rc);
-            if let Some(index) = index_option {
-                self.pinned_clients.remove(index);
-            }
-        }
+        client_rc.borrow_mut().attributes_mut().is_pinned = state;
     }
 
     pub fn set_stack_mode(&mut self, mode: StackMode) {
@@ -227,22 +212,30 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn stack_move(&mut self, client_rc: Rc<RefCell<C>>, inc: i32) {
-        if let Some(pos) = self.tiled_clients.iter().position(|c| *c == client_rc) {
-            let len = self.tiled_clients.len();
+        if let Some(pos) = self.clients.iter().position(|c| *c == client_rc) {
+            let len = self.clients.len();
             let new_pos = (pos as i32 + inc + len as i32) as usize % len;
-            self.tiled_clients.remove(pos);
-            self.tiled_clients.insert(new_pos, client_rc.clone());
+            self.clients.remove(pos);
+            self.clients.insert(new_pos, client_rc.clone());
             self.apply_layout();
             client_rc.borrow().warp_pointer_to_center();
         }
     }
 
+    pub fn stack_set_pos(&mut self, client_rc: Rc<RefCell<C>>, i: usize) {
+        if let Some(pos) = self.clients.iter().position(|c| *c == client_rc) {
+            self.clients.remove(pos);
+            self.clients.insert(i, client_rc.clone());
+            // self.apply_layout();
+        }
+    }
+
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.tiled_clients.iter());
+        return Box::new(self.clients.iter().filter(|c| !c.borrow().attributes().is_floating));
     }
 
     pub fn toggle_floating(&mut self, client_rc: Rc<RefCell<C>>) {
-        let state = self.tiled_clients.contains(&client_rc);
+        let state = client_rc.borrow().attributes().is_floating;
         self.set_floating(client_rc, state);
     }
 
@@ -254,38 +247,27 @@ impl<C: Client<Attributes>> Workspace<C> {
 
 impl<C: Client<Attributes>> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
-        if !client_rc.borrow().is_dialog() {
-            client_rc.borrow().export_tiled(true);
-            self.tiled_clients.push_front(client_rc.clone());
-            self.restack();
-        } else {
-            client_rc.borrow().export_tiled(false);
-            self.floating_clients.push_front(client_rc);
-        }
+        self.clients.push_front(client_rc.clone());
+        self.clients_stack.push_front(client_rc.clone());
+        self.restack();
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.floating_clients.iter().chain(self.tiled_clients.iter()));
+        return Box::new(self.clients.iter());
     }
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {
-        // detach from tiled clients (restack necessary)
-        let index_option = self.tiled_clients.iter().position(|c| c == client_rc);
+        // detach from clients
+        let index_option = self.clients.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
-            self.tiled_clients.remove(index);
+            self.clients.remove(index);
             self.restack();
         }
 
-        // detach from floating clients
-        let index_option = self.floating_clients.iter().position(|c| c == client_rc);
+        // detach from clients stack
+        let index_option = self.clients_stack.iter().position(|c| c == client_rc);
         if let Some(index) = index_option {
-            self.floating_clients.remove(index);
-        }
-
-        // detach from pinned list
-        let index_option = self.pinned_clients.iter().position(|c| c == client_rc);
-        if let Some(index) = index_option {
-            self.pinned_clients.remove(index);
+            self.clients_stack.remove(index);
         }
     }
 }
