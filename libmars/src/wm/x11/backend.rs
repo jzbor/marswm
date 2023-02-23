@@ -802,7 +802,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                             }
                         }
                     }
-                } else if event.get_type() == xlib::ButtonRelease {
+                } else if event.get_type() == xlib::ButtonRelease || event.get_type() == xlib::ButtonPress {
                     break;
                 } else {
                     self.handle_xevent(wm, event);
