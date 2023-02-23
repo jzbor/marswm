@@ -1,13 +1,9 @@
 extern crate x11;
 
 use libmars::common::error::*;
-use libmars::common::x11::atoms::X11Atom::*;
-use libmars::common::x11::send_client_message;
 use libmars::control::WMController;
 use libmars::control::x11::X11Controller;
 use libmars::draw::x11::widget::*;
-use x11::xlib::ClientMessageData;
-use x11::xlib;
 
 pub struct StatusEventHandler {
     block: usize,
@@ -15,8 +11,7 @@ pub struct StatusEventHandler {
 }
 
 pub struct WorkspaceEventHandler {
-    display: *mut xlib::Display,
-    root: xlib::Window,
+    controller: X11Controller,
     workspace_idx: u32,
 }
 
@@ -28,21 +23,21 @@ impl StatusEventHandler {
 }
 
 impl WorkspaceEventHandler {
-    pub fn new(display: *mut xlib::Display, workspace_idx: u32) -> WorkspaceEventHandler {
-        let root = unsafe { xlib::XDefaultRootWindow(display) };
-        return WorkspaceEventHandler { display, root, workspace_idx };
+    pub fn new(workspace_idx: u32) -> Result<WorkspaceEventHandler> {
+        let controller = X11Controller::new()?;
+        return Ok(WorkspaceEventHandler { controller, workspace_idx });
     }
 
-    fn cycle_workspace(controller: &impl WMController<xlib::Window>, inc: i32) -> Result<()> {
-        let nworkspaces = controller.count_workspaces()?;
-        let current_workspace = controller.current_workspace()?;
+    fn cycle_workspace(&self, inc: i32) -> Result<()> {
+        let nworkspaces = self.controller.count_workspaces()?;
+        let current_workspace = self.controller.current_workspace()?;
         let new_workspace = ((current_workspace + nworkspaces) as i32 + inc) as u32 % nworkspaces;
-        return controller.switch_workspace(new_workspace);
+        return self.controller.switch_workspace(new_workspace);
     }
 
-    fn move_client(controller: &impl WMController<xlib::Window>, workspace: u32) -> Result<()> {
-        let active = controller.get_active_window()?;
-        return controller.send_window_to_workspace(active, workspace);
+    fn move_client(&self) -> Result<()> {
+        let active = self.controller.get_active_window()?;
+        return self.controller.send_window_to_workspace(active, self.workspace_idx);
     }
 }
 
@@ -70,18 +65,16 @@ impl WidgetEventHandler for WorkspaceEventHandler {
     fn handle_action_event(&self, event: WidgetEvent, already_handled: bool) -> bool {
         if already_handled { return true; }
         if let WidgetEvent::ButtonPressed(button) = event {
-            if let Ok(controller) = X11Controller::new() {
-                let result = match button {
-                    1 => controller.switch_workspace(self.workspace_idx),
-                    2 => Self::move_client(&controller, self.workspace_idx),
-                    3 => controller.switch_workspace(self.workspace_idx),
-                    4 => Self::cycle_workspace(&controller, -1),
-                    5 => Self::cycle_workspace(&controller, 1),
-                    _ => return false,
-                };
+            let result = match button {
+                1 => self.controller.switch_workspace(self.workspace_idx),
+                2 => self.move_client(),
+                3 => self.controller.switch_workspace(self.workspace_idx),
+                4 => self.cycle_workspace(-1),
+                5 => self.cycle_workspace(1),
+                _ => return false,
+            };
 
-                return result.is_ok()
-            }
+            return result.is_ok()
         }
         return false;
     }

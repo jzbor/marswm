@@ -434,7 +434,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             return;
         }
 
-
         let from_workspace = match self.get_workspace_mut(&client_rc) {
             Some(workspace) => workspace,
             None => return,
@@ -453,6 +452,9 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         }
 
         self.decorate_inactive(client_rc.clone());
+        if !self.monitors.iter().map(|m| m.current_workspace()).any(|ws| ws.contains(&client_rc)) {
+            client_rc.borrow_mut().hide();
+        }
 
         // TODO focus other client or drop focus
         // hacky workaround:

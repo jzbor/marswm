@@ -206,7 +206,7 @@ impl Bar {
                 let mut widget = self.config.style.workspaces
                     .create_text_widget(self.display, self.workspace_widget.wid())
                     .unwrap();
-                let event_handler = WorkspaceEventHandler::new(self.display, i as u32);
+                let event_handler = WorkspaceEventHandler::new(i as u32).unwrap();
 
                 widget.register_event_handler(Box::new(event_handler));
                 if widget.size().0 > max_width {
