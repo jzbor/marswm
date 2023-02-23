@@ -278,6 +278,10 @@ pub fn default_button_bindings() -> Vec<ButtonBinding> {
         client_button_binding!(2, CloseClient, (Shift)),
         frame_button_binding!(3, MouseResize),
         client_button_binding!(3, MouseResize),
+        client_button_binding!(4, CycleClient(-1)),
+        client_button_binding!(4, StackMove(-1), (Shift)),
+        client_button_binding!(5, CycleClient(1)),
+        client_button_binding!(5, StackMove(1), (Shift)),
     ];
     return bindings;
 }
