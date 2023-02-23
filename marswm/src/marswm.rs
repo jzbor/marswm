@@ -195,6 +195,16 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         process::exit(0);
     }
 
+    fn relative_workspace_idx(&self, absolute_idx: u32) -> (usize, u32) {
+        if absolute_idx < self.config.primary_workspaces {
+            return (0, absolute_idx);
+        } else {
+            let mon_idx = 1 + ((absolute_idx - self.config.primary_workspaces) / self.config.secondary_workspaces);
+            let rel_idx = (absolute_idx - self.config.primary_workspaces) % self.config.secondary_workspaces;
+            return (mon_idx as usize, rel_idx);
+        }
+    }
+
     pub fn restart(&mut self, backend: &mut B) {
         println!("Restarting");
         self.cleanup(backend);
@@ -417,18 +427,38 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn move_to_workspace(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_idx: u32) {
+        let (mon_idx, rel_idx) = self.relative_workspace_idx(workspace_idx);
+
+        if self.monitors.get(mon_idx).map(|m| m.workspace(rel_idx)).is_none() {
+            // avoid loosing windows on invalid indices
+            return;
+        }
+
+
+        let from_workspace = match self.get_workspace_mut(&client_rc) {
+            Some(workspace) => workspace,
+            None => return,
+        };
+        from_workspace.detach_client(&client_rc);
+
+        let to_workspace = match self.monitors.get_mut(mon_idx).and_then(|m| m.workspace_mut(rel_idx)) {
+            Some(workspace) => workspace,
+            None => panic!("Window is detached but cannot be attached again"),
+        };
+        to_workspace.attach_client(client_rc.clone());
+
         let mon = self.get_monitor_mut(&client_rc).unwrap();
         if workspace_idx >= mon.workspace_count() {
             return;
         }
 
-        mon.move_to_workspace(client_rc.clone(), workspace_idx);
         self.decorate_inactive(client_rc.clone());
+
         // TODO focus other client or drop focus
         // hacky workaround:
         self.active_client = None;
-
         backend.export_active_window(&self.active_client);
+
         if let Some(workspace) = self.get_workspace(&client_rc) {
             client_rc.borrow().export_workspace(workspace.global_index());
         }
@@ -462,13 +492,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
-        let (mon_idx, rel_idx) = if workspace_idx < self.config.primary_workspaces {
-            (0, workspace_idx)
-        } else {
-            let mon_idx = 1 + ((workspace_idx - self.config.primary_workspaces) / self.config.secondary_workspaces);
-            let rel_idx = (workspace_idx - self.config.primary_workspaces) % self.config.secondary_workspaces;
-            (mon_idx as usize, rel_idx)
-        };
+        let (mon_idx, rel_idx) = self.relative_workspace_idx(workspace_idx);
 
         // switch monitor if necessary
         if mon_idx >= self.monitors.len() {

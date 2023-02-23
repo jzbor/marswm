@@ -131,7 +131,9 @@ impl BindingAction {
                 wm.current_monitor_mut(backend).restack_current();
             },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
-                wm.move_to_workspace(backend, client_rc, *ws);
+                if let Some(monitor) = wm.get_monitor_mut(&client_rc) {
+                    monitor.move_to_workspace(client_rc, *ws);
+                }
             },
             PreviousWorkspace => wm.current_monitor_mut(backend).switch_prev_workspace(backend),
             MoveMain => if let Some(client_rc) = client_option {
@@ -144,7 +146,7 @@ impl BindingAction {
             StackMove(i) => if let Some(client_rc) = client_option {
                 wm.current_workspace_mut(backend).stack_move(client_rc, *i);
             },
-            SwitchWorkspace(ws) => wm.switch_workspace(backend, *ws),
+            SwitchWorkspace(ws) => wm.current_monitor_mut(backend).switch_workspace(backend, *ws),
             ToggleFloating => if let Some(client_rc) = client_option {
                 if let Some(ws) = wm.get_workspace_mut(&client_rc) {
                     ws.toggle_floating(client_rc);

@@ -91,6 +91,14 @@ impl<C: Client<Attributes>> Monitor<C> {
         return self.workspace_offset
     }
 
+    pub fn workspace(&self, index: u32) -> Option<&Workspace<C>> {
+        return self.workspaces.get(index as usize);
+    }
+
+    pub fn workspace_mut(&mut self, index: u32) -> Option<&mut Workspace<C>> {
+        return self.workspaces.get_mut(index as usize);
+    }
+
     pub fn switch_prev_workspace(&mut self, backend: &impl Backend<Attributes>) {
         self.switch_workspace(backend, self.prev_workspace);
     }
