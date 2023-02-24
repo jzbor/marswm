@@ -216,9 +216,17 @@ impl<B: Backend<Attributes>> MarsWM<B> {
     }
 
     pub fn mouse_place(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
-        client_rc.borrow_mut().attributes_mut().is_moving = true;
-        client_rc.borrow().raise();
+        let mut client = client_rc.borrow_mut();
+        if client.is_fullscreen() {
+            return;
+        }
+
+        client.attributes_mut().is_moving = true;
+        client.raise();
+        drop(client);
+
         backend.mouse_action(self, client_rc.clone(), 52, Self::mouse_action_place);
+
         client_rc.borrow_mut().attributes_mut().is_moving = false;
         self.current_workspace_mut(backend).restack();
     }
