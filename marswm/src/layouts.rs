@@ -233,15 +233,12 @@ fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Cl
     let height = area.h();
     let width_remainder = area.w()  - (nclients * width);
     for (i, client_rc) in clients.iter().enumerate() {
-        if !client_rc.borrow().is_fullscreen() {
+        let mut client = client_rc.borrow_mut();
+        if !client.is_fullscreen() && !client.attributes().is_moving {
             let x: i32 = area.x() + (i as i32 * (width + gap_width) as i32);
             let y: i32 = area.y();
             let width_adjustment = if i as u32 == nclients - 1 { width_remainder } else { 0 };
-
-            let mut client = client_rc.borrow_mut();
-            if !client.attributes().is_moving {
-                client.move_resize(x, y, width + width_adjustment, height);
-            }
+            client.move_resize(x, y, width + width_adjustment, height);
         }
     }
 }
@@ -256,15 +253,12 @@ fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Clie
     let height = (area.h() - ((nclients - 1) * gap_width)) / nclients;
     let height_remainder = area.h() - (nclients * height);
     for (i, client_rc) in clients.iter().enumerate() {
-        if !client_rc.borrow().is_fullscreen() {
+        let mut client = client_rc.borrow_mut();
+        if !client.is_fullscreen() && !client.attributes().is_moving {
             let x: i32 = area.x();
             let y: i32 = area.y() + (i as i32 * (height + gap_width) as i32);
             let height_adjustment = if i as u32 == nclients - 1 { height_remainder } else { 0 };
-
-            let mut client = client_rc.borrow_mut();
-            if !client.attributes().is_moving {
-                client.move_resize(x, y, width, height + height_adjustment);
-            }
+            client.move_resize(x, y, width, height + height_adjustment);
         }
     }
 }

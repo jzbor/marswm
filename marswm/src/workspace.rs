@@ -33,7 +33,9 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn apply_layout(&self) {
-        let tiled_clients = self.clients.iter().filter(|c| !c.borrow().attributes().is_floating).cloned().collect();
+        let tiled_clients = self.clients.iter()
+            .filter(|c| !c.borrow().attributes().is_floating && !c.borrow().is_dialog())
+            .cloned().collect();
         Layout::get(self.cur_layout).apply_layout(self.win_area, &tiled_clients, &self.layout_config);
     }
 
