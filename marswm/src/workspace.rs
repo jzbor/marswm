@@ -133,9 +133,8 @@ impl<C: Client<Attributes>> Workspace<C> {
         }
 
         let is_floating = client_rc.borrow().attributes().is_floating;
-        if is_floating {
-            client_rc.borrow().raise();
-        } else {
+        client_rc.borrow().raise();
+        if !is_floating {
             self.restack();
         }
     }
