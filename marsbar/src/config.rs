@@ -10,9 +10,6 @@ const CONFIG_DIR: &str = "marswm";
 const CONFIG_FILE: &str = "marsbar.yaml";
 
 const DEFAULT_FONT: &str = "serif";
-const DEFAULT_LAYOUT_PADDING_HORZ: u32 = 4;
-const DEFAULT_LAYOUT_PADDING_VERT: u32 = 4;
-const DEFAULT_LAYOUT_SPACING: u32 = 4;
 const DEFAULT_TEXT_PADDING_HORZ: u32 = 5;
 const DEFAULT_TEXT_PADDING_VERT: u32 = 0;
 
@@ -42,7 +39,6 @@ pub struct TextWidgetStyle {
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
-#[serde(default)]
 pub struct ContainerWidgetStyle {
     pub foreground: u64,
     pub inner_background: u64,
@@ -72,21 +68,6 @@ impl Default for BarStyle {
             title: TextWidgetStyle::default(),
             status: ContainerWidgetStyle::default_status(),
         }
-    }
-}
-
-impl Default for ContainerWidgetStyle {
-    fn default() -> Self {
-        return ContainerWidgetStyle {
-            foreground: 0x262626,
-            inner_background: 0xaf5f5f,
-            outer_background: 0x262626,
-            padding_horz: DEFAULT_LAYOUT_PADDING_HORZ,
-            padding_vert: DEFAULT_LAYOUT_PADDING_VERT,
-            text_padding_horz: DEFAULT_TEXT_PADDING_HORZ,
-            text_padding_vert: DEFAULT_TEXT_PADDING_VERT,
-            spacing: DEFAULT_LAYOUT_SPACING
-        };
     }
 }
 
