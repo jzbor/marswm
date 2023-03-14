@@ -408,6 +408,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
                                                       self.config.theming.title_vpadding,
                                                       self.config.theming.active_color);
             }
+        } else {
+            client.set_inner_bw(self.config.theming.no_decoration.inner_border_width);
+            client.set_outer_bw(self.config.theming.no_decoration.outer_border_width);
+            client.set_frame_width(self.config.theming.no_decoration.frame_width);
         }
 
         // bind keys and buttons

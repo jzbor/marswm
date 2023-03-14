@@ -69,6 +69,7 @@ pub enum Modifier {
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
 pub struct KeyBinding {
     /// list of modifiers that apply to this binding
+    #[serde(default)]
     modifiers: Vec<Modifier>,
 
     /// key name (as found in

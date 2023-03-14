@@ -77,7 +77,10 @@ pub struct ThemingConfiguration {
     /// width of the border around the frame
     pub outer_border_width: u32,
 
-    /// show title stirng at the top of the frame
+    /// decoration dimensions for clients that want no decoration
+    pub no_decoration: NoDecorThemingConfiguration,
+
+    /// show title string at the top of the frame
     pub show_title: bool,
 
     /// vertical padding of title
@@ -89,6 +92,20 @@ pub struct ThemingConfiguration {
     /// font to use for title
     pub font: String,
 }
+
+#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
+#[serde(default)]
+pub struct NoDecorThemingConfiguration {
+    /// width of the frame that client windows are reparented to
+    pub frame_width: (u32, u32, u32, u32),
+
+    /// width of the border around the inner window
+    pub inner_border_width: u32,
+
+    /// width of the border around the frame
+    pub outer_border_width: u32,
+}
+
 
 impl Default for Configuration {
     fn default() -> Self {
@@ -124,6 +141,7 @@ impl Default for ThemingConfiguration {
             frame_width: (4, 4, 4, 4),
             inner_border_width: 1,
             outer_border_width: 1,
+            no_decoration: NoDecorThemingConfiguration::default(),
             show_title: false,
             title_vpadding: 1,
             title_hpadding: 5,
@@ -131,6 +149,17 @@ impl Default for ThemingConfiguration {
         };
     }
 }
+
+impl Default for NoDecorThemingConfiguration {
+    fn default() -> Self {
+        return NoDecorThemingConfiguration {
+            frame_width: (0, 0, 0, 0),
+            inner_border_width: 0,
+            outer_border_width: 0,
+        };
+    }
+}
+
 
 pub fn read_button_bindings() -> Vec<ButtonBinding> {
     // read keybindings file
