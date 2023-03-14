@@ -58,6 +58,10 @@ Attributes specifying width are all in pixels:
 * `title_vpadding` - vertical padding for title
 * `title_hpadding` - horizontal padding for title
 
+There is also a sub-section for the border configuration of windows that usually don't want to be decorated.
+It is part of the general `theming` section and is called `no_decoration`.
+The values `frame_width`, `inner_border_width` and `outer_border_width` are available and work the same as with normal windows.
+
 
 ## Key Bindings
 `marswm` comes with a set of default key bindings.

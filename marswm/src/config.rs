@@ -134,16 +134,16 @@ impl Default for LayoutConfiguration {
 impl Default for ThemingConfiguration {
     fn default() -> Self {
         return ThemingConfiguration {
-            active_color: 0xae0c0c,
-            inactive_color: 0x1f464f,
-            border_color: 0xceccc6,
+            active_color: 0x5f875f,
+            inactive_color: 0x262626,
+            border_color: 0x262626,
             invert_border_color: false,
-            frame_width: (4, 4, 4, 4),
-            inner_border_width: 1,
-            outer_border_width: 1,
+            frame_width: (15, 2, 2, 2),
+            inner_border_width: 0,
+            outer_border_width: 0,
             no_decoration: NoDecorThemingConfiguration::default(),
             show_title: false,
-            title_vpadding: 1,
+            title_vpadding: 0,
             title_hpadding: 5,
             font: "serif".to_owned(),
         };

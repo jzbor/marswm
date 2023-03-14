@@ -66,11 +66,11 @@ pub struct Configuration {
 impl Default for BarStyle {
     fn default() -> Self {
         return BarStyle {
-            background: 0x000000,
+            background: 0x262626,
             expand_workspace_widgets: false,
-            workspaces: ContainerWidgetStyle::default(),
+            workspaces: ContainerWidgetStyle::default_workspaces(),
             title: TextWidgetStyle::default(),
-            status: ContainerWidgetStyle::default(),
+            status: ContainerWidgetStyle::default_status(),
         }
     }
 }
@@ -78,9 +78,9 @@ impl Default for BarStyle {
 impl Default for ContainerWidgetStyle {
     fn default() -> Self {
         return ContainerWidgetStyle {
-            foreground: 0x000000,
-            inner_background: 0xffffff,
-            outer_background: 0x000000,
+            foreground: 0x262626,
+            inner_background: 0xaf5f5f,
+            outer_background: 0x262626,
             padding_horz: DEFAULT_LAYOUT_PADDING_HORZ,
             padding_vert: DEFAULT_LAYOUT_PADDING_VERT,
             text_padding_horz: DEFAULT_TEXT_PADDING_HORZ,
@@ -93,8 +93,8 @@ impl Default for ContainerWidgetStyle {
 impl Default for TextWidgetStyle {
     fn default() -> Self {
         return TextWidgetStyle {
-            foreground: 0xffffff,
-            background: 0x000000,
+            foreground: 0xbcbcbc,
+            background: 0x262626,
             padding_horz: DEFAULT_TEXT_PADDING_HORZ,
             padding_vert: DEFAULT_TEXT_PADDING_VERT
         };
@@ -120,6 +120,32 @@ impl ContainerWidgetStyle {
         return SystemTrayWidget::new(display, parent, 0, 0, parent_height - 2 * self.spacing, self.padding_horz,
                                      self.padding_horz, self.padding_vert, self.inner_background)
             .map_err(|e| e.to_string());
+    }
+
+    fn default_status() -> Self {
+        return ContainerWidgetStyle {
+            foreground: 0x262626,
+            inner_background: 0xaf5f5f,
+            outer_background: 0x262626,
+            padding_horz: 4,
+            padding_vert: 4,
+            text_padding_horz: 5,
+            text_padding_vert: 0,
+            spacing: 4,
+        };
+    }
+
+    fn default_workspaces() -> Self {
+        return ContainerWidgetStyle {
+            foreground: 0x262626,
+            inner_background: 0x5f87af,
+            outer_background: 0x262626,
+            padding_horz: 0,
+            padding_vert: 0,
+            text_padding_horz: 10,
+            text_padding_vert: 4,
+            spacing: 0,
+        };
     }
 }
 
