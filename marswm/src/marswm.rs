@@ -548,6 +548,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         to_workspace.push_pinned(pinned_clients);
         to_workspace.clients().for_each(|c| c.borrow_mut().show());
 
+        // remove 'active' decoration from newly shown clients to avoid visual bugs
+        let inactive_clients: Vec<Rc<RefCell<B::Client>>> = to_workspace.clients().cloned().collect();
+        inactive_clients.iter().for_each(|c| self.decorate_inactive(c.clone()));
+
         self.active_client = None;
         backend.export_active_window(&self.active_client);
         backend.export_current_workspace(workspace_idx);
