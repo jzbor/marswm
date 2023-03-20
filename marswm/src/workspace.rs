@@ -248,8 +248,9 @@ impl<C: Client<Attributes>> Workspace<C> {
 
 impl<C: Client<Attributes>> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
+        client_rc.borrow_mut().export_workspace(self.global_index);
         self.clients.push_front(client_rc.clone());
-        self.clients_stack.push_front(client_rc.clone());
+        self.clients_stack.push_front(client_rc);
         self.restack();
     }
 

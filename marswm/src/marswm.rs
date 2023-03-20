@@ -496,10 +496,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         // hacky workaround:
         self.active_client = None;
         backend.export_active_window(&self.active_client);
-
-        if let Some(workspace) = self.get_workspace(&client_rc) {
-            client_rc.borrow().export_workspace(workspace.global_index());
-        }
     }
 
     fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool {

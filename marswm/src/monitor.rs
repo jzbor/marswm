@@ -149,7 +149,6 @@ impl<C: Client<Attributes>> Monitor<C> {
 impl<C: Client<Attributes>> ClientList<C> for Monitor<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         let workspace = &mut self.workspaces[self.cur_workspace as usize];
-        client_rc.borrow().export_workspace(workspace.global_index());
         workspace.attach_client(client_rc);
     }
 
