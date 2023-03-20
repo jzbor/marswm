@@ -257,6 +257,11 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         eprintln!("{}", error);
         process::exit(1);
     }
+
+    pub fn switch_prev_workspace(&mut self, backend: &mut B) {
+        let prev_index = self.current_monitor(backend).prev_workspace().global_index();
+        self.switch_workspace(backend, prev_index);
+    }
 }
 
 impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
@@ -272,14 +277,12 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         let monitor = self.get_monitor_mut(&client_rc).unwrap();
 
         // switch workspace
-        let workspace_idx_option = monitor.workspaces().enumerate()
-            .find(|(_, ws)| ws.contains(&client_rc)).map(|(i, _)| i as u32);
-        if let Some(workspace_idx) = workspace_idx_option {
-            monitor.switch_workspace(backend, workspace_idx);
-        }
+        let option = monitor.workspaces()
+            .find(|ws| ws.contains(&client_rc)).map(|ws| ws.global_index());
 
-        if let Some(workspace) = monitor.workspaces_mut().find(|ws| ws.contains(&client_rc)) {
-            workspace.raise_client(&client_rc);
+        if let Some(workspace_idx) = option {
+            self.switch_workspace(backend, workspace_idx);
+            self.current_workspace_mut(backend).raise_client(&client_rc);
         } else {
             // this might be the case for pinned clients
             client_rc.borrow().raise();
@@ -532,9 +535,22 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             backend.warp_pointer(x, y);
         }
 
-        self.current_monitor_mut(backend).switch_workspace(backend, rel_idx);
+        // take pinned clients from old workspace and hide other clients
+        let from_workspace = self.monitors[mon_idx].current_workspace_mut();
+        let pinned_clients = from_workspace.pull_pinned();
+        from_workspace.clients().for_each(|c| c.borrow_mut().hide());
+
+        // set workspace index to new workspace
+        self.monitors[mon_idx].set_cur_workspace(rel_idx);
+
+        // attach pinned clients to new workspace and show clients
+        let to_workspace = self.monitors[mon_idx].current_workspace_mut();
+        to_workspace.push_pinned(pinned_clients);
+        to_workspace.clients().for_each(|c| c.borrow_mut().show());
+
         self.active_client = None;
         backend.export_active_window(&self.active_client);
+        backend.export_current_workspace(workspace_idx);
     }
 
     fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {

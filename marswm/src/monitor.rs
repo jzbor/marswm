@@ -1,5 +1,5 @@
 use libmars::common::*;
-use libmars::wm::{ Backend, Client };
+use libmars::wm::Client;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -61,69 +61,23 @@ impl<C: Client<Attributes>> Monitor<C> {
         return self.config.dimensions();
     }
 
-    pub fn move_to_workspace(&mut self, client_rc: Rc<RefCell<C>>, workspace_idx: u32) {
-        if workspace_idx >= self.workspace_count() {
-            return;
-        }
-
-        for ws in &mut self.workspaces.iter_mut() {
-            if ws.contains(&client_rc) {
-                ws.detach_client(&client_rc);
-            }
-        }
-
-        if workspace_idx != self.cur_workspace {
-            client_rc.borrow_mut().hide();
-        }
-
-        self.workspaces[workspace_idx as usize].attach_client(client_rc);
-    }
-
     pub fn restack_current(&self) {
         self.workspaces[self.cur_workspace as usize].restack();
     }
 
-    pub fn workspace_count(&self) -> u32 {
-        return self.workspaces.len() as u32;
+    pub fn prev_workspace(&self) -> &Workspace<C> {
+        return &self.workspaces[self.prev_workspace as usize];
     }
 
-    pub fn workspace_offset(&self) -> u32 {
-        return self.workspace_offset
-    }
-
-    pub fn workspace(&self, index: u32) -> Option<&Workspace<C>> {
-        return self.workspaces.get(index as usize);
-    }
-
-    pub fn workspace_mut(&mut self, index: u32) -> Option<&mut Workspace<C>> {
-        return self.workspaces.get_mut(index as usize);
-    }
-
-    pub fn switch_prev_workspace(&mut self, backend: &impl Backend<Attributes>) {
-        self.switch_workspace(backend, self.prev_workspace);
-    }
-
-    pub fn switch_workspace(&mut self, backend: &impl Backend<Attributes>, workspace_idx: u32) {
+    pub fn set_cur_workspace(&mut self, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
             return;
         } else if workspace_idx >= self.workspace_count() {
             return;
+        } else {
+            self.prev_workspace = self.cur_workspace;
+            self.cur_workspace = workspace_idx;
         }
-
-        // transfer pinned clients
-        let pinned_clients = self.workspaces[self.cur_workspace as usize].pull_pinned();
-        pinned_clients.iter().for_each(|c| c.borrow().export_workspace(workspace_idx));
-        self.workspaces[workspace_idx as usize].push_pinned(pinned_clients);
-
-        // show and hide clients accordingly
-        self.workspaces[self.cur_workspace as usize].clients()
-            .for_each(|c| c.borrow_mut().hide());
-        self.workspaces[workspace_idx as usize].clients().for_each(|c| c.borrow_mut().show());
-
-        // set new workspace index
-        self.prev_workspace = self.cur_workspace;
-        self.cur_workspace = workspace_idx;
-        backend.export_current_workspace(self.workspaces[self.cur_workspace as usize].global_index());
     }
 
     pub fn update_config(&mut self, config: MonitorConfig) {
@@ -135,6 +89,21 @@ impl<C: Client<Attributes>> Monitor<C> {
 
     pub fn window_area(&self) -> Dimensions {
         return self.config.window_area();
+    }
+
+    pub fn workspace(&self, index: u32) -> Option<&Workspace<C>> {
+        return self.workspaces.get(index as usize);
+    }
+
+    pub fn workspace_mut(&mut self, index: u32) -> Option<&mut Workspace<C>> {
+        return self.workspaces.get_mut(index as usize);
+    }
+    pub fn workspace_count(&self) -> u32 {
+        return self.workspaces.len() as u32;
+    }
+
+    pub fn workspace_offset(&self) -> u32 {
+        return self.workspace_offset
     }
 
     pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
