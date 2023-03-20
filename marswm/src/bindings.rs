@@ -132,8 +132,13 @@ impl BindingAction {
                 wm.mouse_place(backend, client_rc);
             },
             MouseResize => if let Some(client_rc) = client_option {
-                backend.mouse_resize(wm, client_rc);
-                wm.current_monitor_mut(backend).restack_current();
+                let layout_is_floating = wm.get_workspace(&client_rc)
+                    .map(|ws| ws.current_layout() == LayoutType::Floating)
+                    .unwrap_or(false);
+                let client_is_floating = client_rc.borrow().attributes().is_floating;
+                if layout_is_floating || client_is_floating {
+                    backend.mouse_resize(wm, client_rc);
+                }
             },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
                 let ws_index_option = wm.get_monitor_mut(&client_rc)

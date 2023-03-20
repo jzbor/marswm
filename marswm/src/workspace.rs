@@ -47,6 +47,10 @@ impl<C: Client<Attributes>> Workspace<C> {
         }
     }
 
+    pub fn current_layout(&self) -> LayoutType {
+        return self.cur_layout;
+    }
+
     pub fn cycle_layout(&mut self) {
         let cur_idx = LayoutType::VALUES.iter().position(|l| *l == self.cur_layout).unwrap();
         self.cur_layout = LayoutType::VALUES[(cur_idx + 1) % LayoutType::SIZE];
