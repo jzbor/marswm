@@ -241,7 +241,7 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn toggle_floating(&mut self, client_rc: Rc<RefCell<C>>) {
         let state = client_rc.borrow().attributes().is_floating;
-        self.set_floating(client_rc, state);
+        self.set_floating(client_rc, !state);
     }
 
     pub fn update_window_area(&mut self, win_area: Dimensions) {
