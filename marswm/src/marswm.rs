@@ -582,6 +582,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         // unset client as currently active
         if Some(client_rc) == self.active_client {
             self.active_client = None;
+            backend.export_active_window(&self.active_client);
         }
 
         let clients = <marswm::MarsWM<B> as WindowManager<B, Attributes>>::clients(self).collect();
