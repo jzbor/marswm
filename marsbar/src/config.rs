@@ -67,7 +67,7 @@ impl Default for BarStyle {
         return BarStyle {
             background: 0x262626,
             expand_workspace_widgets: false,
-            height: 61,
+            height: 31,
             workspaces: ContainerWidgetStyle::default_workspaces(),
             title: TextWidgetStyle::default(),
             status: ContainerWidgetStyle::default_status(),
