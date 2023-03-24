@@ -1,3 +1,6 @@
+#![doc = include_str!("../README.md")]
+
+
 extern crate x11;
 
 use clap::Parser;
