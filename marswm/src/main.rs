@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 
+use clap::Parser;
 use libmars::utils::configuration::*;
 use libmars::wm::*;
 use libmars::wm::x11::backend::X11Backend;
@@ -13,6 +14,7 @@ use crate::bindings::*;
 use crate::config::*;
 use crate::marswm::*;
 
+
 mod attributes;
 mod bindings;
 mod config;
@@ -21,6 +23,40 @@ mod marswm;
 mod monitor;
 mod rules;
 mod workspace;
+
+/// A dynamic window manager
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+    /// Print default config and exit
+    #[clap(long)]
+    print_default_config: bool,
+
+    /// Print default button bindings and exit
+    #[clap(long)]
+    print_default_buttons: bool,
+
+    /// Print default key bindings and exit
+    #[clap(long)]
+    print_default_keys: bool,
+
+    /// Print current config and exit
+    #[clap(long)]
+    print_config: bool,
+
+    /// Print current button bindings and exit
+    #[clap(long)]
+    print_buttons: bool,
+
+    /// Print current key bindings and exit
+    #[clap(long)]
+    print_keys: bool,
+
+    /// Print current window rules and exit
+    #[clap(long)]
+    print_rules: bool,
+}
+
 
 trait ClientList<C: Client<Attributes>> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);
@@ -56,28 +92,38 @@ trait ClientList<C: Client<Attributes>> {
 }
 
 fn main() {
-    if env::args().any(|a| a == "print-default-config") {
+    let args = Args::parse();
+
+    if args.print_default_config {
         print_config(&Configuration::default());
-        return;
-    }
-
-    let config = read_config();
-
-    if env::args().any(|a| a == "print-default-keys") {
-        print_config(&default_key_bindings(config.primary_workspaces));
-        return;
-    }
-
-    if env::args().any(|a| a == "print-default-buttons") {
+        std::process::exit(0);
+    } else if args.print_default_buttons {
         print_config(&default_button_bindings());
-        return;
+        std::process::exit(0);
+    } else if args.print_default_keys {
+        print_config(&default_key_bindings(read_config().primary_workspaces));
+        std::process::exit(0);
+    } else if args.print_config {
+        print_config(&read_config());
+        std::process::exit(0);
+    } else if args.print_buttons {
+        print_config(&read_button_bindings());
+        std::process::exit(0);
+    } else if args.print_keys {
+        let config = read_config();
+        print_config(&read_key_bindings(config.primary_workspaces));
+        std::process::exit(0);
+    } else if args.print_rules {
+        print_config(&read_rules());
+        std::process::exit(0);
+    } else {
+        let config = read_config();
+        let key_bindings = read_key_bindings(config.primary_workspaces);
+        let button_bindings = read_button_bindings();
+        let rules = read_rules();
+
+        let mut backend = X11Backend::init("marswm").unwrap();
+        let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);
+        backend.run(&mut wm);
     }
-
-    let key_bindings = read_key_bindings(config.primary_workspaces);
-    let button_bindings = read_button_bindings();
-    let rules = read_rules();
-
-    let mut backend = X11Backend::init("marswm").unwrap();
-    let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);
-    backend.run(&mut wm);
 }

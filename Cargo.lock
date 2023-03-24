@@ -176,6 +176,7 @@ dependencies = [
 name = "marswm"
 version = "0.3.2"
 dependencies = [
+ "clap",
  "libmars",
  "serde",
  "x11",
