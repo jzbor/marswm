@@ -2,7 +2,7 @@
 A modern window manager featuring dynamic tiling (rusty successor to [moonwm](https://github.com/jzbor/moonwm)).
 
 The [YAML](https://yaml.org/) format is used for configuration with the default file path being `~/.config/marswm/marswm.yaml`.
-You can get the default configuration with `marswm print-default-config`.
+You can get the default configuration with `marswm --print-default-config`.
 
 ## Multi-Monitor Setups and Workspaces
 The window manager supports multi-monitor setups, although they are not as well tested as they probably should be for daily usage.
@@ -10,6 +10,7 @@ Every (non-overlapping) monitor gets its own set of workspaces, which is also ex
 You can configure the number of the primary monitor and secondary monitors with the `primary_workspaces` and the `secondary_workspaces` option respectively.
 
 It is suggested to use a relatively low number of workspaces for secondary monitors as they might clutter your bar otherwise.
+
 
 ## Layouts
 `marswm` supports dynamic tiling and takes a lot of inspiration for it from [dwm](https://dwm.suckless.org).
@@ -37,6 +38,7 @@ It is configured by these two parameters (also in the `layout` section of the co
 * `stack_position` - specifies where the stack windows should be placed in relation to the main windows
 * `stack_mode` - describes whether the stack windows should be in a `split` or `deck` configuration
 
+
 ## Theming
 You can configure different parts of how `marswm` looks in the `theming` section of the configuration file.
 
@@ -45,7 +47,7 @@ These attributes influence the coloring of window borders:
 * `inactive_color` - frame color of unfocused windows
 * `border_color` - color of the inner and outer border around the frame
 
-*Note: Although they may look very weird in the output of `marswm print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
+*Note: Although they may look very weird in the output of `marswm --print-default-config` colors can simply be written as hex values (like `0x1a2b3c`).*
 
 To show a window's title at the top of its frame use these settings:
 * `show_title` - a boolean value determining whether the title is shown or not
@@ -65,7 +67,7 @@ The values `frame_width`, `inner_border_width` and `outer_border_width` are avai
 
 ## Key Bindings
 `marswm` comes with a set of default key bindings.
-Call `marswm print-default-keys` to get an overview of them.
+Call `marswm --print-default-keys` to get an overview of them.
 
 In contrast to the other sections of this manual the keybindings are not configured in the default configuration file.
 Instead they are read from a separate YAML file (usually in `~/.config/marswm/keybindings.yaml`).
@@ -82,9 +84,10 @@ Here is an example:
 
 The actions are sadly not documented yet, but you can take a look at [the source code](https://github.com/jzbor/marswm/tree/master/marswm/src/bindings.rs).
 
+
 ## Button Bindings
 Button actions can be configured similarly to key bindings in the files `~/.config/marswm/buttonbindings.yaml` and `~/.config/marswm/buttonbindings_ext.yaml` respectively.
-`marswm print-default-buttons` tells you the button bindings installed by default.
+`marswm --print-default-buttons` tells you the button bindings installed by default.
 
 The `targets` field specifies which window areas should be used for the button event.
 Possible values are `window`, `frame` and `root`.
