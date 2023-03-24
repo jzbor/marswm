@@ -1,6 +1,5 @@
 //! Loading configuration files using [serde_yaml].
 
-use std::env;
 use std::fs;
 use std::path;
 use serde::{Serialize, Deserialize};
@@ -28,31 +27,26 @@ pub fn print_config(config: &impl Serialize) {
     }
 }
 
+/// Read config file from a direct path
+///
+/// * `path` - The whole path to the config file
+pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, String> {
+    if path.is_file() {
+        return deserialize_file(&path).map_err(|(_, msg)| msg);
+    } else {
+        return Err(format!("configuration {} not found", path.to_string_lossy()));
+    }
+}
+
 /// Read config file
 ///
-/// * `config_dir` - The subdirectory name (not the whole path)
+/// * `config_name` - The name of the applications configuration subdirectory
 /// * `file_name` - The file name (with extension)
-pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_dir: &str, file_name: &str) -> Result<T, String>{
-    // check configuration dir as specified in xdg base dir specification
-    if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
-        let path = path::Path::new(&xdg_config).join(config_dir).join(file_name);
-        if path.is_file() {
-            return deserialize_file(&path).map_err(|(_, msg)| msg);
-        }
-    }
-
-    // check ~/.config
-    if let Ok(home) = env::var("HOME") {
-        let path = path::Path::new(&home).join(".config").join(config_dir).join(file_name);
-        if path.is_file() {
-            return deserialize_file(&path).map_err(|(_, msg)| msg);
-        }
-    }
-
-    // check local working directory
-    let path = path::Path::new(file_name);
-    if path.is_file() {
-        return deserialize_file(path).map_err(|(_, msg)| msg);
+pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_name: &str, file_name: &str) -> Result<T, String> {
+    let config_dir = xdg::BaseDirectories::with_prefix(config_name)
+        .map_err(|e| format!("unable to open config dir ({})", e))?;
+    if let Some(path) = config_dir.find_config_file(file_name) {
+        return deserialize_file(&path).map_err(|(_, msg)| msg);
     } else {
         return Err(format!("configuration {} not found", file_name));
     }
