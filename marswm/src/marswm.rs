@@ -1,4 +1,5 @@
 use libmars::common::*;
+use libmars::common::x11::WINDOW_MIN_SIZE;
 use libmars::wm::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::cmp;
@@ -215,6 +216,18 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         }
     }
 
+    pub fn mouse_action_resize_centered(_backend: &mut B, _wm: &mut Self, client_rc: &Rc<RefCell<B::Client>>,
+                         orig_client_pos: (i32, i32), orig_client_size: (u32, u32), delta: (i32, i32)) {
+        let dest_w = orig_client_size.0 as i32 + 2 * delta.0;
+        let dest_h = orig_client_size.1 as i32 + 2 * delta.1;
+        let dest_w: u32 = if dest_w < WINDOW_MIN_SIZE as i32 { WINDOW_MIN_SIZE } else { dest_w as u32 };
+        let dest_h: u32 = if dest_h < WINDOW_MIN_SIZE as i32 { WINDOW_MIN_SIZE } else { dest_h as u32 };
+        let dest_x: i32 = orig_client_pos.0 - delta.0;
+        let dest_y: i32 = orig_client_pos.1 - delta.1;
+        client_rc.borrow_mut().move_resize(dest_x, dest_y, dest_w, dest_h);
+    }
+
+
     pub fn mouse_place(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let mut client = client_rc.borrow_mut();
         if client.is_fullscreen() {
@@ -226,6 +239,22 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         drop(client);
 
         backend.mouse_action(self, client_rc.clone(), 52, Self::mouse_action_place);
+
+        client_rc.borrow_mut().attributes_mut().is_moving = false;
+        self.current_workspace_mut(backend).restack();
+    }
+
+    pub fn mouse_resize_centered(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
+        let client = client_rc.borrow_mut();
+        if client.is_fullscreen() {
+            return;
+        }
+
+        client.warp_pointer_to_corner();
+        client.raise();
+        drop(client);
+
+        backend.mouse_action(self, client_rc.clone(), 120, Self::mouse_action_resize_centered);
 
         client_rc.borrow_mut().attributes_mut().is_moving = false;
         self.current_workspace_mut(backend).restack();
