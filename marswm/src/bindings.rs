@@ -21,8 +21,8 @@ macro_rules! client_button_binding {
 }
 
 macro_rules! frame_button_binding {
-    ($button:expr, $action:expr) => {
-        ButtonBinding::new(vec![], $button, vec![Frame], $action)
+    ($button:expr, $action:expr $(, ($($add_mods:ident ),*))?) => {
+        ButtonBinding::new(vec![$($($add_mods),*)?], $button, vec![Frame], $action)
     }
 }
 
@@ -47,6 +47,7 @@ pub enum BindingAction {
     MouseMove,
     MousePlace,
     MouseResize,
+    MouseResizeCentered,
     MoveMain,
     Restart,
     SetLayout(LayoutType),
@@ -144,6 +145,15 @@ impl BindingAction {
                 let client_is_floating = client_rc.borrow().attributes().is_floating;
                 if layout_is_floating || client_is_floating {
                     backend.mouse_resize(wm, client_rc);
+                }
+            },
+            MouseResizeCentered => if let Some(client_rc) = client_option {
+                let layout_is_floating = wm.get_workspace(&client_rc)
+                    .map(|ws| ws.current_layout() == LayoutType::Floating)
+                    .unwrap_or(false);
+                let client_is_floating = client_rc.borrow().attributes().is_floating;
+                if layout_is_floating || client_is_floating {
+                    wm.mouse_resize_centered(backend, client_rc);
                 }
             },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
@@ -304,6 +314,8 @@ pub fn default_button_bindings() -> Vec<ButtonBinding> {
         client_button_binding!(2, CloseClient, (Shift)),
         frame_button_binding!(3, MouseResize),
         client_button_binding!(3, MouseResize),
+        frame_button_binding!(3, MouseResizeCentered, (Control)),
+        client_button_binding!(3, MouseResizeCentered, (Control)),
         client_button_binding!(4, CycleClient(-1)),
         client_button_binding!(4, StackMove(-1), (Shift)),
         client_button_binding!(5, CycleClient(1)),

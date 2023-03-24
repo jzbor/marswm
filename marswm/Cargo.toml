@@ -12,6 +12,7 @@ repository.workspace = true
 license-file.workspace = true
 
 [dependencies]
+clap = { workspace = true }
+libmars = { workspace = true, features = ["configuration"] }
 serde = { workspace = true }
 x11 = { workspace = true }
-libmars = { workspace = true, features = ["configuration"] }

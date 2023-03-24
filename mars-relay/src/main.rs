@@ -32,6 +32,12 @@ pub struct Workspace { index: u32 }
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, clap::Args)]
 pub struct Status { text: String }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::Args)]
+pub struct ModifierShim {
+    #[clap(value_enum)]
+    modifier: Option<Modifier>
+}
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, clap::Subcommand)]
 pub enum Command {
     /// Activate window
@@ -40,23 +46,20 @@ pub enum Command {
     /// Close window
     Close,
 
+    /// Fullscreen setting of a window
+    Fullscreen(ModifierShim),
+
     /// Show quick menu
     Menu,
 
     /// Pin window so it is visible on all workspaces
-    Pin,
+    Pinned(ModifierShim),
 
     /// Send window to workspace
     SendToWorkspace(Workspace),
 
-    /// Make window fullscreen
-    SetFullscreen,
-
     /// Set status string
     SetStatus(Status),
-
-    /// Tile window
-    SetTiled,
 
     /// Switch current workspace
     SwitchWorkspace(Workspace),
@@ -67,44 +70,68 @@ pub enum Command {
     /// Switch to previous workspace
     SwitchWorkspacePrev,
 
-    /// Toggle fullscreen on window
-    ToggleFullscreen,
+    /// Tiled setting of a window
+    Tiled(ModifierShim),
+}
 
-    /// Toggle tiled state on window
-    ToggleTiled,
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+pub enum Modifier { Set, Unset, Toggle }
 
-    /// Unpin window
-    Unpin,
 
-    /// Unfullscreen window
-    UnsetFullscreen,
+impl From<Modifier> for ModifierShim {
+    fn from(value: Modifier) -> ModifierShim {
+        return ModifierShim { modifier: Some(value) };
+    }
+}
 
-    /// Untile window
-    UnsetTiled,
+impl From<Modifier> for SettingMode {
+    fn from(value: Modifier) -> SettingMode {
+        return match value {
+            Modifier::Set => SettingMode::Set,
+            Modifier::Unset => SettingMode::Unset,
+            Modifier::Toggle => SettingMode::Toggle,
+        };
+    }
+}
+
+fn handle_window_setting<C, G, S>(getter: G, setter: S, controller: &C, window: xlib::Window, opt: ModifierShim)
+    -> libmars::common::error::Result<()>
+where
+    C: WMController<xlib::Window>,
+    S: Fn(&C, xlib::Window, SettingMode) -> libmars::common::error::Result<()>,
+    G: Fn(&C, xlib::Window) -> libmars::common::error::Result<bool>,
+{
+    if let Some(modifier) = opt.modifier {
+        setter(controller, window, SettingMode::from(modifier))
+    } else {
+        let state = getter(controller, window)?;
+        println!("{}", state);
+        if state {
+            std::process::exit(0);
+        } else {
+            std::process::exit(1);
+        }
+    }
 }
 
 
 impl Command {
-    fn execute(&self, controller: &impl WMController<xlib::Window>, window: xlib::Window, args: Args) -> Result<(), String> {
+    fn execute<C: WMController<xlib::Window>>(&self, controller: &C, window: xlib::Window, args: Args) -> Result<(), String> {
         if *self == Command::Menu {
             return Self::menu(controller, window, args);
         } else {
             let result = match self {
                 Command::Activate => controller.activate_window(window),
                 Command::Close => controller.close_window(window),
-                Command::Pin => controller.pin_window(window, SettingMode::Set),
+                Command::Fullscreen(mode) => handle_window_setting(C::window_is_fullscreen, C::fullscreen_window, controller,
+                                                                   window, *mode),
+                Command::Pinned(mode) => handle_window_setting(C::window_is_pinned, C::pin_window, controller, window, *mode),
                 Command::SendToWorkspace(ws) => controller.send_window_to_workspace(window, ws.index),
-                Command::SetFullscreen => controller.fullscreen_window(window, SettingMode::Set),
                 Command::SetStatus(status) => controller.set_status(status.text.to_owned()),
-                Command::SetTiled => controller.tile_window(window, SettingMode::Set),
                 Command::SwitchWorkspace(ws) => controller.switch_workspace(ws.index),
                 Command::SwitchWorkspaceNext => Self::switch_workspace_relative(controller, 1),
                 Command::SwitchWorkspacePrev => Self::switch_workspace_relative(controller, -1),
-                Command::ToggleFullscreen => controller.fullscreen_window(window, SettingMode::Toggle),
-                Command::ToggleTiled => controller.tile_window(window, SettingMode::Toggle),
-                Command::Unpin => controller.pin_window(window, SettingMode::Unset),
-                Command::UnsetFullscreen => controller.fullscreen_window(window, SettingMode::Unset),
-                Command::UnsetTiled => controller.tile_window(window, SettingMode::Unset),
+                Command::Tiled(mode) => handle_window_setting(C::window_is_tiled, C::tile_window, controller, window, *mode),
                 Command::Menu => panic!("unhandled command"),
             };
             return result.map_err(|e| e.to_string());

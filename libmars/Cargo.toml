@@ -15,8 +15,9 @@ readme.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_yaml = { workspace = true, optional = true }
 x11 = { workspace = true, features = ["xinerama", "xrandr", "xft"] }
+xdg = { version = "2.4.1", optional = true }
 
 [features]
-configuration = ["dep:serde", "dep:serde_yaml"]
+configuration = ["dep:serde", "dep:serde_yaml", "dep:xdg"]
 xlib = []  # TODO implement configuration option
 

@@ -204,6 +204,7 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn set_pinned(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
         client_rc.borrow_mut().attributes_mut().is_pinned = state;
+        client_rc.borrow().export_pinned(state, Some(self.global_index))
     }
 
     pub fn set_stack_mode(&mut self, mode: StackMode) {

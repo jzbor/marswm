@@ -1,5 +1,6 @@
 extern crate x11;
 
+use clap::Parser;
 use libmars::common::*;
 use libmars::common::x11::atoms::X11Atom::{self, *};
 use libmars::common::x11::window::X11Window;
@@ -7,10 +8,10 @@ use libmars::draw::*;
 use libmars::draw::x11::widget::*;
 use libmars::draw::x11::canvas::*;
 use libmars::utils::configuration::print_config;
-use std::env;
 use std::ffi::*;
 use std::iter;
 use std::mem::MaybeUninit;
+use std::path;
 use std::process;
 use x11::xlib;
 use x11::xrandr;
@@ -26,7 +27,6 @@ mod status;
 mod tray;
 
 
-const HEIGHT: u32 = 31;
 const CLASSNAME: &str = "bar";
 const WINDOWNAME: &str = "Bar Window";
 // const FONT: &'static str = "Noto Serif:size=12";
@@ -38,6 +38,23 @@ const FONT: &str = "serif";
 // const ADDITIONAL_PAD: u32 = 4;
 // const TITLE_HPAD: u32 = 20;
 
+
+/// A simple status bar for marswm
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+    /// Print default config and exit
+    #[clap(long)]
+    print_default_config: bool,
+
+    /// Print current config and exit
+    #[clap(long)]
+    print_config: bool,
+
+    /// Print current config and exit
+    #[clap(short, long)]
+    config: Option<path::PathBuf>,
+}
 
 struct Bar {
     display: *mut xlib::Display,
@@ -62,7 +79,7 @@ impl Bar {
         let window_type = Some(NetWMWindowTypeDock);
         let window = libmars::common::x11::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
         let mut dimensions = dimensions;
-        dimensions.set_h(HEIGHT);
+        dimensions.set_h(config.style.height);
 
         // request updates on property changes
         unsafe {
@@ -231,6 +248,10 @@ impl Bar {
             }
         }
 
+        // center the widget vertically
+        let height_diff = (self.dimensions.h() as i32 - self.workspace_widget.size().1 as i32) / 2;
+        self.workspace_widget.move_to(0, height_diff);
+
         self.workspace_widget.rearrange();
     }
 
@@ -238,7 +259,7 @@ impl Bar {
                           has_tray: bool) -> Result<Bar, String> {
         let mdims = monitor_conf.dimensions();
         let mut dimensions = mdims;
-        dimensions.set_h(HEIGHT);
+        dimensions.set_h(config.style.height);
         return Self::create(display, dimensions, config.clone(), xlib::NoEventMask, has_tray);
     }
 
@@ -462,12 +483,17 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
 }
 
 fn main() {
-    if env::args().any(|a| a == "print-default-config") {
+    let args = Args::parse();
+
+    if args.print_default_config {
         print_config(&Configuration::default());
-        return;
+        std::process::exit(0);
+    } else if args.print_config {
+        print_config(&read_config(args.config));
+        std::process::exit(0);
     }
 
-    let config = read_config();
+    let config = read_config(args.config);
 
     unsafe {
         xlib::XSetErrorHandler(Some(on_error));
