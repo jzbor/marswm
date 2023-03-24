@@ -1,12 +1,14 @@
-use serde::{Serialize, Deserialize};
-use x11::xlib;
-use libmars::utils::configuration::read_config_file;
 use libmars::draw::x11::widget::*;
+use libmars::utils::configuration::read_config_file;
+use libmars::utils::configuration::read_file;
+use serde::{Serialize, Deserialize};
+use std::path;
+use x11::xlib;
 
 use crate::tray::*;
 
 
-const CONFIG_DIR: &str = "marswm";
+const CONFIG_NAME: &str = "marswm";
 const CONFIG_FILE: &str = "marsbar.yaml";
 
 const DEFAULT_FONT: &str = "serif";
@@ -139,8 +141,13 @@ impl TextWidgetStyle {
 }
 
 
-pub fn read_config() -> Configuration {
-    let result = read_config_file(CONFIG_DIR, CONFIG_FILE);
+pub fn read_config(overwrite_path: Option<path::PathBuf>) -> Configuration {
+    let result = if let Some(path) = overwrite_path {
+        read_file(&path)
+    } else {
+        read_config_file(CONFIG_NAME, CONFIG_FILE)
+    };
+
     return match result {
         Ok(config) => config,
         Err(msg) => {

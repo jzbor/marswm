@@ -11,6 +11,7 @@ use libmars::utils::configuration::print_config;
 use std::ffi::*;
 use std::iter;
 use std::mem::MaybeUninit;
+use std::path;
 use std::process;
 use x11::xlib;
 use x11::xrandr;
@@ -50,6 +51,10 @@ pub struct Args {
     /// Print current config and exit
     #[clap(long)]
     print_config: bool,
+
+    /// Print current config and exit
+    #[clap(short, long)]
+    config: Option<path::PathBuf>,
 }
 
 struct Bar {
@@ -481,11 +486,11 @@ fn main() {
         print_config(&Configuration::default());
         std::process::exit(0);
     } else if args.print_config {
-        print_config(&read_config());
+        print_config(&read_config(args.config));
         std::process::exit(0);
     }
 
-    let config = read_config();
+    let config = read_config(args.config);
 
     unsafe {
         xlib::XSetErrorHandler(Some(on_error));
