@@ -525,6 +525,11 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {
+        // abort if we are already on the specified workspace
+        if self.current_workspace(backend).global_index() == workspace_idx {
+            return;
+        }
+
         let (mon_idx, rel_idx) = self.relative_workspace_idx(workspace_idx);
 
         // switch monitor if necessary
