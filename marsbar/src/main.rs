@@ -27,7 +27,6 @@ mod status;
 mod tray;
 
 
-const HEIGHT: u32 = 31;
 const CLASSNAME: &str = "bar";
 const WINDOWNAME: &str = "Bar Window";
 // const FONT: &'static str = "Noto Serif:size=12";
@@ -80,7 +79,7 @@ impl Bar {
         let window_type = Some(NetWMWindowTypeDock);
         let window = libmars::common::x11::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
         let mut dimensions = dimensions;
-        dimensions.set_h(HEIGHT);
+        dimensions.set_h(config.style.height);
 
         // request updates on property changes
         unsafe {
@@ -249,6 +248,10 @@ impl Bar {
             }
         }
 
+        // center the widget vertically
+        let height_diff = (self.dimensions.h() as i32 - self.workspace_widget.size().1 as i32) / 2;
+        self.workspace_widget.move_to(0, height_diff);
+
         self.workspace_widget.rearrange();
     }
 
@@ -256,7 +259,7 @@ impl Bar {
                           has_tray: bool) -> Result<Bar, String> {
         let mdims = monitor_conf.dimensions();
         let mut dimensions = mdims;
-        dimensions.set_h(HEIGHT);
+        dimensions.set_h(config.style.height);
         return Self::create(display, dimensions, config.clone(), xlib::NoEventMask, has_tray);
     }
 
