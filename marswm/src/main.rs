@@ -6,7 +6,6 @@ use libmars::utils::configuration::*;
 use libmars::wm::*;
 use libmars::wm::x11::backend::X11Backend;
 use std::cell::RefCell;
-use std::env;
 use std::rc::Rc;
 
 use crate::attributes::*;

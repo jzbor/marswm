@@ -1,5 +1,6 @@
 extern crate x11;
 
+use clap::Parser;
 use libmars::common::*;
 use libmars::common::x11::atoms::X11Atom::{self, *};
 use libmars::common::x11::window::X11Window;
@@ -7,7 +8,6 @@ use libmars::draw::*;
 use libmars::draw::x11::widget::*;
 use libmars::draw::x11::canvas::*;
 use libmars::utils::configuration::print_config;
-use std::env;
 use std::ffi::*;
 use std::iter;
 use std::mem::MaybeUninit;
@@ -38,6 +38,19 @@ const FONT: &str = "serif";
 // const ADDITIONAL_PAD: u32 = 4;
 // const TITLE_HPAD: u32 = 20;
 
+
+/// A simple status bar for marswm
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Args {
+    /// Print default config and exit
+    #[clap(long)]
+    print_default_config: bool,
+
+    /// Print current config and exit
+    #[clap(long)]
+    print_config: bool,
+}
 
 struct Bar {
     display: *mut xlib::Display,
@@ -462,9 +475,14 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
 }
 
 fn main() {
-    if env::args().any(|a| a == "print-default-config") {
+    let args = Args::parse();
+
+    if args.print_default_config {
         print_config(&Configuration::default());
-        return;
+        std::process::exit(0);
+    } else if args.print_config {
+        print_config(&read_config());
+        std::process::exit(0);
     }
 
     let config = read_config();
