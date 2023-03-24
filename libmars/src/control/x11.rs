@@ -168,20 +168,28 @@ impl WMController<xlib::Window> for X11Controller {
         return Ok(());
     }
 
+    fn window_is_fullscreen(&self, window: xlib::Window) -> Result<bool> {
+        require_ewmh_atom(self.display, NetWMState)?;
+        let is_fullscreen = window.x11_net_wm_state(self.display)
+            .map_err(MarsError::unknown)?
+            .contains(&NetWMStateFullscreen);
+        return Ok(is_fullscreen);
+    }
+
     fn window_is_pinned(&self, window: xlib::Window) -> Result<bool> {
         require_ewmh_atom(self.display, NetWMDesktop)?;
-        let data = window.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
+        let data = window.x11_read_property_long(self.display, NetWMDesktop, xlib::XA_CARDINAL)
             .map_err(MarsError::unknown)?;
         let ws_u64 = data.first()
             .ok_or(MarsError::invalid_response("reading property _NET_WM_DESKTOP"))?;
         return Ok(*ws_u64 == u64::MAX);
     }
 
-    fn window_is_fullscreen(&self, window: xlib::Window) -> Result<bool> {
+    fn window_is_tiled(&self, window: xlib::Window) -> Result<bool> {
         require_ewmh_atom(self.display, NetWMState)?;
         let is_fullscreen = window.x11_net_wm_state(self.display)
             .map_err(MarsError::unknown)?
-            .contains(&NetWMStateFullscreen);
+            .contains(&MarsWMStateTiled);
         return Ok(is_fullscreen);
     }
 

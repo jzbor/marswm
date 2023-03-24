@@ -12,7 +12,6 @@ fn menu_input() -> String {
     string.push_str("% Tile	tile\n");
     string.push_str("+ Fullscreen	fullscreen\n");
     string.push_str("' Pin	pin\n");
-    string.push_str("* Unpin	unpin\n");
 
     return string;
 }
@@ -42,10 +41,9 @@ pub fn display_menu() -> Result<Command, String> {
 
     return match output.trim() {
         "close" => Ok(Command::Close),
-        "tile" => Ok(Command::ToggleTiled),
-        "fullscreen" => Ok(Command::ToggleFullscreen),
-        "pin" => Ok(Command::Pin),
-        "unpin" => Ok(Command::Unpin),
+        "tile" => Ok(Command::Tiled(Modifier::Toggle.into())),
+        "fullscreen" => Ok(Command::Fullscreen(Modifier::Toggle.into())),
+        "pin" => Ok(Command::Pinned(Modifier::Toggle.into())),
         _ => return Err("no match".to_string()),
     };
 }

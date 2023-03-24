@@ -25,5 +25,6 @@ pub trait WMController<W> {
     fn tile_window(&self, window: W, mode: SettingMode) -> Result<()>;
     fn window_is_fullscreen(&self, window: W) -> Result<bool>;
     fn window_is_pinned(&self, window: W) -> Result<bool>;
+    fn window_is_tiled(&self, window: W) -> Result<bool>;
     fn workspaces(&self) -> Result<Vec<String>>;
 }
