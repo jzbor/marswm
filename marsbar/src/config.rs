@@ -27,6 +27,7 @@ pub struct BarStyle {
     pub background: u64,
     pub expand_workspace_widgets: bool,
     pub height: u32,
+    pub font: String,
     pub workspaces: ContainerWidgetStyle,
     pub title: TextWidgetStyle,
     pub status: ContainerWidgetStyle,
@@ -68,6 +69,7 @@ impl Default for BarStyle {
             background: 0x262626,
             expand_workspace_widgets: false,
             height: 31,
+            font: DEFAULT_FONT.to_owned(),
             workspaces: ContainerWidgetStyle::default_workspaces(),
             title: TextWidgetStyle::default(),
             status: ContainerWidgetStyle::default_status(),
@@ -94,9 +96,10 @@ impl ContainerWidgetStyle {
             .map_err(|e| e.to_string());
     }
 
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<X11TextWidget, String> {
+    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
+            -> Result<X11TextWidget, String> {
         return X11TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
-                               "".to_string(), DEFAULT_FONT, self.foreground, self.inner_background)
+                               "".to_string(), font, self.foreground, self.inner_background)
             .map_err(|e| e.to_string());
     }
 
@@ -135,9 +138,10 @@ impl ContainerWidgetStyle {
 }
 
 impl TextWidgetStyle {
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<X11TextWidget, String> {
+    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
+            -> Result<X11TextWidget, String> {
         return X11TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
-                               "".to_string(), DEFAULT_FONT, self.foreground, self.background)
+                               "".to_string(), font, self.foreground, self.background)
             .map_err(|e| e.to_string());
     }
 }

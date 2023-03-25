@@ -47,6 +47,7 @@ style:
   background: 0x262626             # background color of the bar
   expand_workspace_widgets: false  # make all workspace widgets the same width
   height: 31                       # height of the whole bar
+  font: FiraCode:size=12           # font of text surfaces (as xft name)
   workspaces:
     foreground: 0x262626           # foreground (text) color of the workspace widget
     inner_background: 0x5F87AF     # background of the individual workspaces
