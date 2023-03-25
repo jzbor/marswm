@@ -1,6 +1,7 @@
 [package]
 name = "marsbar"
 description = "Task bar for marswm (and other EWMH-compliant window managers)"
+readme = "README.md"
 workspace = ".."
 
 # inherit the following keys from workspace
@@ -9,7 +10,6 @@ edition.workspace = true
 authors.workspace = true
 repository.workspace = true
 license-file.workspace = true
-readme.workspace = true
 
 [dependencies]
 clap = { workspace = true }
