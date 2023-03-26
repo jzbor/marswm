@@ -588,12 +588,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
         // set focused window either to the first window or `None`
         let new_active = self.current_workspace(backend).clients().next().cloned();
-        if let Some(client_rc) = new_active.clone() {
-            self.decorate_active(client_rc);
-        }
-        self.active_client = new_active;
-        backend.export_active_window(&self.active_client);
-        backend.export_current_workspace(workspace_idx);
+        self.focus_client(backend, new_active);
     }
 
     fn toggle_fullscreen_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
