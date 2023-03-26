@@ -51,6 +51,10 @@ pub struct SystemTrayWidget {
 impl SystemTrayWidget {
     pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, height: u32,
                ipad: u32, hpad: u32, vpad: u32, bg_color: u64) -> Result<SystemTrayWidget, String> {
+        if height < 2*vpad {
+            return Err(format!("Padding bigger than height (h: {}, vpad: {})", height, vpad));
+        }
+
         let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window = create_widget_window(display, parent, outer_dimensions)?;

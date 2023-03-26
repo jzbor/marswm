@@ -32,14 +32,6 @@ mod tray;
 
 const CLASSNAME: &str = "bar";
 const WINDOWNAME: &str = "Bar Window";
-// const FONT: &'static str = "Noto Serif:size=12";
-const FONT: &str = "serif";
-// const TEXT_BASE_HPAD: u32 = 5;
-// const TEXT_BASE_VPAD: u32 = 0;
-// const TRAY_BASE_HPAD: u32 = 2;
-// const TRAY_BASE_VPAD: u32 = 2;
-// const ADDITIONAL_PAD: u32 = 4;
-// const TITLE_HPAD: u32 = 20;
 
 
 /// A simple status bar for marswm
@@ -94,11 +86,11 @@ impl Bar {
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
         canvas.set_foreground(config.style.background)
             .and(canvas.set_background(config.style.background))
-            .and(canvas.set_font(FONT))
+            .and(canvas.set_font(&config.style.font))
             .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
 
         let workspace_widget = config.style.workspaces.create_flow_layout_widget(display, window)?;
-        let title_widget = config.style.title.create_text_widget(display, window)?;
+        let title_widget = config.style.title.create_text_widget(display, window, &config.style.font)?;
         let status_widget = config.style.status.create_flow_layout_widget(display, window)?;
         let systray = if create_tray {
             config.style.status.create_systray_widget(display, window, dimensions.h()).ok()
@@ -163,7 +155,7 @@ impl Bar {
                 widget.set_label(block.to_owned());
             } else {
                 let mut widget = self.config.style.status
-                    .create_text_widget(self.display, self.status_widget.wid())
+                    .create_text_widget(self.display, self.status_widget.wid(), &self.config.style.font)
                     .unwrap();
                 if let Some(callback) = &self.config.action_cmd {
                     let event_handler = StatusEventHandler::new(i, callback.clone());
@@ -224,7 +216,7 @@ impl Bar {
                 }
             } else {
                 let mut widget = self.config.style.workspaces
-                    .create_text_widget(self.display, self.workspace_widget.wid())
+                    .create_text_widget(self.display, self.workspace_widget.wid(), &self.config.style.font)
                     .unwrap();
                 let event_handler = WorkspaceEventHandler::new(i as u32).unwrap();
 
