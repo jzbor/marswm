@@ -586,7 +586,12 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         let inactive_clients: Vec<Rc<RefCell<B::Client>>> = to_workspace.clients().cloned().collect();
         inactive_clients.iter().for_each(|c| self.decorate_inactive(c.clone()));
 
-        self.active_client = None;
+        // set focused window either to the first window or `None`
+        let new_active = self.current_workspace(backend).clients().next().cloned();
+        if let Some(client_rc) = new_active.clone() {
+            self.decorate_active(client_rc);
+        }
+        self.active_client = new_active;
         backend.export_active_window(&self.active_client);
         backend.export_current_workspace(workspace_idx);
     }
