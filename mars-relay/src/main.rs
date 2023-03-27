@@ -80,17 +80,17 @@ pub enum Modifier { Set, Unset, Toggle }
 
 impl From<Modifier> for ModifierShim {
     fn from(value: Modifier) -> ModifierShim {
-        return ModifierShim { modifier: Some(value) };
+        ModifierShim { modifier: Some(value) }
     }
 }
 
 impl From<Modifier> for SettingMode {
     fn from(value: Modifier) -> SettingMode {
-        return match value {
+        match value {
             Modifier::Set => SettingMode::Set,
             Modifier::Unset => SettingMode::Unset,
             Modifier::Toggle => SettingMode::Toggle,
-        };
+        }
     }
 }
 
@@ -118,7 +118,7 @@ where
 impl Command {
     fn execute<C: WMController<xlib::Window>>(&self, controller: &C, window: xlib::Window, args: Args) -> Result<(), String> {
         if *self == Command::Menu {
-            return Self::menu(controller, window, args);
+            Self::menu(controller, window, args)
         } else {
             let result = match self {
                 Command::Activate => controller.activate_window(window),
@@ -134,7 +134,7 @@ impl Command {
                 Command::Tiled(mode) => handle_window_setting(C::window_is_tiled, C::tile_window, controller, window, *mode),
                 Command::Menu => panic!("unhandled command"),
             };
-            return result.map_err(|e| e.to_string());
+            result.map_err(|e| e.to_string())
         }
     }
 
@@ -143,14 +143,14 @@ impl Command {
             Ok(cmd) => cmd,
             Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu".to_owned()); },
         };
-        return command.execute(controller, window, args);
+        command.execute(controller, window, args)
     }
 
     fn switch_workspace_relative(controller: &impl WMController<xlib::Window>, inc: i32) -> Result<(), MarsError> {
         let workspace = controller.current_workspace()?;
         let nworkspaces = controller.count_workspaces()?;
         let new_workspace = (workspace + (nworkspaces as i32 + inc) as u32) % nworkspaces;
-        return controller.switch_workspace(new_workspace);
+        controller.switch_workspace(new_workspace)
     }
 }
 

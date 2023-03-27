@@ -111,7 +111,7 @@ impl Bar {
         bar.arrange();
         bar.draw();
 
-        return Ok(bar);
+        Ok(bar)
     }
 
     fn arrange(&mut self) {
@@ -255,7 +255,7 @@ impl Bar {
         let mdims = monitor_conf.dimensions();
         let mut dimensions = mdims;
         dimensions.set_h(config.style.height);
-        return Self::create(display, dimensions, config.clone(), xlib::NoEventMask, has_tray);
+        Self::create(display, dimensions, config.clone(), xlib::NoEventMask, has_tray)
     }
 
     fn draw(&mut self) {
@@ -276,18 +276,18 @@ impl Bar {
     }
 
     fn get_status(&self) -> Result<String, String> {
-        return self.root.x11_read_property_string(self.display, MarsStatus)
+        self.root.x11_read_property_string(self.display, MarsStatus)
             .or_else(|_| self.root.x11_wm_name(self.display))
-            .map_err(|e| e.to_string());
+            .map_err(|e| e.to_string())
     }
 
     fn get_active_workspace(&self) -> Result<u32, String> {
         let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
             .map_err(|e| e.to_string())?;
         match data.first() {
-            Some(idx) => return Ok(*idx as u32),
-            None => return Err("unable to convert desktop index to u32".to_owned()),
-        };
+            Some(idx) => Ok(*idx as u32),
+            None => Err("unable to convert desktop index to u32".to_owned()),
+        }
     }
 
     fn get_active_window(&self) -> Option<xlib::Window> {
@@ -297,9 +297,9 @@ impl Bar {
             Err(_) => return None,
         };
         match data.first() {
-            Some(0) | None => return None,
-            Some(window) => return Some(*window),
-        };
+            Some(0) | None => None,
+            Some(window) => Some(*window),
+        }
     }
 
     fn get_active_window_title(&self) -> String {
@@ -309,8 +309,8 @@ impl Bar {
             None => return default,
         };
         match window.x11_wm_name(self.display) {
-            Ok(title) => return title,
-            Err(_) => return default,
+            Ok(title) => title,
+            Err(_) => default,
         }
     }
 
@@ -557,5 +557,5 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
             _ => panic!("Fatal X11 error: {} (request code: {})", msg, (*error).request_code),
         }
     }
-    return 0;
+    0
 }

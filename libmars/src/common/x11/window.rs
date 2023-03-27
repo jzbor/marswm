@@ -43,9 +43,9 @@ impl X11Window for xlib::Window {
         unsafe {
             let mut attributes: MaybeUninit<xlib::XWindowAttributes> = MaybeUninit::uninit();
             if xlib::XGetWindowAttributes(display, *self, attributes.as_mut_ptr()) != 0 {
-                return Ok(attributes.assume_init());
+                Ok(attributes.assume_init())
             } else {
-                return Err(MarsError::failed_request(stringify!(xlib::XGetWindowAttributes)));
+                Err(MarsError::failed_request(stringify!(xlib::XGetWindowAttributes)))
             }
         }
     }
@@ -64,12 +64,12 @@ impl X11Window for xlib::Window {
                     let ret_val = Ok((res_name, res_class));
                     xlib::XFree(class_hints.res_name as *mut c_void);
                     xlib::XFree(class_hints.res_class as *mut c_void);
-                    return ret_val;
+                    ret_val
                 } else {
-                    return Err(MarsError::property_unavailable(WMClass));
+                    Err(MarsError::property_unavailable(WMClass))
                 }
             } else {
-                return Err(MarsError::failed_request(stringify!(xlib::XGetClassHint)));
+                Err(MarsError::failed_request(stringify!(xlib::XGetClassHint)))
             }
         }
     }
@@ -102,7 +102,7 @@ impl X11Window for xlib::Window {
 
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64> {
         let result = self.x11_read_property_long(display, WMState, WMState.to_xlib_atom(display))?;
-        return Ok(result[0]);
+        Ok(result[0])
     }
 
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>> {
@@ -112,7 +112,7 @@ impl X11Window for xlib::Window {
         let mut data = Vec::new();
         unsafe {
             if xlib::XGetTextProperty(display, *self, text.as_mut_ptr(), property.to_xlib_atom(display)) == 0 {
-                return Err(MarsError::property_unavailable(property));
+                Err(MarsError::property_unavailable(property))
             } else if xlib::Xutf8TextPropertyToTextList(display, text.as_ptr(), &mut data_ptr, &mut nitems) != 0 {
                 return Err(MarsError::failed_conversion(text.as_ptr(), stringify!(*mut *mut i8), stringify!(xlib::TextProperty)));
             } else {
@@ -136,7 +136,7 @@ impl X11Window for xlib::Window {
     fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>> {
         let atoms = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM)?
             .iter().filter_map(|a| X11Atom::from_xlib_atom(display, *a)).collect();
-        return Ok(atoms);
+        Ok(atoms)
     }
 
     fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
@@ -196,14 +196,14 @@ impl X11Window for xlib::Window {
                 }
             }
         }
-        return Ok(data);
+        Ok(data)
     }
 
     fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String> {
         let v = self.x11_get_text_list_property(display, property)?;
         match v.get(0) {
-            Some(string) => return Ok(string.to_owned()),
-            None => return Err(MarsError::property_unavailable(property)),
+            Some(string) => Ok(string.to_owned()),
+            None => Err(MarsError::property_unavailable(property)),
         }
     }
 
@@ -244,8 +244,8 @@ impl X11Window for xlib::Window {
     }
 
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions> {
-        return self.x11_geometry(display)
-            .map(|(_root, x, y, w, h, _bw, _depth)| Dimensions { x, y, w, h });
+        self.x11_geometry(display)
+            .map(|(_root, x, y, w, h, _bw, _depth)| Dimensions { x, y, w, h })
     }
 
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32)> {
@@ -258,9 +258,9 @@ impl X11Window for xlib::Window {
             let mut bw: u32 = 0;
             let mut depth: u32 = 0;
             if xlib::XGetGeometry(display, *self, &mut root, &mut x, &mut y, &mut w, &mut h, &mut bw, &mut depth) != 0 {
-                return Ok((root, x, y, w, h, bw, depth));
+                Ok((root, x, y, w, h, bw, depth))
             } else {
-                return Err(MarsError::failed_request(stringify!(xlib::XGetGeometry)));
+                Err(MarsError::failed_request(stringify!(xlib::XGetGeometry)))
             }
         }
     }
@@ -290,8 +290,8 @@ impl X11Window for xlib::Window {
         unsafe {
             let mut window: xlib::Window = XLIB_NONE;
             match xlib::XGetTransientForHint(display, *self, &mut window) {
-                0 => return None,
-                _ => return Some(window),
+                0 => None,
+                _ => Some(window),
             }
         }
     }
@@ -317,7 +317,7 @@ impl X11Window for xlib::Window {
     }
 
     fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool {
-        return self.x11_wm_protocols(display).contains(&protocol);
+        self.x11_wm_protocols(display).contains(&protocol)
     }
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {
@@ -334,7 +334,7 @@ impl X11Window for xlib::Window {
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {
-        return self.x11_read_property_string(display, WMName);
+        self.x11_read_property_string(display, WMName)
     }
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long)> {
@@ -342,9 +342,9 @@ impl X11Window for xlib::Window {
             let mut size_hints: MaybeUninit<xlib::XSizeHints> = MaybeUninit::uninit();
             let mut supplied_hints: c_long = 0;
             if xlib::XGetWMNormalHints(display, *self, size_hints.as_mut_ptr(), &mut supplied_hints) != 0 {
-                return Ok((size_hints.assume_init(), supplied_hints));
+                Ok((size_hints.assume_init(), supplied_hints))
             } else {
-                return Err(MarsError::property_unavailable(WMNormalHints));
+                Err(MarsError::property_unavailable(WMNormalHints))
             }
         }
     }

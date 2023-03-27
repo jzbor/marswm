@@ -22,14 +22,14 @@ pub struct Workspace<C: Client<Attributes>> {
 
 impl<C: Client<Attributes>> Workspace<C> {
     pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
-        return Workspace {
+        Workspace {
             name, global_index,
             clients: VecDeque::new(),
             clients_stack: VecDeque::new(),
             win_area,
             cur_layout: layout_config.default,
             layout_config,
-        };
+        }
     }
 
     pub fn apply_layout(&self) {
@@ -48,7 +48,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn current_layout(&self) -> LayoutType {
-        return self.cur_layout;
+        self.cur_layout
     }
 
     pub fn cycle_layout(&mut self) {
@@ -67,7 +67,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn global_index(&self) -> u32 {
-        return self.global_index;
+        self.global_index
     }
 
     pub fn inc_nmain(&mut self, i: i32) {
@@ -76,7 +76,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn name(&self) -> &str {
-        return &self.name;
+        &self.name
     }
 
     pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {
@@ -116,7 +116,7 @@ impl<C: Client<Attributes>> Workspace<C> {
         }
 
         self.restack();
-        return vec;
+        vec
     }
 
     pub fn push_pinned(&mut self, clients: Vec<Rc<RefCell<C>>>) {

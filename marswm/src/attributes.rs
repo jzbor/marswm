@@ -11,12 +11,12 @@ pub struct Attributes {
 
 impl Default for Attributes {
     fn default() -> Self {
-        return Attributes {
+        Attributes {
             is_floating: false,
             is_moving: false,
             is_pinned: false,
 
             floating_dimensions: None,
-        };
+        }
     }
 }

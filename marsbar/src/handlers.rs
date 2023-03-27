@@ -18,26 +18,26 @@ pub struct WorkspaceEventHandler {
 
 impl StatusEventHandler {
     pub fn new(block: usize, command: String) -> StatusEventHandler {
-        return StatusEventHandler { block, command };
+        StatusEventHandler { block, command }
     }
 }
 
 impl WorkspaceEventHandler {
     pub fn new(workspace_idx: u32) -> Result<WorkspaceEventHandler> {
         let controller = X11Controller::new()?;
-        return Ok(WorkspaceEventHandler { controller, workspace_idx });
+        Ok(WorkspaceEventHandler { controller, workspace_idx })
     }
 
     fn cycle_workspace(&self, inc: i32) -> Result<()> {
         let nworkspaces = self.controller.count_workspaces()?;
         let current_workspace = self.controller.current_workspace()?;
         let new_workspace = ((current_workspace + nworkspaces) as i32 + inc) as u32 % nworkspaces;
-        return self.controller.switch_workspace(new_workspace);
+        self.controller.switch_workspace(new_workspace)
     }
 
     fn move_client(&self) -> Result<()> {
         let active = self.controller.get_active_window()?;
-        return self.controller.send_window_to_workspace(active, self.workspace_idx);
+        self.controller.send_window_to_workspace(active, self.workspace_idx)
     }
 }
 
@@ -54,9 +54,9 @@ impl WidgetEventHandler for StatusEventHandler {
                     let _ignored = handle.wait();
                 });
             }
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     }
 }
@@ -76,6 +76,6 @@ impl WidgetEventHandler for WorkspaceEventHandler {
 
             return result.is_ok()
         }
-        return false;
+        false
     }
 }

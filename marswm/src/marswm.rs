@@ -51,7 +51,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
         backend.handle_existing_windows(&mut wm);
 
-        return wm;
+        wm
     }
 
     pub fn cleanup(&mut self, backend: &mut B) {
@@ -62,7 +62,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     fn clients_stacked_order(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_> {
         let clients = self.monitors.iter().flat_map(|m| m.clients());
-        return Box::new(clients);
+        Box::new(clients)
     }
 
     fn current_monitor_index(&self, backend: &B) -> usize {
@@ -77,7 +77,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         if let Some(monitor) = monitor_by_pointer {
             return self.monitors.iter().position(|m| m == monitor).unwrap();
         } else {
-            return 0;
+            0
         }
     }
 
@@ -161,14 +161,14 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         pos.1 = cmp::max(pos.1, win_area.y());
         pos.0 = cmp::min(pos.0, win_area.x() + win_area.w() as i32 - client.w() as i32);
         pos.1 = cmp::min(pos.1, win_area.y() + win_area.h() as i32 - client.h() as i32);
-        return pos;
+        pos
     }
 
     pub fn is_tiled(&self, client_rc: &Rc<RefCell<B::Client>>) -> bool {
         let mut tiled_clients = self.monitors.iter()
             .flat_map(|m| m.workspaces())
             .flat_map(|ws| ws.tiled_clients());
-        return tiled_clients.find(|c| *c == client_rc).is_some();
+        tiled_clients.find(|c| *c == client_rc).is_some()
     }
 
     pub fn get_monitor(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Monitor<B::Client>> {
@@ -262,11 +262,11 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     fn relative_workspace_idx(&self, absolute_idx: u32) -> (usize, u32) {
         if absolute_idx < self.config.primary_workspaces {
-            return (0, absolute_idx);
+            (0, absolute_idx)
         } else {
             let mon_idx = 1 + ((absolute_idx - self.config.primary_workspaces) / self.config.secondary_workspaces);
             let rel_idx = (absolute_idx - self.config.primary_workspaces) % self.config.secondary_workspaces;
-            return (mon_idx as usize, rel_idx);
+            (mon_idx as usize, rel_idx)
         }
     }
 
@@ -295,7 +295,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
 impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     fn active_client(&self) -> Option<Rc<RefCell<B::Client>>> {
-        return self.active_client.clone();
+        self.active_client.clone()
     }
 
     fn active_workspace(&self, backend: &mut B) -> u32 {
@@ -488,9 +488,9 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             let mut client = client_rc.borrow_mut();
             let (width, height) = client.size();
             client.move_resize(x, y, width, height);
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     }
 
@@ -535,9 +535,9 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             let mut client = client_rc.borrow_mut();
             let (x, y) = client.pos();
             client.move_resize(x, y, width, height);
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     }
 

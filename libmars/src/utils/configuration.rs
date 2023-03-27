@@ -13,9 +13,9 @@ fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, 
     };
 
     match serde_yaml::from_slice(&raw) {
-        Ok(config) => return Ok(config),
-        Err(e) => return Err((true, e.to_string())),
-    };
+        Ok(config) => Ok(config),
+        Err(e) => Err((true, e.to_string())),
+    }
 }
 
 /// Print config files to stdout
@@ -32,7 +32,7 @@ pub fn print_config(config: &impl Serialize) {
 /// * `path` - The whole path to the config file
 pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, String> {
     if path.is_file() {
-        return deserialize_file(&path).map_err(|(_, msg)| msg);
+        deserialize_file(&path).map_err(|(_, msg)| msg)
     } else {
         return Err(format!("configuration {} not found", path.to_string_lossy()));
     }
@@ -46,7 +46,7 @@ pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_name: &str, file_name
     let config_dir = xdg::BaseDirectories::with_prefix(config_name)
         .map_err(|e| format!("unable to open config dir ({})", e))?;
     if let Some(path) = config_dir.find_config_file(file_name) {
-        return deserialize_file(&path).map_err(|(_, msg)| msg);
+        deserialize_file(&path).map_err(|(_, msg)| msg)
     } else {
         return Err(format!("configuration {} not found", file_name));
     }

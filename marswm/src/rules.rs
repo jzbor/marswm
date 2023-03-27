@@ -29,15 +29,15 @@ struct Identifiers {
 
 impl Rule {
     pub fn matches(&self, client_rc: Rc<RefCell<impl Client<Attributes>>>) -> bool {
-        return self.identifiers.matches(client_rc);
+        self.identifiers.matches(client_rc)
     }
 
     pub fn actions(&self) -> &Vec<BindingAction> {
-        return &self.actions;
+        &self.actions
     }
 
     pub fn ignore_window(&self) -> bool {
-        return self.ignore_window;
+        self.ignore_window
     }
 }
 

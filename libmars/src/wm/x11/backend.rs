@@ -86,7 +86,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
     pub fn init(name: &str) -> Result<X11Backend<A>> {
         // open new connection to x11 server
         let display = open_display()?;
-        return Self::init_with_connection(display, name);
+        Self::init_with_connection(display, name)
     }
 
     /// Register window manager and create backend from existing connection.
@@ -135,7 +135,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
             x11b.set_supported_atoms(SUPPORTED_ATOMS);
             x11b.monitors = query_monitor_config(display, true);
 
-            return Ok(x11b);
+            Ok(x11b)
         }
     }
 
@@ -582,7 +582,6 @@ impl<A: PartialEq + Default> X11Backend<A> {
         // ignore unmap notifies generated from reparenting
         if event.event == root || client_rc.borrow().is_reparenting() {
             client_rc.borrow_mut().set_reparenting(false);
-            return;
         } else if event.send_event == xlib::True {
             client_rc.borrow_mut().x11_set_state(self.display, WITHDRAWN_STATE);
         } else {
@@ -655,7 +654,7 @@ impl XRandrInfo {
             xrandr::XRRQueryExtension(display, &mut event_base, &mut error_base) != 0
         };
 
-        return XRandrInfo { supported, event_base, _error_base: error_base };
+        XRandrInfo { supported, event_base, _error_base: error_base }
     }
 }
 
@@ -715,7 +714,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
     }
 
     fn get_monitor_config(&self) -> Vec<MonitorConfig> {
-        return self.monitors.clone();
+        self.monitors.clone()
     }
 
     fn handle_existing_windows(&mut self, wm: &mut WM<A>) {
@@ -742,7 +741,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                 };
 
                 // FIXME also manage windows where state == IconicState
-                return attributes.map_state == xlib::IsViewable;
+                attributes.map_state == xlib::IsViewable
             };
 
             // manage non-transient windows first
@@ -843,7 +842,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                     return Some(i as u32);
             }
         }
-        return None;
+        None
     }
 
     fn pointer_pos(&self) -> (i32, i32) {
@@ -856,7 +855,7 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
 
             if xlib::XQueryPointer(self.display, self.root, &mut dummy, &mut dummy, &mut x, &mut y,
                                    &mut di, &mut di, &mut dui) == xlib::True {
-                return (x, y);
+                (x, y)
             } else {
                 panic!("Cannot find pointer");
             }

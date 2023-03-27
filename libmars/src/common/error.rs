@@ -39,10 +39,10 @@ impl MarsError {
     }
 
     pub fn invalid_input(msg: impl ToString) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::InvalidInput,
             info: Some(msg.to_string()),
-        };
+        }
     }
 
     pub fn invalid_response(request: impl Display) -> MarsError {
@@ -53,31 +53,31 @@ impl MarsError {
     }
 
     pub fn property_unavailable(property: impl ToString) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::PropertyUnavailable,
             info: Some(property.to_string()),
-        };
+        }
     }
 
     pub fn unknown(info: impl ToString) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::Unknown,
             info: Some(info.to_string()),
-        };
+        }
     }
 
     pub fn x11_unsupported_atom(atom: X11Atom) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::UnsupportedProtocol,
             info: Some(atom.to_string()),
-        };
+        }
     }
 
     pub fn x11_open_display() -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::ConnectionFailed,
             info: Some("XOpenDisplay".to_owned()),
-        };
+        }
     }
 }
 
@@ -88,13 +88,13 @@ impl Display for MarsError {
         if let Some(info) = &self.info {
             write!(f, " ({})", info)?;
         }
-        return Ok(());
+        Ok(())
     }
 }
 
 impl From<MarsError> for String {
     fn from(value: MarsError) -> Self {
-        return value.to_string();
+        value.to_string()
     }
 }
 
@@ -109,7 +109,7 @@ impl Display for MarsErrorKind {
             Self::Unknown => "Unknown error",
             Self::UnsupportedProtocol => "Protocol not supported",
         };
-        return write!(f, "{}", name);
+        write!(f, "{}", name)
     }
 }
 

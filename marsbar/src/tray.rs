@@ -100,7 +100,7 @@ impl SystemTrayWidget {
             bg_color,
         };
 
-        return Ok(widget);
+        Ok(widget)
     }
 
     fn dock(&mut self, tray_icon: xlib::Window) {
@@ -224,9 +224,9 @@ impl Widget for SystemTrayWidget {
                             |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
                         });
                 }
-                return true;
+                true
             } else {
-                return false;
+                false
             }
         }
     }
@@ -241,11 +241,11 @@ impl Widget for SystemTrayWidget {
         self.resize_to_content();
     }
     fn size(&self) -> (u32, u32) {
-        return (self.width, self.height);
+        (self.width, self.height)
     }
 
     fn wid(&self) -> xlib::Window {
-        return self.window;
+        self.window
     }
 }
 

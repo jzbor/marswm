@@ -65,7 +65,7 @@ pub struct Configuration {
 
 impl Default for BarStyle {
     fn default() -> Self {
-        return BarStyle {
+        BarStyle {
             background: 0x262626,
             expand_workspace_widgets: false,
             height: 31,
@@ -79,39 +79,39 @@ impl Default for BarStyle {
 
 impl Default for TextWidgetStyle {
     fn default() -> Self {
-        return TextWidgetStyle {
+        TextWidgetStyle {
             foreground: 0xbcbcbc,
             background: 0x262626,
             padding_horz: DEFAULT_TEXT_PADDING_HORZ,
             padding_vert: DEFAULT_TEXT_PADDING_VERT
-        };
+        }
     }
 }
 
 impl ContainerWidgetStyle {
     pub fn create_flow_layout_widget<W: Widget>(&self, display: *mut xlib::Display, parent: xlib::Window)
             -> Result<X11FlowLayoutWidget<W>, String> {
-        return X11FlowLayoutWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert, self.spacing,
+        X11FlowLayoutWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert, self.spacing,
                                      Vec::new(), self.outer_background)
-            .map_err(|e| e.to_string());
+            .map_err(|e| e.to_string())
     }
 
     pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
             -> Result<X11TextWidget, String> {
-        return X11TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
+        X11TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
                                "".to_string(), font, self.foreground, self.inner_background)
-            .map_err(|e| e.to_string());
+            .map_err(|e| e.to_string())
     }
 
     pub fn create_systray_widget(&self, display: *mut xlib::Display, parent: xlib::Window, parent_height: u32)
             -> Result<SystemTrayWidget, String> {
-        return SystemTrayWidget::new(display, parent, 0, 0, parent_height - 2 * self.spacing, self.padding_horz,
+        SystemTrayWidget::new(display, parent, 0, 0, parent_height - 2 * self.spacing, self.padding_horz,
                                      self.padding_horz, self.padding_vert, self.inner_background)
-            .map_err(|e| e.to_string());
+            .map_err(|e| e.to_string())
     }
 
     fn default_status() -> Self {
-        return ContainerWidgetStyle {
+        ContainerWidgetStyle {
             foreground: 0x262626,
             inner_background: 0xaf5f5f,
             outer_background: 0x262626,
@@ -120,11 +120,11 @@ impl ContainerWidgetStyle {
             text_padding_horz: 5,
             text_padding_vert: 0,
             spacing: 4,
-        };
+        }
     }
 
     fn default_workspaces() -> Self {
-        return ContainerWidgetStyle {
+        ContainerWidgetStyle {
             foreground: 0x262626,
             inner_background: 0x5f87af,
             outer_background: 0x262626,
@@ -133,16 +133,16 @@ impl ContainerWidgetStyle {
             text_padding_horz: 10,
             text_padding_vert: 4,
             spacing: 0,
-        };
+        }
     }
 }
 
 impl TextWidgetStyle {
     pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
             -> Result<X11TextWidget, String> {
-        return X11TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
+        X11TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
                                "".to_string(), font, self.foreground, self.background)
-            .map_err(|e| e.to_string());
+            .map_err(|e| e.to_string())
     }
 }
 
