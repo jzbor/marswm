@@ -174,12 +174,19 @@ impl Bar {
 
         self.status_widget.rearrange();
 
-        // self.status_widget.set_label(status);
-        let tray_width = if let Some(tray_widget) = &self.systray {
-            tray_widget.size().0 + self.config.style.status.padding_horz
+        // show or hide tray widget depending on whether there are icons
+        let tray_width = if let Some(tray_widget) = &mut self.systray {
+            if tray_widget.is_empty() {
+                tray_widget.hide();
+                0
+            } else {
+                tray_widget.show();
+                tray_widget.size().0 + self.config.style.status.padding_horz
+            }
         } else {
             0
         };
+
         let height_diff = (self.dimensions.h() as i32 - self.status_widget.size().1 as i32) / 2;
         let x = self.dimensions.w() as i32 - tray_width as i32 - self.status_widget.size().0 as i32 - height_diff;
         let y = height_diff;
