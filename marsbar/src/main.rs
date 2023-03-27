@@ -157,6 +157,7 @@ impl Bar {
                 let mut widget = self.config.style.status
                     .create_text_widget(self.display, self.status_widget.wid(), &self.config.style.font)
                     .unwrap();
+                widget.set_label(block.to_owned());
                 if let Some(callback) = &self.config.action_cmd {
                     let event_handler = StatusEventHandler::new(i, callback.clone());
                     widget.register_event_handler(Box::new(event_handler));
