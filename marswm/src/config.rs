@@ -172,8 +172,11 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
     };
 
     // read extended keybindings
-    if let Ok(config) = read_config_file::<Vec<ButtonBinding>>(CONFIG_DIR, BUTTON_BINDINGS_EXT_FILE) {
-        button_bindings.extend(config);
+    match read_config_file::<Vec<ButtonBinding>>(CONFIG_DIR, BUTTON_BINDINGS_EXT_FILE) {
+        Ok(config) => button_bindings.extend(config),
+        Err(msg) => {
+            println!("Unable to read extended button bindings: {}", msg);
+        },
     }
 
     return button_bindings;
@@ -200,8 +203,11 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     };
 
     // read extended keybindings
-    if let Ok(config) = read_config_file::<Vec<KeyBinding>>(CONFIG_DIR, KEY_BINDINGS_EXT_FILE) {
-        keybindings.extend(config);
+    match read_config_file::<Vec<KeyBinding>>(CONFIG_DIR, KEY_BINDINGS_EXT_FILE) {
+        Ok(config) => keybindings.extend(config),
+        Err(msg) => {
+            println!("Unable to read extended key bindings: {}", msg);
+        },
     }
 
     return keybindings;
