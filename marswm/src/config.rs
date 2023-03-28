@@ -109,7 +109,7 @@ pub struct NoDecorThemingConfiguration {
 
 impl Default for Configuration {
     fn default() -> Self {
-        return Configuration {
+        Configuration {
             primary_workspaces: 8,
             secondary_workspaces: 2,
             layout: LayoutConfiguration::default(),
@@ -120,20 +120,20 @@ impl Default for Configuration {
 
 impl Default for LayoutConfiguration {
     fn default() -> Self {
-        return LayoutConfiguration {
+        LayoutConfiguration {
             default: LayoutType::Floating,
             gap_width: 4,
             main_ratio: 0.6,
             nmain: 1,
             stack_position: StackPosition::Right,
             stack_mode: StackMode::Split,
-        };
+        }
     }
 }
 
 impl Default for ThemingConfiguration {
     fn default() -> Self {
-        return ThemingConfiguration {
+        ThemingConfiguration {
             active_color: 0x5f875f,
             inactive_color: 0x262626,
             border_color: 0x262626,
@@ -146,17 +146,17 @@ impl Default for ThemingConfiguration {
             title_vpadding: 0,
             title_hpadding: 5,
             font: "serif".to_owned(),
-        };
+        }
     }
 }
 
 impl Default for NoDecorThemingConfiguration {
     fn default() -> Self {
-        return NoDecorThemingConfiguration {
+        NoDecorThemingConfiguration {
             frame_width: (0, 0, 0, 0),
             inner_border_width: 0,
             outer_border_width: 0,
-        };
+        }
     }
 }
 
@@ -179,7 +179,7 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
         },
     }
 
-    return button_bindings;
+    button_bindings
 }
 
 pub fn read_config() -> Configuration {
@@ -210,7 +210,7 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         },
     }
 
-    return keybindings;
+    keybindings
 }
 
 pub fn read_rules() -> Vec<Rule> {

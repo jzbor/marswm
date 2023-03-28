@@ -90,7 +90,7 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
 
         widget.rearrange();
 
-        return Ok(widget);
+        Ok(widget)
     }
 
     fn arrange_children(&mut self) {
@@ -120,7 +120,7 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
     }
 
     pub fn count_children(&self) -> usize {
-        return self.children.len();
+        self.children.len()
     }
 
     pub fn push(&mut self, widget: W) {
@@ -193,14 +193,14 @@ impl X11TextWidget {
 
         widget.resize_to_content();
 
-        return Ok(widget);
+        Ok(widget)
     }
 
     pub fn content_size(&mut self) -> (u32, u32) {
         if let Ok(size) = self.canvas.text_size(&self.label) {
-            return size;
+            size
         } else {
-            return self.size();
+            self.size()
         }
     }
 
@@ -226,14 +226,14 @@ impl X11TextWidget {
         self.canvas.set_foreground(color)?;
         self.fg_color = color;
         self.redraw();
-        return Ok(());
+        Ok(())
     }
 
     pub fn set_background(&mut self, color: u64) -> Result<()> {
         self.canvas.set_background(color)?;
         self.bg_color = color;
         self.redraw();
-        return Ok(());
+        Ok(())
     }
 
     pub fn set_label(&mut self, label: String) {
@@ -284,14 +284,14 @@ impl<W: Widget> Widget for X11FlowLayoutWidget<W> {
                             |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
                         });
                 }
-                return true;
+                true
             } else {
                 for child in &mut self.children {
                     if child.handle_xevent(event) {
                         return true;
                     }
                 }
-                return false;
+                false
             }
         }
     }
@@ -307,11 +307,11 @@ impl<W: Widget> Widget for X11FlowLayoutWidget<W> {
     }
 
     fn size(&self) -> (u32, u32) {
-        return (self.width, self.height);
+        (self.width, self.height)
     }
 
     fn wid(&self) -> xlib::Window {
-        return self.window;
+        self.window
     }
 }
 
@@ -362,9 +362,9 @@ impl Widget for X11TextWidget {
                             |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
                         });
                 }
-                return true;
+                true
             } else {
-                return false;
+                false
             }
         }
     }
@@ -380,11 +380,11 @@ impl Widget for X11TextWidget {
     }
 
     fn size(&self) -> (u32, u32) {
-        return (self.width, self.height);
+        (self.width, self.height)
     }
 
     fn wid(&self) -> xlib::Window {
-        return self.window;
+        self.window
     }
 }
 
@@ -428,7 +428,7 @@ pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, d
         // sync requests with x11 server
         xlib::XFlush(display);
 
-        return Ok(win);
+        Ok(win)
     }
 }
 

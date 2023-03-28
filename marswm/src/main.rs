@@ -75,7 +75,7 @@ trait ClientList<C: Client<Attributes>> {
             self.detach_client(client);
         }
 
-        return clients;
+        clients
     }
 
     fn attach_all(&mut self, clients: Vec<Rc<RefCell<C>>>) {

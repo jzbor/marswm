@@ -75,7 +75,7 @@ impl<A: Default + PartialEq> X11Client<A> {
             },
         };
 
-        return Ok( X11Client {
+        Ok( X11Client {
             name,
             display, root, window, frame,
             title_widget: None,
@@ -96,7 +96,7 @@ impl<A: Default + PartialEq> X11Client<A> {
             frame_color: 0x000000,
             saved_decorations: None,
             saved_dimensions: None,
-        } );
+        } )
     }
 }
 
@@ -203,7 +203,7 @@ impl<A: PartialEq> X11Client<A> {
     }
 
     pub fn frame(&self) -> u64 {
-        return self.frame;
+        self.frame
     }
 
     fn remove_decoration(&mut self) {
@@ -232,7 +232,7 @@ impl<A: PartialEq> X11Client<A> {
     }
 
     pub fn is_reparenting(&self) -> bool {
-        return self.actively_reparenting;
+        self.actively_reparenting
     }
 
     pub fn set_reparenting(&mut self, status: bool) {
@@ -244,7 +244,7 @@ impl<A: PartialEq> X11Client<A> {
     }
 
     pub fn window(&self) -> u64 {
-        return self.window;
+        self.window
     }
 }
 
@@ -259,22 +259,22 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
         }
 
         self.title_widget = Some(widget);
-        return Ok(());
+        Ok(())
     }
 
     fn application(&self) -> String {
-        return match self.x11_class_hint(self.display) {
+        match self.x11_class_hint(self.display) {
             Ok((_name, class)) => class,
             Err(_) => String::default(),
-        };
+        }
     }
 
     fn attributes(&self) -> &A {
-        return &self.attributes;
+        &self.attributes
     }
 
     fn attributes_mut(&mut self) -> &mut A {
-        return &mut self.attributes;
+        &mut self.attributes
     }
 
     fn bind_button(&mut self, modifiers: u32, button: u32, target: ButtonTarget) {
@@ -314,7 +314,7 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     }
 
     fn dont_decorate(&self) -> bool {
-        return self.dont_decorate;
+        self.dont_decorate
     }
 
     fn export_pinned(&self, state: bool, workspace_idx: Option<u32>) {
@@ -338,7 +338,7 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     }
 
     fn frame_width(&self) -> (u32, u32, u32, u32) {
-        return self.fw;
+        self.fw
     }
 
     fn hide(&mut self) {
@@ -367,28 +367,28 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     }
 
     fn inner_bw(&self) -> u32 {
-        return self.ibw;
+        self.ibw
     }
 
     fn inner_dimensions(&self) -> Dimensions {
         let (fw_north, fw_east, _, _) = self.fw;
         let (bw_north, bw_east, bw_south, bw_west) = self.total_bw();
-        return Dimensions::new(fw_east.try_into().unwrap(),
+        Dimensions::new(fw_east.try_into().unwrap(),
                                fw_north.try_into().unwrap(),
                                self.w - bw_east - bw_west,
-                               self.h - bw_north - bw_south);
+                               self.h - bw_north - bw_south)
     }
 
     fn is_dialog(&self) -> bool {
-        return self.is_dialog;
+        self.is_dialog
     }
 
     fn is_fullscreen(&self) -> bool {
-        return self.fullscreen;
+        self.fullscreen
     }
 
     fn is_visible(&self) -> bool {
-        return self.visible;
+        self.visible
     }
 
     fn move_resize(&mut self, x: i32, y: i32, width: u32, height: u32) {
@@ -417,11 +417,11 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     }
 
     fn name(&self) -> &str {
-        return &self.name;
+        &self.name
     }
 
     fn outer_bw(&self) -> u32 {
-        return self.obw;
+        self.obw
     }
 
     fn raise(&self) {
@@ -518,14 +518,14 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
     }
 
     fn title(&self) -> String {
-        return self.window.x11_wm_name(self.display).unwrap_or_default();
+        self.window.x11_wm_name(self.display).unwrap_or_default()
     }
 
     fn total_bw(&self) -> (u32, u32, u32, u32) {
-        return (self.ibw + self.fw.0 + self.obw,
+        (self.ibw + self.fw.0 + self.obw,
                 self.ibw + self.fw.1 + self.obw,
                 self.ibw + self.fw.2 + self.obw,
-                self.ibw + self.fw.3 + self.obw);
+                self.ibw + self.fw.3 + self.obw)
     }
 
     fn unset_fullscreen(&mut self) {
@@ -616,21 +616,21 @@ impl<A: PartialEq> Eq for X11Client<A> {}
 
 impl<A: PartialEq> PartialEq for X11Client<A> {
     fn eq(&self, other: &Self) -> bool {
-        return self.frame == other.frame;
+        self.frame == other.frame
     }
 
     fn ne(&self, other: &Self) -> bool {
-        return !self.eq(other);
+        !self.eq(other)
     }
 }
 
 impl<A: PartialEq> X11Window for X11Client<A> {
     fn x11_attributes(&self, display: *mut xlib::Display) -> Result<xlib::XWindowAttributes> {
-        return self.window.x11_attributes(display);
+        self.window.x11_attributes(display)
     }
 
     fn x11_class_hint(&self, display: *mut xlib::Display) -> Result<(String, String)> {
-        return self.window.x11_class_hint(display);
+        self.window.x11_class_hint(display)
     }
 
     fn x11_close(&self, display: *mut xlib::Display,
@@ -649,15 +649,15 @@ impl<A: PartialEq> X11Window for X11Client<A> {
     }
 
     fn x11_get_state(&self, display: *mut xlib::Display) -> Result<u64> {
-        return self.window.x11_get_state(display);
+        self.window.x11_get_state(display)
     }
 
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>> {
-        return self.window.x11_get_text_list_property(display, property);
+        self.window.x11_get_text_list_property(display, property)
     }
 
     fn x11_net_wm_state(&self, display: *mut xlib::Display) -> Result<Vec<X11Atom>> {
-        return self.window.x11_net_wm_state(display);
+        self.window.x11_net_wm_state(display)
     }
 
     fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
@@ -669,11 +669,11 @@ impl<A: PartialEq> X11Window for X11Client<A> {
     }
 
     fn x11_read_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong) -> Result<Vec<u64>> {
-        return self.window.x11_read_property_long(display, property, prop_type);
+        self.window.x11_read_property_long(display, property, prop_type)
     }
 
     fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String> {
-        return self.window.x11_read_property_string(display, property);
+        self.window.x11_read_property_string(display, property)
     }
 
     fn x11_replace_property_long(&self, display: *mut xlib::Display, property: X11Atom, prop_type: c_ulong, data: &[c_ulong]) {
@@ -689,38 +689,38 @@ impl<A: PartialEq> X11Window for X11Client<A> {
     }
 
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions> {
-        return self.frame.x11_dimensions(display);
+        self.frame.x11_dimensions(display)
     }
 
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32)> {
-        return self.frame.x11_geometry(display);
+        self.frame.x11_geometry(display)
     }
 
     fn x11_get_window_types(&self, display: *mut xlib::Display) -> Vec<X11Atom> {
-        return self.window.x11_get_window_types(display);
+        self.window.x11_get_window_types(display)
     }
 
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {
-        return self.window.x11_is_transient_for(display);
+        self.window.x11_is_transient_for(display)
     }
 
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
-        return self.window.x11_message(display, msg_type, msg_format, msg_data);
+        self.window.x11_message(display, msg_type, msg_format, msg_data)
     }
 
     fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool {
-        return self.window.x11_supports_protocol(display, protocol);
+        self.window.x11_supports_protocol(display, protocol)
     }
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {
-        return self.window.x11_wm_protocols(display);
+        self.window.x11_wm_protocols(display)
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {
-        return self.window.x11_wm_name(display);
+        self.window.x11_wm_name(display)
     }
 
     fn x11_wm_normal_hints(&self, display: *mut xlib::Display) -> Result<(xlib::XSizeHints, c_long)> {
-        return self.window.x11_wm_normal_hints(display);
+        self.window.x11_wm_normal_hints(display)
     }
 }

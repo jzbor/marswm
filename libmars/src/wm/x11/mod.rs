@@ -53,5 +53,5 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
     //     }
     // }
 
-    return 0;
+    0
 }

@@ -36,6 +36,7 @@ pub struct SystemTrayWidget {
     window: xlib::Window,
     canvas: X11Canvas,
     event_handlers: Vec<Box<dyn WidgetEventHandler>>,
+    is_visible: bool,
     width: u32,
     height: u32,
     min_size: (u32, u32),
@@ -92,6 +93,7 @@ impl SystemTrayWidget {
             tray_icons: Vec::new(),
             window, canvas,
             event_handlers: Vec::new(),
+            is_visible: true,
             width: height, height,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
@@ -100,7 +102,7 @@ impl SystemTrayWidget {
             bg_color,
         };
 
-        return Ok(widget);
+        Ok(widget)
     }
 
     fn dock(&mut self, tray_icon: xlib::Window) {
@@ -166,6 +168,19 @@ impl SystemTrayWidget {
         self.resize_to_content();
     }
 
+    pub fn hide(&mut self) {
+        if self.is_visible {
+            unsafe {
+                xlib::XUnmapWindow(self.display, self.window);
+            }
+            self.is_visible = false;
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tray_icons.is_empty()
+    }
+
     fn resize_to_content(&mut self) {
         let nicons = self.tray_icons.len();
         self.width = if nicons > 0 {
@@ -182,6 +197,15 @@ impl SystemTrayWidget {
         }
 
         self.canvas.match_resize();
+    }
+
+    pub fn show(&mut self) {
+        if !self.is_visible {
+            unsafe {
+                xlib::XMapWindow(self.display, self.window);
+            }
+            self.is_visible = true;
+        }
     }
 }
 
@@ -224,9 +248,9 @@ impl Widget for SystemTrayWidget {
                             |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
                         });
                 }
-                return true;
+                true
             } else {
-                return false;
+                false
             }
         }
     }
@@ -241,11 +265,11 @@ impl Widget for SystemTrayWidget {
         self.resize_to_content();
     }
     fn size(&self) -> (u32, u32) {
-        return (self.width, self.height);
+        (self.width, self.height)
     }
 
     fn wid(&self) -> xlib::Window {
-        return self.window;
+        self.window
     }
 }
 

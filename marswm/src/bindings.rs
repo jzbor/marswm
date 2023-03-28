@@ -198,15 +198,15 @@ impl BindingAction {
 
 impl KeyBinding {
     pub fn new(modifiers: Vec<Modifier>, key: &str, action: BindingAction) -> Self {
-        return KeyBinding { modifiers, key: key.to_owned(), action };
+        KeyBinding { modifiers, key: key.to_owned(), action }
     }
 
     pub fn action(&self) -> BindingAction {
-        return self.action.clone();
+        self.action.clone()
     }
 
     pub fn matches(&self, modifiers: u32, key: u32) -> bool {
-        return modifiers == self.modifiers() && key == self.key();
+        modifiers == self.modifiers() && key == self.key()
     }
 
     pub fn modifiers(&self) -> u32 {
@@ -214,21 +214,21 @@ impl KeyBinding {
     }
 
     pub fn key(&self) -> u32 {
-        return get_keysym(&self.key) as u32;
+        get_keysym(&self.key) as u32
     }
 }
 
 impl ButtonBinding {
     pub fn new(modifiers: Vec<Modifier>, button: u32, targets: Vec<ButtonTarget>, action: BindingAction) -> Self {
-        return ButtonBinding { modifiers, button, targets, action };
+        ButtonBinding { modifiers, button, targets, action }
     }
 
     pub fn action(&self) -> BindingAction {
-        return self.action.clone();
+        self.action.clone()
     }
 
     pub fn button(&self) -> u32 {
-        return self.button;
+        self.button
     }
 
     pub fn matches(&self, modifiers: u32, button: u32, target: ButtonTarget) -> bool {
@@ -240,7 +240,7 @@ impl ButtonBinding {
     }
 
     pub fn targets(&self) -> &[ButtonTarget] {
-        return &self.targets;
+        &self.targets
     }
 }
 
@@ -299,7 +299,7 @@ pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         bindings.push(KeyBinding::new(vec!(DEFAULT_MODKEY, Modifier::Shift), &key_name, MoveWorkspace(i)));
     }
 
-    return bindings;
+    bindings
 }
 
 pub fn default_button_bindings() -> Vec<ButtonBinding> {
@@ -321,6 +321,6 @@ pub fn default_button_bindings() -> Vec<ButtonBinding> {
         client_button_binding!(5, CycleClient(1)),
         client_button_binding!(5, StackMove(1), (Shift)),
     ];
-    return bindings;
+    bindings
 }
 

@@ -110,7 +110,7 @@ impl Display for X11Atom {
             X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
             X11Atom::MarsStatus => "_MARS_STATUS",
         };
-        return write!(f, "{}", string);
+        write!(f, "{}", string)
     }
 }
 
@@ -126,13 +126,13 @@ impl X11Atom {
                 return Some(*atom);
             }
         }
-        return None;
+        None
     }
 
     pub fn to_xlib_atom(&self, display: *mut xlib::Display) -> xlib::Atom {
         let atom_name = CString::new(self.to_string()).unwrap().into_raw();
         unsafe {
-            return xlib::XInternAtom(display, atom_name, xlib::False);
+            xlib::XInternAtom(display, atom_name, xlib::False)
         }
     }
 }
@@ -141,11 +141,11 @@ pub fn atom_name(display: *mut xlib::Display, atom: xlib::Atom) -> Option<String
     unsafe {
         let name_ptr = xlib::XGetAtomName(display, atom);
         if name_ptr.is_null() {
-            return None;
+            None
         } else {
             let name = CStr::from_ptr(name_ptr).to_string_lossy().to_string();
             xlib::XFree(name_ptr as *mut c_void);
-            return Some(name);
+            Some(name)
         }
     }
 }

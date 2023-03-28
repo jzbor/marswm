@@ -75,7 +75,7 @@ impl From<*mut xlib::Screen> for MonitorConfig {
         let h = unsafe { xlib::XHeightOfScreen(screen).try_into().unwrap() };
         let dims = Dimensions::new(0, 0, w, h);
 
-        return MonitorConfig { name: "output".to_owned(), dims, win_area: dims };
+        MonitorConfig { name: "output".to_owned(), dims, win_area: dims }
     }
 }
 
@@ -159,7 +159,7 @@ pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class:
         // sync requests with x11 server
         xlib::XFlush(display);
 
-        return Ok(win);
+        Ok(win)
     }
 }
 
@@ -168,9 +168,9 @@ pub fn open_display() -> Result<*mut xlib::Display> {
     unsafe {
         let display = xlib::XOpenDisplay(ptr::null());
         if display.is_null() {
-            return Err(MarsError::x11_open_display());
+            Err(MarsError::x11_open_display())
         } else {
-            return Ok(display);
+            Ok(display)
         }
     }
 }
@@ -181,12 +181,12 @@ pub fn open_display() -> Result<*mut xlib::Display> {
 pub fn get_keysym(name: &str) -> xlib::KeySym {
     unsafe {
         let cstring = CString::new(name).unwrap();
-        return xlib::XStringToKeysym(cstring.as_ptr());
+        xlib::XStringToKeysym(cstring.as_ptr())
     }
 }
 
 pub extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
-    return 0;
+    0
 }
 
 /// Get the current monitor configuration
@@ -239,17 +239,17 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
                     non_overlapping.push(mon);
                 }
             }
-            return non_overlapping;
+            non_overlapping
         } else {
-            return monitors.into();
+            monitors.into()
         }
     }
 }
 
 /// Remove unrelated mask bits on button or key events
 pub fn sanitize_modifiers(modifiers: u32) -> u32 {
-    return modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod2Mask
-                        | xlib::Mod3Mask | xlib::Mod4Mask |xlib::Mod5Mask);
+    modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod2Mask
+                        | xlib::Mod3Mask | xlib::Mod4Mask |xlib::Mod5Mask)
 }
 
 /// Send a ClientMessage to the default root window

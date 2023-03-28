@@ -48,22 +48,22 @@ pub trait Dimensioned {
     fn center(&self) -> (i32, i32) {
         let center_x = self.x() + (self.w() / 2) as i32;
         let center_y = self.y() + (self.h() / 2) as i32;
-        return (center_x, center_y);
+        (center_x, center_y)
     }
 
     fn contains_point(&self, point: (i32, i32)) -> bool {
-        return point.0 >= self.x()
+        point.0 >= self.x()
             && point.0 < self.x() + self.w() as i32
             && point.1 >= self.y()
-            && point.1 < self.y() + self.h() as i32;
+            && point.1 < self.y() + self.h() as i32
     }
 
     fn bottom(&self) -> i32 {
-        return self.y() + self.h() as i32;
+        self.y() + self.h() as i32
     }
 
     fn right(&self) -> i32 {
-        return self.x() + self.w() as i32;
+        self.x() + self.w() as i32
     }
 }
 
@@ -86,17 +86,17 @@ pub struct MonitorConfig {
 
 impl Dimensions {
     pub fn new(x: i32, y: i32, w: u32, h: u32) -> Dimensions {
-        return Dimensions {x, y, w, h};
+        Dimensions {x, y, w, h}
     }
 
     pub fn as_tuple(&self) -> (i32, i32, u32, u32) {
-        return (self.x, self.y, self.w, self.h);
+        (self.x, self.y, self.w, self.h)
     }
 }
 
 impl MonitorConfig {
     pub fn new(name: String, dimensions: Dimensions, win_area: Dimensions) -> MonitorConfig {
-        return MonitorConfig { name, dims: dimensions, win_area };
+        MonitorConfig { name, dims: dimensions, win_area }
     }
 
     pub fn add_inset_top(&mut self, inset: u32) {
@@ -109,15 +109,15 @@ impl MonitorConfig {
     }
 
     pub fn contains_point(&self, point: (i32, i32)) -> bool {
-        return self.dims.contains_point(point);
+        self.dims.contains_point(point)
     }
 
     pub fn dimensions(&self) -> Dimensions {
-        return self.dims;
+        self.dims
     }
 
     pub fn name(&self) -> &str {
-        return &self.name;
+        &self.name
     }
 
     pub fn remove_insets(&mut self) {
@@ -125,7 +125,7 @@ impl MonitorConfig {
     }
 
     pub fn window_area(&self) -> Dimensions {
-        return self.win_area;
+        self.win_area
     }
 }
 

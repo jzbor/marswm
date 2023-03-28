@@ -36,29 +36,29 @@ impl<C: Client<Attributes>> Monitor<C> {
                 .collect()
         };
 
-        return Monitor {
+        Monitor {
             config: monitor_config,
             workspaces,
             cur_workspace: 0,
             prev_workspace: 0,
             workspace_offset,
-        };
+        }
     }
 
     pub fn config(&self) -> &MonitorConfig {
-        return &self.config;
+        &self.config
     }
 
     pub fn current_workspace(&self) -> &Workspace<C> {
-        return &self.workspaces[self.cur_workspace as usize];
+        &self.workspaces[self.cur_workspace as usize]
     }
 
     pub fn current_workspace_mut(&mut self) -> &mut Workspace<C> {
-        return &mut self.workspaces[self.cur_workspace as usize];
+        &mut self.workspaces[self.cur_workspace as usize]
     }
 
     pub fn dimensions(&self) -> Dimensions {
-        return self.config.dimensions();
+        self.config.dimensions()
     }
 
     pub fn restack_current(&self) {
@@ -66,12 +66,11 @@ impl<C: Client<Attributes>> Monitor<C> {
     }
 
     pub fn prev_workspace(&self) -> &Workspace<C> {
-        return &self.workspaces[self.prev_workspace as usize];
+        &self.workspaces[self.prev_workspace as usize]
     }
 
     pub fn set_cur_workspace(&mut self, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
-            return;
         } else if workspace_idx >= self.workspace_count() {
             return;
         } else {
@@ -88,7 +87,7 @@ impl<C: Client<Attributes>> Monitor<C> {
     }
 
     pub fn window_area(&self) -> Dimensions {
-        return self.config.window_area();
+        self.config.window_area()
     }
 
     pub fn workspace(&self, index: u32) -> Option<&Workspace<C>> {
@@ -99,11 +98,11 @@ impl<C: Client<Attributes>> Monitor<C> {
         return self.workspaces.get_mut(index as usize);
     }
     pub fn workspace_count(&self) -> u32 {
-        return self.workspaces.len() as u32;
+        self.workspaces.len() as u32
     }
 
     pub fn workspace_offset(&self) -> u32 {
-        return self.workspace_offset
+        self.workspace_offset
     }
 
     pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
@@ -134,6 +133,6 @@ impl<C: Client<Attributes>> ClientList<C> for Monitor<C> {
 
 impl<C: Client<Attributes>> PartialEq for Monitor<C> {
     fn eq(&self, other: &Self) -> bool {
-        return self.config == other.config;
+        self.config == other.config
     }
 }

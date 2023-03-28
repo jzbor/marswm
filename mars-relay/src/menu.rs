@@ -13,7 +13,7 @@ fn menu_input() -> String {
     string.push_str("+ Fullscreen	fullscreen\n");
     string.push_str("' Pin	pin\n");
 
-    return string;
+    string
 }
 
 pub fn display_menu() -> Result<Command, String> {

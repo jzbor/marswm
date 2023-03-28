@@ -41,9 +41,9 @@ impl X11Canvas {
         let gc = Self::create_default_gc(display, window, false)
             .map_err(|e| unsafe { xlib::XFreePixmap(display, pixbuffer); e })?;
 
-        return Ok( X11Canvas {
+        Ok( X11Canvas {
             display, screen, window, pixbuffer, gc, style,
-        } );
+        } )
     }
 
     fn create_default_gc(display: *mut xlib::Display, window: xlib::Window, reverse_video: bool) -> Result<xlib::GC> {
@@ -71,7 +71,7 @@ impl X11Canvas {
             xlib::XSetLineAttributes(display, gc, style.line_width, style.line_style, style.cap_style, style.join_style);
             xlib::XSetFillStyle(display, gc, style.fill_style);
 
-            return Ok(gc);
+            Ok(gc)
         }
     }
 
@@ -80,7 +80,7 @@ impl X11Canvas {
             let window_dims = window.x11_dimensions(display)?;
             let depth = xlib::XDefaultDepth(display, screen);
             let root = xlib::XDefaultRootWindow(display);
-            return Ok(xlib::XCreatePixmap(display, root, window_dims.w(), window_dims.h(), depth as u32));
+            Ok(xlib::XCreatePixmap(display, root, window_dims.w(), window_dims.h(), depth as u32))
         }
     }
 
@@ -128,15 +128,15 @@ impl X11Canvas {
             let visual = xlib::XDefaultVisual(self.display, self.screen);
             let colormap = xlib::XDefaultColormap(self.display, self.screen);
             if xft::XftColorAllocValue(self.display, visual, colormap, &xr_color, xft_color.as_mut_ptr()) == 0 {
-                return Err(MarsError::failed_request(stringify!(xft::XftColorAllocValue)));
+                Err(MarsError::failed_request(stringify!(xft::XftColorAllocValue)))
             } else {
-                return Ok(xft_color.assume_init());
+                Ok(xft_color.assume_init())
             }
         }
     }
 
     pub fn window(&self) -> xlib::Window {
-        return self.window;
+        self.window
     }
 }
 
@@ -214,10 +214,10 @@ impl Canvas for X11Canvas {
                 let extents = extents.assume_init();
                 let height = (*xfont).ascent + (*xfont).descent;
 
-                return Ok((extents.width.into(), height as u32));
+                Ok((extents.width.into(), height as u32))
             }
         } else {
-            return Err(MarsError::invalid_input("unable to get text size - no font specified"));
+            Err(MarsError::invalid_input("unable to get text size - no font specified"))
         }
     }
 
@@ -250,7 +250,7 @@ impl Canvas for X11Canvas {
             xft::XftDrawDestroy(xft_draw);
         }
 
-        return self.text_size(text);
+        self.text_size(text)
     }
 
     fn fill_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32) {
@@ -307,7 +307,7 @@ impl Canvas for X11Canvas {
             // set background for gc
             xlib::XSetBackground(self.display, self.gc, xft_color.pixel);
         }
-        return Ok(());
+        Ok(())
     }
 
     fn set_font(&mut self, font_name: &str) -> Result<()> {
@@ -326,13 +326,13 @@ impl Canvas for X11Canvas {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn set_foreground(&mut self, color: u64) -> Result<()> {
         self.style.xft_color = self.alloc_color(color)?;
         self.gc_apply_foreground();
-        return Ok(());
+        Ok(())
     }
 
     fn set_line_width(&mut self, line_width: u32) {

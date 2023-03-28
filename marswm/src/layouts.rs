@@ -48,7 +48,7 @@ pub struct Layout<C: Client<Attributes>> {
 
 impl<C: Client<Attributes>> Layout<C> {
     pub fn get(layout_type: LayoutType) -> Layout<C> {
-        return match layout_type {
+        match layout_type {
             LayoutType::Floating => Layout {
                 apply: |_, _, _| {},
             },
@@ -151,7 +151,7 @@ fn layout_dimensions_horizontal(win_area: Dimensions, ratio: f32, gap_width: u32
     let first_width: u32 = (win_area.w() as f32 * ratio) as u32;
     let gap_share = (gap_width / 2, gap_width - (gap_width / 2));
 
-    return {
+    {
         if nmain == 0 {  // all windows in stack area
             let first_area = Dimensions::new(0, 0, 0, 0);
             let second_x = win_area.x() + gap_width as i32;
@@ -182,14 +182,14 @@ fn layout_dimensions_horizontal(win_area: Dimensions, ratio: f32, gap_width: u32
             let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
             (first_area, second_area)
         }
-    };
+    }
 }
 
 fn layout_dimensions_vertical(win_area: Dimensions, ratio: f32, gap_width: u32, nmain: u32, nclients: u32) -> (Dimensions, Dimensions) {
     let first_height: u32 = (win_area.h() as f32 * ratio) as u32;
     let gap_share = (gap_width / 2, gap_width - (gap_width / 2));
 
-    return {
+    {
         if nmain == 0 {  // all windows in stack area
             let first_area = Dimensions::new(0, 0, 0, 0);
             let second_x = win_area.x() + gap_width as i32;
@@ -220,7 +220,7 @@ fn layout_dimensions_vertical(win_area: Dimensions, ratio: f32, gap_width: u32, 
             let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
             (first_area, second_area)
         }
-    };
+    }
 }
 
 fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Client<Attributes>>>>, gap_width: u32) {
