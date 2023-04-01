@@ -27,7 +27,6 @@ macro_rules! frame_button_binding {
 }
 
 
-
 #[derive(Serialize,Deserialize,Clone,Debug,PartialEq)]
 #[serde(rename_all = "kebab-case")]
 // #[serde(tag = "action", content = "arg")]
@@ -103,11 +102,7 @@ impl BindingAction {
         use BindingAction::*;
         match self {
             CenterClient => if let Some(client_rc) = client_option {
-                let layout_is_floating = wm.get_workspace(&client_rc)
-                    .map(|ws| ws.current_layout() == LayoutType::Floating)
-                    .unwrap_or(false);
-                let client_is_floating = client_rc.borrow().attributes().is_floating;
-                if layout_is_floating || client_is_floating {
+                if is_floating!(wm, &client_rc) {
                     if let Some(mon) = wm.get_monitor(&client_rc) {
                         client_rc.borrow_mut().center_on_screen(mon.config().window_area());
                     }
@@ -139,20 +134,12 @@ impl BindingAction {
                 wm.mouse_place(backend, client_rc);
             },
             MouseResize => if let Some(client_rc) = client_option {
-                let layout_is_floating = wm.get_workspace(&client_rc)
-                    .map(|ws| ws.current_layout() == LayoutType::Floating)
-                    .unwrap_or(false);
-                let client_is_floating = client_rc.borrow().attributes().is_floating;
-                if layout_is_floating || client_is_floating {
+                if is_floating!(wm, &client_rc) {
                     backend.mouse_resize(wm, client_rc);
                 }
             },
             MouseResizeCentered => if let Some(client_rc) = client_option {
-                let layout_is_floating = wm.get_workspace(&client_rc)
-                    .map(|ws| ws.current_layout() == LayoutType::Floating)
-                    .unwrap_or(false);
-                let client_is_floating = client_rc.borrow().attributes().is_floating;
-                if layout_is_floating || client_is_floating {
+                if is_floating!(wm, &client_rc) {
                     wm.mouse_resize_centered(backend, client_rc);
                 }
             },

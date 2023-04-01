@@ -14,6 +14,7 @@ use crate::*;
 use crate::monitor::*;
 use crate::rules::*;
 use crate::workspace::*;
+use crate::layouts::LayoutType;
 
 
 pub struct MarsWM<B: Backend<Attributes>> {
@@ -484,7 +485,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool {
-        if client_rc.borrow().attributes().is_floating {
+        if is_floating!(self, &client_rc) {
             let mut client = client_rc.borrow_mut();
             let (width, height) = client.size();
             client.move_resize(x, y, width, height);
@@ -531,7 +532,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool {
-        if client_rc.borrow().attributes().is_floating {
+        if is_floating!(self, &client_rc) {
             let mut client = client_rc.borrow_mut();
             let (x, y) = client.pos();
             client.move_resize(x, y, width, height);

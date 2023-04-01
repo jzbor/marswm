@@ -18,6 +18,7 @@ mod attributes;
 mod bindings;
 mod config;
 mod layouts;
+mod macros;
 mod marswm;
 mod monitor;
 mod rules;
