@@ -427,8 +427,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         }
 
         let mut client = (*client_rc).borrow_mut();
-        client.show();
-        client.center_on_screen(monitor_conf.window_area());
 
         // configure look
         if !client.dont_decorate() {
@@ -446,6 +444,9 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client.set_outer_bw(self.config.theming.no_decoration.outer_border_width);
             client.set_frame_width(self.config.theming.no_decoration.frame_width);
         }
+
+        client.show();
+        client.center_on_screen(monitor_conf.window_area());
 
         // bind keys and buttons
         for key_binding in &self.key_bindings {
