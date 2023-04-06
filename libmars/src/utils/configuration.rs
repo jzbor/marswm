@@ -32,9 +32,9 @@ pub fn print_config(config: &impl Serialize) {
 /// * `path` - The whole path to the config file
 pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, String> {
     if path.is_file() {
-        deserialize_file(&path).map_err(|(_, msg)| msg)
+        deserialize_file(path).map_err(|(_, msg)| msg)
     } else {
-        return Err(format!("configuration {} not found", path.to_string_lossy()));
+        Err(format!("configuration {} not found", path.to_string_lossy()))
     }
 }
 
@@ -48,6 +48,6 @@ pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_name: &str, file_name
     if let Some(path) = config_dir.find_config_file(file_name) {
         deserialize_file(&path).map_err(|(_, msg)| msg)
     } else {
-        return Err(format!("configuration {} not found", file_name));
+        Err(format!("configuration {} not found", file_name))
     }
 }

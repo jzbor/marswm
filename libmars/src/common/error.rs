@@ -25,17 +25,17 @@ pub enum MarsErrorKind {
 
 impl MarsError {
     pub fn failed_request(call: &str) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::FailedRequest,
             info: Some(format!("{} failed", call)),
         }
     }
 
     pub fn failed_conversion(value: impl std::fmt::Debug, from: &str, to: &str) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::IllegalValue,
             info: Some(format!("unable to convert {:?} from {} to {}", value, from, to)),
-        };
+        }
     }
 
     pub fn invalid_input(msg: impl ToString) -> MarsError {
@@ -46,10 +46,10 @@ impl MarsError {
     }
 
     pub fn invalid_response(request: impl Display) -> MarsError {
-        return MarsError {
+        MarsError {
             kind: MarsErrorKind::IllegalValue,
             info: Some(format!("invalid response value to request '{}'", request)),
-        };
+        }
     }
 
     pub fn property_unavailable(property: impl ToString) -> MarsError {

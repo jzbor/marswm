@@ -618,10 +618,6 @@ impl<A: PartialEq> PartialEq for X11Client<A> {
     fn eq(&self, other: &Self) -> bool {
         self.frame == other.frame
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
-    }
 }
 
 impl<A: PartialEq> X11Window for X11Client<A> {
