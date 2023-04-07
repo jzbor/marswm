@@ -550,10 +550,10 @@ fn main() {
 extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEvent) -> c_int {
     let msg = unsafe {
         let bufsize = 1024;
-        let mut buf = vec![0u8; bufsize];
-        xlib::XGetErrorText(display, (*error).error_code.into(), buf.as_mut_ptr() as *mut i8,
+        let mut buf = vec![0; bufsize];
+        xlib::XGetErrorText(display, (*error).error_code.into(), buf.as_mut_ptr(),
                             (bufsize - 1) as c_int);
-        let msg_cstring = CStr::from_ptr(buf.as_mut_ptr() as *mut i8);
+        let msg_cstring = CStr::from_ptr(buf.as_mut_ptr());
         msg_cstring.to_str().unwrap().to_owned()
         // println!("{}", msg);
     };

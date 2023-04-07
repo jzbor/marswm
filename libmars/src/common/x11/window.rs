@@ -108,7 +108,7 @@ impl X11Window for xlib::Window {
     fn x11_get_text_list_property(&self, display: *mut xlib::Display, property: X11Atom) -> Result<Vec<String>> {
         let mut text: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
         let mut nitems = 0;
-        let mut data_ptr: *mut *mut i8 = ptr::null_mut();
+        let mut data_ptr: *mut *mut c_char = ptr::null_mut();
         let mut data = Vec::new();
         unsafe {
             if xlib::XGetTextProperty(display, *self, text.as_mut_ptr(), property.to_xlib_atom(display)) == 0 {
@@ -232,7 +232,7 @@ impl X11Window for xlib::Window {
 
 
     fn x11_set_text_list_property(&self, display: *mut xlib::Display, property: X11Atom, list: &[String]) {
-        let mut pointers: Vec<*mut i8> = list.iter().flat_map(|s| CString::new(s.clone()))
+        let mut pointers: Vec<*mut c_char> = list.iter().flat_map(|s| CString::new(s.clone()))
             .map(|s| s.into_raw()).collect();
         let slice = &mut pointers;
         let mut text: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();

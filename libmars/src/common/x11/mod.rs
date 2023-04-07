@@ -129,8 +129,8 @@ pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class:
         };
         let mut class_bytes = class_cstring.into_bytes_with_nul();
         let mut class_hint = xlib::XClassHint {
-            res_name: class_bytes.as_mut_ptr() as *mut i8,
-            res_class: class_bytes.as_mut_ptr() as *mut i8,
+            res_name: class_bytes.as_mut_ptr() as *mut c_char,
+            res_class: class_bytes.as_mut_ptr() as *mut c_char,
         };
         xlib::XSetClassHint(display, win, &mut class_hint);
 
@@ -140,7 +140,7 @@ pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class:
             Err(_) => return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(CString))),
         };
         let mut name_property: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
-        let mut data = [name_cstring.as_ptr() as *mut i8];
+        let mut data = [name_cstring.as_ptr() as *mut c_char];
         if xlib::XStringListToTextProperty(data.as_mut_ptr(),
         1, name_property.as_mut_ptr()) == 0 {
             return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(xlib::XTextProperty)));

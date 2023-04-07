@@ -318,7 +318,9 @@ impl Canvas for X11Canvas {
             }
 
             // allocate font
-            let xfont = xft::XftFontOpenName(self.display, self.screen,font_name.as_ptr() as *const i8);
+            let c_font_name = CString::new(font_name)
+                .map_err(|_| MarsError::failed_conversion(font_name, stringify!(&str), stringify!(CString)))?;
+            let xfont = xft::XftFontOpenName(self.display, self.screen, c_font_name.as_ptr());
             if xfont.is_null() {
                 return Err(MarsError::failed_request(stringify!(xft::XftFontOpenName)));
             } else {
