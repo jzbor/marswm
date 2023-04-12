@@ -27,3 +27,27 @@ Although not currently planned a wayland backend (as well as other backends) wou
 ### mars-relay
 
 `mars-relay` lets you control EWMH-compliant X11 window managers and can be used as an IPC-client for `marswm` and a lot of other window managers.
+
+## Installation (with package manager)
+
+### NetBSD ([Official repositories])
+
+```sh
+pkgin install marswm
+```
+
+or, if you prefer to build it from source
+
+```sh
+cd /usr/pkgsrc/wm/marswm
+make install
+```
+
+### Archlinux ([AUR])
+
+```sh
+paru -S marswm-git
+```
+
+[Official repositories]: https://pkgsrc.se/wm/marswm/
+[AUR]: https://aur.archlinux.org/packages/marswm-git
