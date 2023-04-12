@@ -46,7 +46,7 @@ make install
 ### Archlinux ([AUR])
 
 ```sh
-paru -S marswm
+paru -S marswm-git
 ```
 
 [Official repositories]: https://pkgsrc.se/wm/marswm/
