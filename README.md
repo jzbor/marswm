@@ -49,7 +49,5 @@ make install
 paru -S marswm
 ```
 
-[paru] is an AUR helper like [yay], but written in [Rust].
-
 [Official repositories]: https://pkgsrc.se/wm/marswm/
 [AUR]: https://aur.archlinux.org/packages/marswm-git
