@@ -229,9 +229,10 @@ fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Cl
         return;
     }
 
-    let width = (area.w() - ((nclients - 1) * gap_width)) / nclients;
+    let total_gaps = (nclients - 1) * gap_width;
+    let width = (area.w() - total_gaps) / nclients;
     let height = area.h();
-    let width_remainder = area.w()  - (nclients * width);
+    let width_remainder = area.w()  - (nclients * width + total_gaps);
     for (i, client_rc) in clients.iter().enumerate() {
         let mut client = client_rc.borrow_mut();
         if !client.is_fullscreen() && !client.attributes().is_moving {
@@ -249,9 +250,10 @@ fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Clie
         return;
     }
 
+    let total_gaps = (nclients - 1) * gap_width;
     let width = area.w();
-    let height = (area.h() - ((nclients - 1) * gap_width)) / nclients;
-    let height_remainder = area.h() - (nclients * height);
+    let height = (area.h() - total_gaps) / nclients;
+    let height_remainder = area.h() - (nclients * height + total_gaps);
     for (i, client_rc) in clients.iter().enumerate() {
         let mut client = client_rc.borrow_mut();
         if !client.is_fullscreen() && !client.attributes().is_moving {
