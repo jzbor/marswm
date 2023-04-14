@@ -242,7 +242,9 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         backend.mouse_action(self, client_rc.clone(), 52, Self::mouse_action_place);
 
         client_rc.borrow_mut().attributes_mut().is_moving = false;
-        self.current_workspace_mut(backend).restack();
+        if let Some(ws) = self.get_workspace_mut(&client_rc) {
+            ws.restack()
+        }
     }
 
     pub fn mouse_resize_centered(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
