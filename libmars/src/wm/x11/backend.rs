@@ -479,6 +479,11 @@ impl<A: PartialEq + Default> X11Backend<A> {
             unsafe {
                 xlib::XConfigureWindow(self.display, event.window, event.value_mask as u32, &mut wc);
             }
+
+            if  self.unmanaged_clients.iter().find(|u| u.window() == event.window && u.get_type() == UnmanagedType::Dock).is_some() {
+                self.apply_dock_insets();
+                wm.update_monitor_config(self, self.monitors.clone());
+            }
         }
     }
 
