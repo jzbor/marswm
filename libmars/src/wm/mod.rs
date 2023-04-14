@@ -57,6 +57,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn name(&self) -> &str;
     fn outer_bw(&self) -> u32;
     fn raise(&self);
+    fn set_dimensions(&mut self, dimensions: Dimensions);
     fn set_frame_color(&mut self, color: u64);
     fn set_frame_width(&mut self, width: (u32, u32, u32, u32));
     fn set_fullscreen(&mut self, monitor_conf: &MonitorConfig);

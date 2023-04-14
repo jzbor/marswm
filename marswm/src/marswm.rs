@@ -422,10 +422,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         monitor.attach_client(client_rc.clone());
         let monitor_conf = monitor.config().clone();
 
-        if let Some(workspace) = workspace_preference {
-            self.move_to_workspace(backend, client_rc.clone(), workspace);
-        }
-
         let mut client = (*client_rc).borrow_mut();
 
         // configure look
@@ -516,9 +512,24 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         };
         to_workspace.attach_client(client_rc.clone());
 
-        let mon = self.get_monitor_mut(&client_rc).unwrap();
-        if workspace_idx >= mon.workspace_count() {
-            return;
+        // adjust position to be on workspace
+        let client_dimensions_orig = client_rc.borrow().dimensions();
+        let mut client_dimensions = client_dimensions_orig;
+        let window_area_dimensions = self.get_monitor_mut(&client_rc).unwrap().window_area();
+        if client_dimensions.x() < window_area_dimensions.x() {
+            client_dimensions.set_x(window_area_dimensions.x());
+        }
+        if client_dimensions.y() < window_area_dimensions.y() {
+            client_dimensions.set_y(window_area_dimensions.y());
+        }
+        if client_dimensions.right() > window_area_dimensions.right() {
+            client_dimensions.set_x(window_area_dimensions.right() - client_dimensions.w() as i32);
+        }
+        if client_dimensions.bottom() > window_area_dimensions.bottom() {
+            client_dimensions.set_y(window_area_dimensions.bottom() - client_dimensions.h() as i32);
+        }
+        if client_dimensions != client_dimensions_orig {
+            client_rc.borrow_mut().set_dimensions(client_dimensions);
         }
 
         self.decorate_inactive(client_rc.clone());

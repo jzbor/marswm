@@ -430,6 +430,10 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
         }
     }
 
+    fn set_dimensions(&mut self, dimensions: Dimensions) {
+        self.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h())
+    }
+
     fn set_frame_color(&mut self, color: u64) {
         unsafe {
             xlib::XSetWindowBackground(self.display, self.frame, color);
