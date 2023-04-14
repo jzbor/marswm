@@ -263,6 +263,33 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         self.current_workspace_mut(backend).restack();
     }
 
+    fn fix_client_to_area(client_rc: Rc<RefCell<B::Client>>, area: Dimensions) {
+        let client_dimensions_orig = client_rc.borrow().dimensions();
+        let mut client_dimensions = client_dimensions_orig;
+
+        if client_dimensions.x() < area.x() {
+            client_dimensions.set_x(area.x());
+        }
+        if client_dimensions.y() < area.y() {
+            client_dimensions.set_y(area.y());
+        }
+        if client_dimensions.right() > area.right() {
+            client_dimensions.set_x(area.right() - client_dimensions.w() as i32);
+        }
+        if client_dimensions.bottom() > area.bottom() {
+            client_dimensions.set_y(area.bottom() - client_dimensions.h() as i32);
+        }
+
+        if client_dimensions != client_dimensions_orig {
+            // center window if it's completely off
+            if !area.contains_point(client_dimensions_orig.center()) {
+                client_rc.borrow_mut().center_on_screen(area);
+            } else {
+                client_rc.borrow_mut().set_dimensions(client_dimensions);
+            }
+        }
+    }
+
     fn relative_workspace_idx(&self, absolute_idx: u32) -> (usize, u32) {
         if absolute_idx < self.config.primary_workspaces {
             (0, absolute_idx)
@@ -515,29 +542,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         to_workspace.attach_client(client_rc.clone());
 
         // adjust position to be on workspace
-        let client_dimensions_orig = client_rc.borrow().dimensions();
-        let mut client_dimensions = client_dimensions_orig;
-        let window_area_dimensions = self.get_monitor_mut(&client_rc).unwrap().window_area();
-        if client_dimensions.x() < window_area_dimensions.x() {
-            client_dimensions.set_x(window_area_dimensions.x());
-        }
-        if client_dimensions.y() < window_area_dimensions.y() {
-            client_dimensions.set_y(window_area_dimensions.y());
-        }
-        if client_dimensions.right() > window_area_dimensions.right() {
-            client_dimensions.set_x(window_area_dimensions.right() - client_dimensions.w() as i32);
-        }
-        if client_dimensions.bottom() > window_area_dimensions.bottom() {
-            client_dimensions.set_y(window_area_dimensions.bottom() - client_dimensions.h() as i32);
-        }
-        if client_dimensions != client_dimensions_orig {
-            // center window if it's completely off
-            if !window_area_dimensions.contains_point(client_dimensions_orig.center()) {
-                client_rc.borrow_mut().center_on_screen(window_area_dimensions);
-            } else {
-                client_rc.borrow_mut().set_dimensions(client_dimensions);
-            }
-        }
+        Self::fix_client_to_area(client_rc.clone(), self.get_monitor_mut(&client_rc).unwrap().window_area());
 
         self.decorate_inactive(client_rc.clone());
         if !self.monitors.iter().map(|m| m.current_workspace()).any(|ws| ws.contains(&client_rc)) {
@@ -678,11 +683,13 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             }
         }
 
-        for i in 0..cmp::min(configs.len(), self.monitors.len()) {
-            // let config: MonitorConfig = *configs.get(i).unwrap();
-            // self.monitors.get_mut(config.num() as usize).unwrap().update_config(config);
-            self.monitors.get_mut(i).unwrap()
-                .update_config(configs.get(i).unwrap().clone());
+        for (i, monitor) in self.monitors.iter_mut().enumerate() {
+            monitor.update_config(configs.get(i).unwrap().clone());
+            let window_area = monitor.window_area();
+            for client_rc in monitor.clients() {
+                Self::fix_client_to_area(client_rc.clone(), window_area);
+            }
+
         }
 
         // export desktop settings
