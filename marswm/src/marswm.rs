@@ -531,7 +531,12 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client_dimensions.set_y(window_area_dimensions.bottom() - client_dimensions.h() as i32);
         }
         if client_dimensions != client_dimensions_orig {
-            client_rc.borrow_mut().set_dimensions(client_dimensions);
+            // center window if it's completely off
+            if !window_area_dimensions.contains_point(client_dimensions_orig.center()) {
+                client_rc.borrow_mut().center_on_screen(window_area_dimensions);
+            } else {
+                client_rc.borrow_mut().set_dimensions(client_dimensions);
+            }
         }
 
         self.decorate_inactive(client_rc.clone());
