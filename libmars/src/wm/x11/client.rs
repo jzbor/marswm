@@ -700,12 +700,20 @@ impl<A: PartialEq> X11Window for X11Client<A> {
         self.window.x11_is_transient_for(display)
     }
 
+    fn x11_map(&self, display: *mut xlib::Display) {
+        self.window.x11_map(display);
+    }
+
     fn x11_message(&self, display: *mut xlib::Display, msg_type: atoms::X11Atom, msg_format: c_int, msg_data: xlib::ClientMessageData) {
         self.window.x11_message(display, msg_type, msg_format, msg_data)
     }
 
     fn x11_supports_protocol(&self, display: *mut xlib::Display, protocol: X11Atom) -> bool {
         self.window.x11_supports_protocol(display, protocol)
+    }
+
+    fn x11_unmap(&self, display: *mut xlib::Display) {
+        self.window.x11_unmap(display);
     }
 
     fn x11_wm_protocols(&self, display: *mut xlib::Display) -> Vec<X11Atom> {

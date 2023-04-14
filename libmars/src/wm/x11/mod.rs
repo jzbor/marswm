@@ -3,6 +3,7 @@ use std::ffi::*;
 
 pub mod backend;
 mod client;
+mod unmanaged;
 
 extern "C" fn on_wm_detected(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int {
     panic!("Another Window Manager seems to be running already");

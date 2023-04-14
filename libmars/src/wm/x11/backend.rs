@@ -8,13 +8,15 @@ use std::slice;
 use x11::xlib;
 use x11::xrandr;
 
+use super::*;
+use super::unmanaged::*;
+use super::client::*;
 use crate::wm::*;
-use crate::wm::x11::*;
 use crate::common::x11::*;
 use crate::common::x11::atoms::*;
 use crate::common::x11::atoms::X11Atom::*;
-use crate::wm::x11::client::*;
 use crate::common::x11::window::*;
+
 
 
 #[allow(unused_macros)]
@@ -44,7 +46,7 @@ pub struct X11Backend<A: PartialEq> {
     xrandr: XRandrInfo,
     monitors: Vec<MonitorConfig>,
     wmcheck_win: u64,
-    dock_windows: Vec<xlib::Window>,
+    unmanaged_clients: Vec<UnmanagedClient>,
 }
 
 struct XRandrInfo {
@@ -101,7 +103,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                 xrandr: XRandrInfo::query(display),
                 monitors: Vec::new(),
                 wmcheck_win: 0,
-                dock_windows: Vec::new(),
+                unmanaged_clients: Vec::new(),
             };
 
             // For debugging:
@@ -142,8 +144,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
     fn apply_dock_insets(&mut self) {
         self.monitors.iter_mut().for_each(|m| m.remove_insets());
 
-        for dock in &self.dock_windows {
-            let dimensions = match dock.x11_dimensions(self.display) {
+        for dock in self.unmanaged_clients.iter().filter(|u| u.get_type() == UnmanagedType::Dock) {
+            let dimensions = match dock.window().x11_dimensions(self.display) {
                 Ok(dimensions) => dimensions,
                 Err(_) => continue,
             };
@@ -234,17 +236,15 @@ impl<A: PartialEq + Default> X11Backend<A> {
         let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display);
         for win_type in &window_types {
             match win_type {
-                NetWMWindowTypeDesktop => unsafe {
-                    xlib::XMapWindow(self.display, window);
-                    xlib::XLowerWindow(self.display, window);
+                NetWMWindowTypeDesktop => {
+                    self.unmanaged_clients.push(UnmanagedClient::new(self.display, window, UnmanagedType::Desktop));
                     return;
                 },
                 NetWMWindowTypeDialog => {
                     is_dialog = true;
                 },
-                NetWMWindowTypeDock => unsafe {
-                    xlib::XMapRaised(self.display, window);
-                    self.dock_windows.push(window);
+                NetWMWindowTypeDock => {
+                    self.unmanaged_clients.push(UnmanagedClient::new(self.display, window, UnmanagedType::Dock));
                     self.apply_dock_insets();
                     wm.update_monitor_config(self, self.monitors.clone());
                     return;
@@ -254,8 +254,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
                     xlib::XMapRaised(self.display, window);
                     return;
                 },
-                NetWMWindowTypeNotification => unsafe {
-                    xlib::XMapRaised(self.display, window);
+                NetWMWindowTypeNotification => {
+                    self.unmanaged_clients.push(UnmanagedClient::new(self.display, window, UnmanagedType::Notification));
                     return;
                 }
                 _ => (),
@@ -483,13 +483,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
     fn on_destroy_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XDestroyWindowEvent) {
-        //print_event!(wm, event);
-
-        // unmanage dock window
-        if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
-            self.dock_windows.swap_remove(index);
-            self.apply_dock_insets();
-            wm.update_monitor_config(self, self.monitors.clone());
+        if self.remove_unmanaged_client(wm, event.window) {
+            return;
         }
 
         let client_rc = match wm.clients().find(|c| c.borrow().window() == event.window) {
@@ -560,12 +555,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
     fn on_unmap_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XUnmapEvent) {
-        //print_event!(wm, event);
-        // unmanage dock window
-        if let Some(index) = self.dock_windows.iter().position(|w| *w == event.window) {
-            self.dock_windows.swap_remove(index);
-            self.apply_dock_insets();
-            wm.update_monitor_config(self, self.monitors.clone());
+        if self.remove_unmanaged_client(wm, event.window) {
+            return;
         }
 
         let root = self.root;
@@ -610,6 +601,22 @@ impl<A: PartialEq + Default> X11Backend<A> {
                 }
             }
         }
+    }
+
+    fn remove_unmanaged_client(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), window: xlib::Window) -> bool {
+        if let Some(index) = self.unmanaged_clients.iter().position(|u| u.window() == window) {
+            let unmanaged = self.unmanaged_clients.swap_remove(index);
+
+            // reconfigure insets for monitors
+            if unmanaged.get_type() == UnmanagedType::Dock {
+                self.apply_dock_insets();
+                wm.update_monitor_config(self, self.monitors.clone());
+            }
+
+            return true;
+        }
+
+        false
     }
 
     fn set_supported_atoms(&mut self, supported_atoms: &[X11Atom]) {
