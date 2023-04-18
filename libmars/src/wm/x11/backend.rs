@@ -236,7 +236,8 @@ impl<A: PartialEq + Default> X11Backend<A> {
         let window_types: Vec<X11Atom> = window.x11_get_window_types(self.display);
         for win_type in &window_types {
             match win_type {
-                NetWMWindowTypeDesktop => {
+                NetWMWindowTypeDesktop => unsafe {
+                    xlib::XGrabKey(self.display, xlib::AnyKey, xlib::AnyModifier, window, xlib::True, xlib::GrabModeAsync, xlib::GrabModeAsync);
                     self.unmanaged_clients.push(UnmanagedClient::new(self.display, window, UnmanagedType::Desktop));
                     return;
                 },
