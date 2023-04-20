@@ -171,10 +171,7 @@ impl BindingAction {
                 }
             },
             ToggleFloating => if let Some(client_rc) = client_option {
-                if let Some(ws) = wm.get_workspace_mut(&client_rc) {
-                    ws.toggle_floating(client_rc);
-                    ws.apply_layout();
-                }
+                wm.toggle_tile_client(backend, client_rc);
             },
             ToggleFullscreen => if let Some(client_rc) = client_option {
                 wm.toggle_fullscreen_client(backend, client_rc);

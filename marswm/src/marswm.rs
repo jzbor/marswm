@@ -574,7 +574,9 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
     fn tile_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool) {
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
-            ws.set_floating(client_rc, !state);
+            if ws.current_layout() != LayoutType::Floating {
+                ws.set_floating(client_rc, !state);
+            }
         }
     }
 
