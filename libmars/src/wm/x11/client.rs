@@ -288,17 +288,21 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
             ButtonTarget::Root => panic!("You can't bind actions to the root window through a client window"),
         };
 
-        unsafe {
-            xlib::XGrabButton(self.display, button, modifiers, window, xlib::False, mask,
-                              xlib::GrabModeAsync, xlib::GrabModeAsync, window, 0);
+        for modifiers in alternative_modifiers(modifiers) {
+            unsafe {
+                xlib::XGrabButton(self.display, button, modifiers, window, xlib::False, mask,
+                                  xlib::GrabModeAsync, xlib::GrabModeAsync, window, 0);
+            }
         }
     }
 
     fn bind_key(&mut self, modifiers: u32, key: u32) {
         unsafe {
             let keycode = xlib::XKeysymToKeycode(self.display, key.into());
-            xlib::XGrabKey(self.display, keycode.into(), modifiers, self.frame, xlib::False,
-                            xlib::GrabModeAsync, xlib::GrabModeAsync);
+            for modifiers in alternative_modifiers(modifiers) {
+                xlib::XGrabKey(self.display, keycode.into(), modifiers, self.frame, xlib::False,
+                                xlib::GrabModeAsync, xlib::GrabModeAsync);
+            }
         }
     }
 

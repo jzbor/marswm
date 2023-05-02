@@ -80,6 +80,16 @@ impl From<*mut xlib::Screen> for MonitorConfig {
 }
 
 
+/// Returs all permutiations of your modifiers with NumLock and Level3
+pub fn alternative_modifiers(modifiers: u32) -> Vec<u32> {
+    vec![
+        modifiers,
+        modifiers | xlib::Mod2Mask,
+        modifiers | xlib::Mod5Mask,
+        modifiers | xlib::Mod2Mask, xlib::Mod5Mask,
+    ]
+}
+
 /// Waits for MapNotify on the specified window.
 /// Discards all events before the MapNotify.
 pub fn await_map_notify(display: *mut xlib::Display, window: xlib::Window) {
@@ -248,8 +258,7 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
 
 /// Remove unrelated mask bits on button or key events
 pub fn sanitize_modifiers(modifiers: u32) -> u32 {
-    modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod2Mask
-                        | xlib::Mod3Mask | xlib::Mod4Mask |xlib::Mod5Mask)
+    modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod3Mask | xlib::Mod4Mask)
 }
 
 /// Send a ClientMessage to the default root window
