@@ -439,6 +439,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             return;
         }
 
+        if let Some(rule) = rules.iter().find(|r| r.floating().is_some()) {
+            client_rc.borrow_mut().attributes_mut().is_floating = rule.floating().unwrap();
+        }
+
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);

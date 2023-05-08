@@ -15,6 +15,9 @@ pub struct Rule {
 
     /// do not manage this window
     ignore_window: bool,
+
+    /// initially make this window floating
+    floating: Option<bool>,
 }
 
 #[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
@@ -34,6 +37,10 @@ impl Rule {
 
     pub fn actions(&self) -> &Vec<BindingAction> {
         &self.actions
+    }
+
+    pub fn floating(&self) -> Option<bool> {
+        self.floating
     }
 
     pub fn ignore_window(&self) -> bool {
