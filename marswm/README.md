@@ -123,4 +123,5 @@ For example:
 ### Configuration Options:
 * `actions` - list of binding actions to execute for the new window
 * `ignore_window` - leads to the window not being managed by the window manager
+* `floating` - specify whether a window should initially be tiled or floating
 
