@@ -1,3 +1,5 @@
+use std::cmp;
+use libmars::common::*;
 use serde::{Serialize, Deserialize};
 use libmars::utils::configuration::*;
 
@@ -15,6 +17,7 @@ const KEY_BINDINGS_FILE: &str = "keybindings.yaml";
 const KEY_BINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
 const RULES_FILE: &str = "rules.yaml";
 
+
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
 #[serde(default)]
 pub struct Configuration {
@@ -23,6 +26,9 @@ pub struct Configuration {
 
     /// number of workspaces for secondary monitors
     pub secondary_workspaces: u32,
+
+    /// where should windows be placed initially
+    pub initial_placement: WindowPlacement,
 
     /// layout configuration
     pub layout: LayoutConfiguration,
@@ -106,12 +112,20 @@ pub struct NoDecorThemingConfiguration {
     pub outer_border_width: u32,
 }
 
+#[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum WindowPlacement {
+    Centered,
+    Pointer,
+}
+
 
 impl Default for Configuration {
     fn default() -> Self {
         Configuration {
             primary_workspaces: 8,
             secondary_workspaces: 2,
+            initial_placement: WindowPlacement::default(),
             layout: LayoutConfiguration::default(),
             theming: ThemingConfiguration::default(),
         }
@@ -156,6 +170,36 @@ impl Default for NoDecorThemingConfiguration {
             frame_width: (0, 0, 0, 0),
             inner_border_width: 0,
             outer_border_width: 0,
+        }
+    }
+}
+
+impl Default for WindowPlacement {
+    fn default() -> Self {
+        Self::Centered
+    }
+}
+
+
+impl WindowPlacement {
+    pub fn calc(&self, client_dimensions: Dimensions, window_area: Dimensions, pointer: (i32, i32)) -> (i32, i32) {
+        use WindowPlacement::*;
+        match self {
+            Pointer => {
+                let (mut x, mut y) = pointer;
+                x -= (client_dimensions.w() / 2) as i32;
+                y -= (client_dimensions.h() / 2) as i32;
+                x = cmp::max(x, window_area.x());
+                y = cmp::max(y, window_area.y());
+                x = cmp::min(x, window_area.x() + window_area.w() as i32 - client_dimensions.w() as i32);
+                y = cmp::min(y, window_area.y() + window_area.h() as i32 - client_dimensions.h() as i32);
+                (x, y)
+            },
+            Centered => {
+                let x = window_area.center().0 - (client_dimensions.w() as i32 / 2);
+                let y = window_area.center().1 - (client_dimensions.h() as i32 / 2);
+                (x, y)
+            },
         }
     }
 }

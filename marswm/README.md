@@ -14,6 +14,15 @@ You can configure the number of the primary monitor and secondary monitors with 
 It is suggested to use a relatively low number of workspaces for secondary monitors as they might clutter your bar otherwise.
 
 
+## Initial Window Placement
+You can specify where windows should be placed initially (applies to floating windows only).
+Possible settings are:
+* `center` - center the window on the screen
+* `pointer` - place the window below the pointer
+
+The corresponding setting is called `initial_placement`.
+
+
 ## Layouts
 `marswm` supports dynamic tiling and takes a lot of inspiration for it from [dwm](https://dwm.suckless.org).
 

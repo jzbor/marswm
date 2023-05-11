@@ -2,7 +2,6 @@ use libmars::common::*;
 use libmars::common::x11::WINDOW_MIN_SIZE;
 use libmars::wm::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
-use std::cmp;
 use std::env;
 use std::marker::PhantomData;
 use std::os::unix::process::CommandExt;
@@ -189,19 +188,6 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         }
         client.set_title_color(self.config.theming.active_color);
         client.set_frame_color(self.config.theming.inactive_color);
-    }
-
-    pub fn initial_position(&self, backend: &mut B, client_rc: &Rc<RefCell<B::Client>>) -> (i32, i32) {
-        let win_area = self.current_monitor(backend).window_area();
-        let mut pos = backend.pointer_pos();
-        let client = client_rc.borrow();
-        pos.0 -= (client.w() / 2) as i32;
-        pos.1 -= (client.h() / 2) as i32;
-        pos.0 = cmp::max(pos.0, win_area.x());
-        pos.1 = cmp::max(pos.1, win_area.y());
-        pos.0 = cmp::min(pos.0, win_area.x() + win_area.w() as i32 - client.w() as i32);
-        pos.1 = cmp::min(pos.1, win_area.y() + win_area.h() as i32 - client.h() as i32);
-        pos
     }
 
     pub fn is_tiled(&self, client_rc: &Rc<RefCell<B::Client>>) -> bool {
@@ -472,10 +458,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             None => return,
         };
 
-        // add and determine initial position
         self.clients.push(client_rc.clone());
-        let pos = self.initial_position(backend, &client_rc);
-        client_rc.borrow_mut().set_pos(pos);
 
         // attach client to monitor or workspace
         let (mon, rel_ws) = self.relative_workspace_idx(workspace_idx);
@@ -529,7 +512,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
         // Center client on screen and set focused
         if let Some(monitor) = self.get_monitor(&client_rc) {
-            client_rc.borrow_mut().center_on_screen(monitor.window_area());
+            let pointer_pos = backend.pointer_pos();
+            let pos = self.config.initial_placement
+                .calc(client_rc.borrow().dimensions(), monitor.window_area(), pointer_pos);
+            client_rc.borrow_mut().set_pos(pos);
         }
 
         // adjust workspace to new client
