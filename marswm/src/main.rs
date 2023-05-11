@@ -24,10 +24,18 @@ mod monitor;
 mod rules;
 mod workspace;
 
+
+const DOCS_URL: &str = "https://docs.rs/crate/marswm";
+
+
 /// A dynamic window manager
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
+    /// Open documentation in the browser
+    #[clap(long)]
+    docs: bool,
+
     /// Print default config and exit
     #[clap(long)]
     print_default_config: bool,
@@ -94,28 +102,29 @@ trait ClientList<C: Client<Attributes>> {
 fn main() {
     let args = Args::parse();
 
-    if args.print_default_config {
+    if args.docs {
+        let result = std::process::Command::new("xdg-open")
+            .arg(DOCS_URL)
+            .spawn();
+        match result {
+            Ok(_) => (),
+            Err(e) => { eprintln!("Error: {}", e); std::process::exit(1); }
+        }
+    } else if args.print_default_config {
         print_config(&Configuration::default());
-        std::process::exit(0);
     } else if args.print_default_buttons {
         print_config(&default_button_bindings());
-        std::process::exit(0);
     } else if args.print_default_keys {
         print_config(&default_key_bindings(read_config().primary_workspaces));
-        std::process::exit(0);
     } else if args.print_config {
         print_config(&read_config());
-        std::process::exit(0);
     } else if args.print_buttons {
         print_config(&read_button_bindings());
-        std::process::exit(0);
     } else if args.print_keys {
         let config = read_config();
         print_config(&read_key_bindings(config.primary_workspaces));
-        std::process::exit(0);
     } else if args.print_rules {
         print_config(&read_rules());
-        std::process::exit(0);
     } else {
         let config = read_config();
         let key_bindings = read_key_bindings(config.primary_workspaces);
