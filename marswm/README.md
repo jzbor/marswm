@@ -93,7 +93,7 @@ Here is an example:
   action: !move-workspace 0
 ```
 
-The actions are sadly not documented yet, but you can take a look at [the source code](https://github.com/jzbor/marswm/tree/master/marswm/src/bindings.rs).
+You can find documentation for actions [in the docs](bindings::BindingAction) or [in the source code](src/bindings.rs).
 
 
 ## Button Bindings
@@ -112,6 +112,8 @@ Here is an example:
   action: close-client
 ```
 
+You can find documentation for actions [in the docs](bindings::BindingAction) or [in the source code](src/bindings.rs).
+
 
 ## Window Rules
 It is possible to configure the state of newly mapped windows with window rules.
@@ -124,6 +126,9 @@ For example:
     application: 'thunderbird'
   actions: [ !move-workspace 5 ]
 ```
+
+You can find documentation for actions [in the docs](bindings::BindingAction) or [in the source code](src/bindings.rs).
+
 
 ### Identifiers:
 * `application` - name of the application (second string of the `WM_CLASS` property on X11)

@@ -27,34 +27,61 @@ macro_rules! frame_button_binding {
 }
 
 
+/// Actions for key bindings, button bindings and window rules.
+///
+/// ***Note that the configuration files use `kebab-case` convention for enum variants.***
 #[derive(Serialize,Deserialize,Clone,Debug,PartialEq)]
 #[serde(rename_all = "kebab-case")]
 // #[serde(tag = "action", content = "arg")]
 // #[serde(tag = "type")]
 pub enum BindingAction {
+    /// Center the current client on the screen
     CenterClient,
+    /// Change the ration between main and stack area
     ChangeMainRatio(f32),
+    /// Close the client
     CloseClient,
+    /// Cycle through clients
     CycleClient(i32),
+    /// Switch through the different layouts
     CycleLayout,
+    /// Cycle through workspaces
     CycleWorkspace(i32),
+    /// Execute a command in the system shell
     Execute(String),
+    /// Exit the window manager
     Exit,
+    /// Increase or decrease the number of clients in the main area
     IncNMain(i32),
-    MoveWorkspace(u32),
-    PreviousWorkspace,
+    /// Move the client with the mouse
     MouseMove,
+    /// Place a window with the mouse
     MousePlace,
+    /// Resize a window with the mouse
     MouseResize,
+    /// Resize a window around its center
     MouseResizeCentered,
+    /// Move client to/from the main area
     MoveMain,
+    /// Move the client to a different workspace
+    MoveWorkspace(u32),
+    /// Switch to the previously focused workspace
+    PreviousWorkspace,
+    /// Restart the window manager
     Restart,
+    /// Set the layout
     SetLayout(LayoutType),
+    /// Set the stack mode for the dynamic layout
     SetStackMode(StackMode),
+    /// Set the stack position for the dynamic layout
     SetStackPosition(StackPosition),
+    /// Move the client up or down the stack
     StackMove(i32),
+    /// Switch to a different workspace
     SwitchWorkspace(u32),
+    /// Toggle floating state on the window
     ToggleFloating,
+    /// Toggle fullscreen state on the window
     ToggleFullscreen,
 }
 
