@@ -55,6 +55,36 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         wm
     }
 
+    pub fn apply_window_rules(&self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, app_workspace_pref: Option<u32>) -> Option<(u32, Vec<BindingAction>)> {
+        let rules: Vec<Rule> = self.rules.iter()
+            .filter(|r| r.matches(client_rc.clone()))
+            .cloned().collect();
+        let mut actions = vec![];
+
+        let current_workspace = self.current_workspace(backend).global_index();
+        let workspace = match app_workspace_pref {
+            Some(ws) => ws,
+            None => current_workspace,
+        };
+
+
+        for rule in rules {
+            if rule.ignore_window() {
+                // make the window visible, but do not manage it
+                client_rc.borrow_mut().show();
+                return None;
+            }
+
+            if let Some(state) = rule.floating() {
+                client_rc.borrow_mut().attributes_mut().is_floating = state;
+            }
+
+            actions.extend(rule.actions().iter().cloned());
+        }
+
+        Some((workspace, actions))
+    }
+
     pub fn cleanup(&mut self, backend: &mut B) {
         for client_rc in self.clients.clone() {
             self.unmanage(backend, client_rc);
@@ -428,32 +458,27 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>) {
-        // get rules for client
-        let rules: Vec<Rule> = self.rules.iter()
-            .filter(|r| r.matches(client_rc.clone()))
-            .cloned().collect();
+        let (workspace_idx, actions)  = match self.apply_window_rules(backend, client_rc.clone(), workspace_preference) {
+            Some(params) => params,
+            None => return,
+        };
 
-        if rules.iter().any(|r| r.ignore_window()) {
-            // make the window visible, but do not manage it
-            client_rc.borrow_mut().show();
-            return;
-        }
-
-        if let Some(rule) = rules.iter().find(|r| r.floating().is_some()) {
-            client_rc.borrow_mut().attributes_mut().is_floating = rule.floating().unwrap();
-        }
-
+        // add and determine initial position
         self.clients.push(client_rc.clone());
         let pos = self.initial_position(backend, &client_rc);
         client_rc.borrow_mut().set_pos(pos);
 
-        let monitor = if let Some(monitor_num) = backend.point_to_monitor(client_rc.borrow().center()) {
-            self.monitors.get_mut(monitor_num as usize).unwrap()
+        // attach client to monitor or workspace
+        let (mon, rel_ws) = self.relative_workspace_idx(workspace_idx);
+        if let Some(workspace) = self.monitors.get_mut(mon).and_then(|m| m.workspace_mut(rel_ws)) {
+            workspace.attach_client(client_rc.clone());
+        } else if let Some(monitor) = backend.point_to_monitor(client_rc.borrow().center())
+                .and_then(|m| self.monitors.get_mut(m as usize)) {
+            monitor.attach_client(client_rc.clone());
         } else {
-            self.current_monitor_mut(backend)
-        };
-        monitor.attach_client(client_rc.clone());
-        let monitor_conf = monitor.config().clone();
+            self.current_monitor_mut(backend).attach_client(client_rc.clone());
+        }
+
 
         let mut client = (*client_rc).borrow_mut();
 
@@ -474,8 +499,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client.set_frame_width(self.config.theming.no_decoration.frame_width);
         }
 
-        client.show();
-        client.center_on_screen(monitor_conf.window_area());
 
         // bind keys and buttons
         for key_binding in &self.key_bindings {
@@ -491,8 +514,13 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
         drop(client);
 
-        if let Some(workspace) = workspace_preference {
-            self.move_to_workspace(backend, client_rc.clone(), workspace);
+        if Some(self.current_workspace(backend)) == self.get_workspace(&client_rc) {
+            client_rc.borrow_mut().show();
+        }
+
+        // Center client on screen
+        if let Some(monitor) = self.get_monitor(&client_rc) {
+            client_rc.borrow_mut().center_on_screen(monitor.window_area());
         }
 
         // adjust workspace to new client
@@ -510,8 +538,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         backend.export_client_list(clients, clients_stacked);
 
         // apply window rule actions
-        rules.iter().flat_map(|r| r.actions())
-            .for_each(|a| a.execute(self, backend, Some(client_rc.clone())))
+        actions.iter().for_each(|a| a.execute(self, backend, Some(client_rc.clone())))
     }
 
     fn move_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, x: i32, y: i32) -> bool {
