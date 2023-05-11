@@ -62,7 +62,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         let mut actions = vec![];
 
         let current_workspace = self.current_workspace(backend).global_index();
-        let workspace = match app_workspace_pref {
+        let mut workspace = match app_workspace_pref {
             Some(ws) => ws,
             None => current_workspace,
         };
@@ -77,6 +77,15 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
             if let Some(state) = rule.floating() {
                 client_rc.borrow_mut().attributes_mut().is_floating = state;
+            }
+
+            if let Some(ws) = rule.workspace() {
+                let current_monitor = self.current_monitor(backend);
+                if ws >= current_monitor.workspace_count() {
+                    workspace = current_monitor.workspace_count() - 1;
+                } else {
+                    workspace = self.current_monitor(backend).workspace_offset() + ws;
+                }
             }
 
             actions.extend(rule.actions().iter().cloned());
@@ -518,7 +527,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client_rc.borrow_mut().show();
         }
 
-        // Center client on screen
+        // Center client on screen and set focused
         if let Some(monitor) = self.get_monitor(&client_rc) {
             client_rc.borrow_mut().center_on_screen(monitor.window_area());
         }
@@ -530,8 +539,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         }
 
         // set client as currently focused
-        self.focus_client(backend, Some(client_rc.clone()));
-        client_rc.borrow_mut().warp_pointer_to_center();
+        if client_rc.borrow().is_visible() {
+            self.focus_client(backend, Some(client_rc.clone()));
+            client_rc.borrow_mut().warp_pointer_to_center();
+        }
 
         let clients = <marswm::MarsWM<B> as WindowManager<B, Attributes>>::clients(self).collect();
         let clients_stacked = self.clients_stacked_order().collect();

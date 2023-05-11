@@ -124,4 +124,5 @@ For example:
 * `actions` - list of binding actions to execute for the new window
 * `ignore_window` - leads to the window not being managed by the window manager
 * `floating` - specify whether a window should initially be tiled or floating
+* `workspace` - set to the workspace you would prefer the application to launch on
 

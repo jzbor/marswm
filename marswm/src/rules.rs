@@ -18,6 +18,9 @@ pub struct Rule {
 
     /// initially make this window floating
     floating: Option<bool>,
+
+    /// preferred workspace for the application to get launched on
+    workspace: Option<u32>,
 }
 
 #[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
@@ -45,6 +48,10 @@ impl Rule {
 
     pub fn ignore_window(&self) -> bool {
         self.ignore_window
+    }
+
+    pub fn workspace(&self) -> Option<u32> {
+        self.workspace
     }
 }
 
