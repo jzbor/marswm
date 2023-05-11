@@ -241,7 +241,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                     self.unmanaged_clients.push(UnmanagedClient::new(self.display, window, UnmanagedType::Desktop));
                     return;
                 },
-                NetWMWindowTypeDialog => {
+                NetWMWindowTypeDialog | NetWMWindowTypeSplash => {
                     is_dialog = true;
                 },
                 NetWMWindowTypeDock => {
