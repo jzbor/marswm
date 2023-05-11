@@ -95,6 +95,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     pub fn cleanup(&mut self, backend: &mut B) {
         for client_rc in self.clients.clone() {
+            client_rc.borrow_mut().show();
             self.unmanage(backend, client_rc);
         }
     }

@@ -499,6 +499,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         };
 
         // unmanage clients
+        client_rc.borrow_mut().hide();
         self.unmanage(wm, client_rc);
     }
 
@@ -582,6 +583,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
         } else if event.send_event == xlib::True {
             client_rc.borrow_mut().x11_set_state(self.display, WITHDRAWN_STATE);
         } else {
+        client_rc.borrow_mut().hide();
             self.unmanage(wm, client_rc);
         }
     }

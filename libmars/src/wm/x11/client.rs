@@ -612,7 +612,9 @@ impl<A: PartialEq> Drop for X11Client<A> {
             // These generate xlib errors if the window is already unmapped
             xlib::XSetErrorHandler(Some(on_error_dummy));
             xlib::XReparentWindow(self.display, self.window, self.root, self.orig_pos.0, self.orig_pos.1);
-            xlib::XMapWindow(self.display, self.window);
+            if self.visible {
+                xlib::XMapWindow(self.display, self.window);
+            }
             xlib::XRemoveFromSaveSet(self.display, self.window);
             xlib::XSetErrorHandler(Some(on_error));
             xlib::XDestroyWindow(self.display, self.frame);
