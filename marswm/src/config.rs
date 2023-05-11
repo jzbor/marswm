@@ -117,6 +117,7 @@ pub struct NoDecorThemingConfiguration {
 pub enum WindowPlacement {
     Centered,
     Pointer,
+    Wherever,
 }
 
 
@@ -200,6 +201,7 @@ impl WindowPlacement {
                 let y = window_area.center().1 - (client_dimensions.h() as i32 / 2);
                 (x, y)
             },
+            Wherever => client_dimensions.pos(),
         }
     }
 }

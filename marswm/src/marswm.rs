@@ -54,11 +54,13 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         wm
     }
 
-    pub fn apply_window_rules(&self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, app_workspace_pref: Option<u32>) -> Option<(u32, Vec<BindingAction>)> {
+    pub fn apply_window_rules(&self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, app_workspace_pref: Option<u32>)
+            -> Option<(u32, Vec<BindingAction>, Option<WindowPlacement>)> {
         let rules: Vec<Rule> = self.rules.iter()
             .filter(|r| r.matches(client_rc.clone()))
             .cloned().collect();
         let mut actions = vec![];
+        let mut initial_placement = None;
 
         let current_workspace = self.current_workspace(backend).global_index();
         let mut workspace = match app_workspace_pref {
@@ -78,6 +80,10 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                 client_rc.borrow_mut().attributes_mut().is_floating = state;
             }
 
+            if rule.initial_placement().is_some() {
+                initial_placement = rule.initial_placement();
+            }
+
             if let Some(ws) = rule.workspace() {
                 let current_monitor = self.current_monitor(backend);
                 if ws >= current_monitor.workspace_count() {
@@ -90,7 +96,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
             actions.extend(rule.actions().iter().cloned());
         }
 
-        Some((workspace, actions))
+        Some((workspace, actions, initial_placement))
     }
 
     pub fn cleanup(&mut self, backend: &mut B) {
@@ -454,7 +460,8 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn manage(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>, workspace_preference: Option<u32>) {
-        let (workspace_idx, actions)  = match self.apply_window_rules(backend, client_rc.clone(), workspace_preference) {
+        let (workspace_idx, actions, initial_placement)
+                = match self.apply_window_rules(backend, client_rc.clone(), workspace_preference) {
             Some(params) => params,
             None => return,
         };
@@ -514,8 +521,11 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         // Center client on screen and set focused
         if let Some(monitor) = self.get_monitor(&client_rc) {
             let pointer_pos = backend.pointer_pos();
-            let pos = self.config.initial_placement
-                .calc(client_rc.borrow().dimensions(), monitor.window_area(), pointer_pos);
+            let placement = match initial_placement {
+                Some(placement) => placement,
+                None => self.config.initial_placement,
+            };
+            let pos = placement.calc(client_rc.borrow().dimensions(), monitor.window_area(), pointer_pos);
             client_rc.borrow_mut().set_pos(pos);
         }
 

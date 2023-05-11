@@ -5,6 +5,7 @@ use libmars::wm::Client;
 
 use crate::attributes::*;
 use crate::bindings::*;
+use crate::config::WindowPlacement;
 
 
 #[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
@@ -15,6 +16,9 @@ pub struct Rule {
 
     /// do not manage this window
     ignore_window: bool,
+
+    /// where should windows be placed initially
+    initial_placement: Option<WindowPlacement>,
 
     /// initially make this window floating
     floating: Option<bool>,
@@ -48,6 +52,10 @@ impl Rule {
 
     pub fn ignore_window(&self) -> bool {
         self.ignore_window
+    }
+
+    pub fn initial_placement(&self) -> Option<WindowPlacement> {
+        self.initial_placement
     }
 
     pub fn workspace(&self) -> Option<u32> {

@@ -19,6 +19,7 @@ You can specify where windows should be placed initially (applies to floating wi
 Possible settings are:
 * `center` - center the window on the screen
 * `pointer` - place the window below the pointer
+* `wherever` - don't care about placing the window at a special position
 
 The corresponding setting is called `initial_placement`.
 
@@ -136,7 +137,8 @@ You can find documentation for actions [in the docs](bindings::BindingAction) or
 
 ### Configuration Options:
 * `actions` - list of binding actions to execute for the new window
-* `ignore_window` - leads to the window not being managed by the window manager
 * `floating` - specify whether a window should initially be tiled or floating
+* `ignore_window` - leads to the window not being managed by the window manager
+* `initial_placement` - allows overwriting the placement value in your general configuration
 * `workspace` - set to the workspace you would prefer the application to launch on
 
