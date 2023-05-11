@@ -3,7 +3,7 @@
 # export RUSTFLAGS="-C prefer-dynamic"
 cargo build --features xlib || exit 1
 XEPHYR=$(whereis -b Xephyr | cut -f2 -d' ')
-xinit ./xinitrc -- \
+xinit ./xephyr_xinitrc -- \
     "$XEPHYR" \
         :100 \
         -resizeable \
