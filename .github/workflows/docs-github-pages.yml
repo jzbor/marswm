@@ -1,7 +1,7 @@
-name: Build Documentation
+name: Documentation on Github Pages
 on:
   push:
-    branches: [ "master" ]
+    tags: [ "docs" ]
 
 permissions:
   pages: write
@@ -12,30 +12,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      # - name: Find packages
-      #   run: apt search libx11
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - name: Install X11 dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libx11-dev libxft-dev libxinerama-dev libxrandr-dev pkg-config
           version: 1.0
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: ClementTsang/cargo-action@v0.0.3
+      - name: Build docs with cargo
+        uses: ClementTsang/cargo-action@v0.0.3
         with:
           command: doc
           args: --no-deps
-      - name: Create Forwarding to Actual index.html
+      - name: Create forwarding to actual index.html
         run: echo '<meta http-equiv="refresh" content="0; url=marswm">' > ./target/doc/index.html
-      # - uses: peaceiris/actions-gh-pages@v3
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     publish_dir: ./target/doc
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload entire repository
           path: './target/doc'
       - name: Deploy to GitHub Pages
         id: deployment
