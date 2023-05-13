@@ -25,7 +25,7 @@ mod rules;
 mod workspace;
 
 
-const DOCS_URL: &str = "https://docs.rs/crate/marswm";
+const DOCS_URL: &str = "https://jzbor.de/marswm";
 
 
 /// A dynamic window manager
