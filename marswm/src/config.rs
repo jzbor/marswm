@@ -27,6 +27,9 @@ pub struct Configuration {
     /// number of workspaces for secondary monitors
     pub secondary_workspaces: u32,
 
+    /// script, executable or command to be executed on startup
+    pub on_startup: Option<String>,
+
     /// where should windows be placed initially
     pub initial_placement: WindowPlacement,
 
@@ -126,6 +129,7 @@ impl Default for Configuration {
         Configuration {
             primary_workspaces: 8,
             secondary_workspaces: 2,
+            on_startup: None,
             initial_placement: WindowPlacement::default(),
             layout: LayoutConfiguration::default(),
             theming: ThemingConfiguration::default(),

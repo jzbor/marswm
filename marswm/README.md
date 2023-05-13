@@ -14,6 +14,11 @@ You can configure the number of the primary monitor and secondary monitors with 
 It is suggested to use a relatively low number of workspaces for secondary monitors as they might clutter your bar otherwise.
 
 
+## Startup Command
+You might want to execute a script or command on startup in order to launch a bar, a compositor or a notification daemon.
+This is what the `on_startup` option is for.
+
+
 ## Initial Window Placement
 You can specify where windows should be placed initially (applies to floating windows only).
 Possible settings are:
