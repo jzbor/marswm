@@ -45,6 +45,8 @@ pub enum BindingAction {
     CycleClient(i32),
     /// Switch through the different layouts
     CycleLayout,
+    /// Switch monitor (relative to the current monitor)
+    CycleMonitor(i32),
     /// Cycle through workspaces
     CycleWorkspace(i32),
     /// Execute a command in the system shell
@@ -63,6 +65,8 @@ pub enum BindingAction {
     MouseResizeCentered,
     /// Move client to/from the main area
     MoveMain,
+    /// Move the client to a different monitor (relative to the current monitor)
+    MoveMonitor(i32),
     /// Move the client to a different workspace
     MoveWorkspace(u32),
     /// Switch to the previously focused workspace
@@ -141,6 +145,7 @@ impl BindingAction {
             },
             CycleClient(inc) => wm.cycle_client(backend, *inc),
             CycleLayout => wm.current_workspace_mut(backend).cycle_layout(),
+            CycleMonitor(inc) => wm.cycle_monitor(backend, *inc),
             CycleWorkspace(inc) => wm.cycle_workspace(backend, *inc),
             Execute(cmd) => {
                 if let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(cmd).spawn() {
@@ -169,6 +174,9 @@ impl BindingAction {
                 if is_floating!(wm, &client_rc) {
                     wm.mouse_resize_centered(backend, client_rc);
                 }
+            },
+            MoveMonitor(inc) => if let Some(client_rc) = client_option {
+                wm.move_client_to_monitor(client_rc, *inc);
             },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
                 let ws_index_option = wm.get_monitor_mut(&client_rc)
@@ -302,6 +310,10 @@ pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         KeyBinding::new(vec![DEFAULT_MODKEY], "Left", SetStackPosition(StackPosition::Left)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "semicolon", SetStackMode(StackMode::Split)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "apostrophe", SetStackMode(StackMode::Deck)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Next", CycleMonitor(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "Prior", CycleMonitor(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "Next", MoveMonitor(1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "Prior", MoveMonitor(-1)),
     ];
 
     for i in 0..cmp::min(nworkspaces, 9) {

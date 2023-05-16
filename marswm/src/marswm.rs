@@ -164,6 +164,15 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         }
     }
 
+    pub fn cycle_monitor(&mut self, backend: &mut B, inc: i32) {
+        let current_index = self.current_monitor_index(backend);
+        let next_index = (current_index as i32 + inc) as usize % self.monitors.len();
+        if let Some(monitor) = self.monitors.get(next_index) {
+            let (x, y) = monitor.window_area().center();
+            backend.warp_pointer(x, y);
+        }
+    }
+
     pub fn cycle_workspace(&mut self, backend: &mut B, inc: i32) {
         let monitor = self.current_monitor(backend);
         let cur_workspace_idx = monitor.workspaces().position(|ws| ws == self.current_workspace(backend)).unwrap();
@@ -293,6 +302,16 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
         client_rc.borrow_mut().attributes_mut().is_moving = false;
         self.current_workspace_mut(backend).restack();
+    }
+
+    pub fn move_client_to_monitor(&mut self, client_rc: Rc<RefCell<B::Client>>, inc: i32) {
+        let client_index_opt = self.get_monitor(&client_rc).and_then(|cm| self.monitors.iter().position(|m| m == cm));
+        let client_index = if let Some(ci) = client_index_opt { ci } else { return };
+        let target_index = (client_index as i32 + inc) as usize % self.monitors.len();
+
+        self.monitors[client_index].detach_client(&client_rc);
+        Self::fix_client_to_area(client_rc.clone(), self.monitors[target_index].window_area());
+        self.monitors[target_index].attach_client(client_rc);
     }
 
     fn fix_client_to_area(client_rc: Rc<RefCell<B::Client>>, area: Dimensions) {
