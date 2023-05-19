@@ -141,7 +141,7 @@ impl Default for LayoutConfiguration {
     fn default() -> Self {
         LayoutConfiguration {
             default: LayoutType::Floating,
-            gap_width: 4,
+            gap_width: 0,
             main_ratio: 0.6,
             nmain: 1,
             stack_position: StackPosition::Right,
