@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=MarsWM
+Comment=A modern window manager featuring dynamic tiling.
+Exec=/usr/bin/marswm
+TryExec=/usr/bin/marswm
+#Icon=openbox.png
+Type=Application

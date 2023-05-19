@@ -14,7 +14,7 @@ You can find documentation on how to configure the window manger on [crates.io](
 
 Features:
 * dwm-style layouts
-* workspaces (like i3 - unlike dwm)
+* workspaces (similar to i3 - unlike dwm)
 * IPC using X11 atoms (`mars-relay`)
 * YAML for configuration and key bindings
 
@@ -30,28 +30,7 @@ Although not currently planned a wayland backend (as well as other backends) wou
 
 
 ## Installation (with package manager)
-
-### NetBSD ([Official repositories])
-
-```sh
-pkgin install marswm
-```
-
-or, if you prefer to build it from source
-
-```sh
-cd /usr/pkgsrc/wm/marswm
-make install
-```
-
-### Archlinux ([AUR])
-
-```sh
-paru -S marswm-git
-```
-
-[Official repositories]: https://pkgsrc.se/wm/marswm/
-[AUR]: https://aur.archlinux.org/packages/marswm-git
+See [INSTALLATION.md](./INSTALLATION.md).
 
 
 ## Building from Source
