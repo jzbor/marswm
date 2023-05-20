@@ -75,8 +75,23 @@ impl<C: Client<Attributes>> Workspace<C> {
         self.apply_layout();
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn index_of(&self, client_rc: &Rc<RefCell<C>>) -> Option<usize> {
+        self.clients.iter().position(|c| c == client_rc)
+    }
+
+    pub fn is_main(&self, client_rc: &Rc<RefCell<C>>) -> bool {
+        match self.index_of(client_rc) {
+            Some(idx) => (idx as u32) < self.layout_config.nmain,
+            None => false,
+        }
+    }
+
+    pub fn last_active_main(&self) -> Option<Rc<RefCell<C>>> {
+        self.clients_stack.iter().find(|c| self.is_main(c)).cloned()
+    }
+
+    pub fn last_active_stack(&self) -> Option<Rc<RefCell<C>>> {
+        self.clients_stack.iter().find(|c| !self.is_main(c)).cloned()
     }
 
     pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {
@@ -94,6 +109,10 @@ impl<C: Client<Attributes>> Workspace<C> {
             }
             self.apply_layout();
         }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn pull_pinned(&mut self) -> Vec<Rc<RefCell<C>>> {

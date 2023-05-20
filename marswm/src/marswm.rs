@@ -145,6 +145,28 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         return self.current_monitor_mut(backend).current_workspace_mut();
     }
 
+    pub fn switch_to_main(&mut self, backend: &mut B) {
+        if let Some(active) = &self.active_client {
+            if active.borrow().is_fullscreen() {
+                return;
+            }
+
+            let ws = self.current_workspace(backend);
+            let client_opt = if ws.contains(active) && ws.is_main(active) {
+                ws.last_active_stack()
+            } else if ws.contains(active) {
+                ws.last_active_main()
+            } else {
+                None
+            };
+
+            if let Some(client_rc) = client_opt {
+                client_rc.borrow().warp_pointer_to_center();
+                self.current_workspace_mut(backend).raise_client(&client_rc);
+            }
+        }
+    }
+
     pub fn cycle_client(&mut self, backend: &mut B, inc: i32) {
         if let Some(active) = &self.active_client {
             if active.borrow().is_fullscreen() {

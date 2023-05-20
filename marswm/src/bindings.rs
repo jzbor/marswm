@@ -53,6 +53,8 @@ pub enum BindingAction {
     Execute(String),
     /// Exit the window manager
     Exit,
+    /// Switch between the last focused window of the main and stack area
+    FocusMain,
     /// Increase or decrease the number of clients in the main area
     IncNMain(i32),
     /// Move the client with the mouse
@@ -157,6 +159,7 @@ impl BindingAction {
             Exit => {
                 wm.exit(backend);
             },
+            FocusMain => wm.switch_to_main(backend),
             IncNMain(i) => wm.current_workspace_mut(backend).inc_nmain(*i),
             MouseMove => if let Some(client_rc) = client_option {
                 backend.mouse_move(wm, client_rc);
@@ -293,6 +296,8 @@ pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         KeyBinding::new(vec![DEFAULT_MODKEY, Control], "x", ChangeMainRatio(-0.10)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "j", CycleClient(1)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "k", CycleClient(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "h", FocusMain),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "l", FocusMain),
         KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "j", StackMove(1)),
         KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "k", StackMove(-1)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "period", CycleWorkspace(1)),
