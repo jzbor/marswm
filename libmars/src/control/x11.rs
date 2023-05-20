@@ -47,6 +47,13 @@ impl WMController<xlib::Window> for X11Controller {
         Ok(())
     }
 
+    fn center_window(&self, window: xlib::Window) -> Result<()> {
+        require_ewmh_atom(self.display, MarsCenter)?;
+        let data = xlib::ClientMessageData::new();
+        send_client_message(self.display, MarsCenter, window, data);
+        Ok(())
+    }
+
     fn close_window(&self, window: xlib::Window) -> Result<()> {
         if require_ewmh_atom(self.display, NetCloseWindow).is_ok() {
             let data = xlib::ClientMessageData::new();

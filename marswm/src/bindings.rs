@@ -135,11 +135,7 @@ impl BindingAction {
         use BindingAction::*;
         match self {
             CenterClient => if let Some(client_rc) = client_option {
-                if is_floating!(wm, &client_rc) {
-                    if let Some(mon) = wm.get_monitor(&client_rc) {
-                        client_rc.borrow_mut().center_on_screen(mon.config().window_area());
-                    }
-                }
+                wm.center_client(backend, client_rc);
             },
             ChangeMainRatio(f) =>  wm.current_workspace_mut(backend).change_main_ratio(*f),
             CloseClient => if let Some(client_rc) = client_option {

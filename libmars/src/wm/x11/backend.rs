@@ -57,7 +57,7 @@ struct XRandrInfo {
 
 
 const MAX_FRAMERATE: u64 = 120;
-const SUPPORTED_ATOMS: &[X11Atom; 21] = & [
+const SUPPORTED_ATOMS: &[X11Atom; 22] = & [
     NetActiveWindow,
     NetClientList,
     NetClientListStacking,
@@ -79,6 +79,7 @@ const SUPPORTED_ATOMS: &[X11Atom; 21] = & [
     NetWMWindowTypeNotification,
     NetWorkarea,
 
+    MarsCenter,
     MarsWMStateTiled,
 ];
 
@@ -394,7 +395,12 @@ impl<A: PartialEq + Default> X11Backend<A> {
                             }
                         }
                     }
-                }
+                },
+                MarsCenter => {
+                    if let Some(client_rc) = Self::client_by_window(wm, event.window) {
+                        wm.center_client(self, client_rc);
+                    }
+                },
                 _ => (),
             }
         }

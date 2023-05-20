@@ -423,6 +423,14 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         self.focus_client(backend, Some(client_rc));
     }
 
+    fn center_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
+        if is_floating!(self, &client_rc) {
+            if let Some(mon) = self.get_monitor(&client_rc) {
+                client_rc.borrow_mut().center_on_screen(mon.config().window_area());
+            }
+        }
+    }
+
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_> {
         return Box::new(self.clients.iter());
     }

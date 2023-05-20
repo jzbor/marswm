@@ -12,6 +12,7 @@ pub enum SettingMode {
 
 pub trait WMController<W> {
     fn activate_window(&self, window: W) -> Result<()>;
+    fn center_window(&self, window: W) -> Result<()>;
     fn close_window(&self, window: W) -> Result<()>;
     fn count_workspaces(&self) -> Result<u32>;
     fn current_workspace(&self) -> Result<u32>;

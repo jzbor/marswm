@@ -12,6 +12,7 @@ pub trait WindowManager<B: Backend<A>, A> {
     fn active_client(&self) -> Option<Rc<RefCell<B::Client>>>;
     fn active_workspace(&self, backend: &mut B) -> u32;
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
+    fn center_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>);
     fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<B::Client>>, monitor: u32);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_>;
     fn focus_client(&mut self, backend: &mut B, client_option: Option<Rc<RefCell<B::Client>>>);

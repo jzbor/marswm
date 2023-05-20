@@ -43,6 +43,9 @@ pub enum Command {
     /// Activate window
     Activate,
 
+    /// Center window on screen
+    Center,
+
     /// Close window
     Close,
 
@@ -122,6 +125,7 @@ impl Command {
         } else {
             let result = match self {
                 Command::Activate => controller.activate_window(window),
+                Command::Center => controller.center_window(window),
                 Command::Close => controller.close_window(window),
                 Command::Fullscreen(mode) => handle_window_setting(C::window_is_fullscreen, C::fullscreen_window, controller,
                                                                    window, *mode),
