@@ -2,5 +2,5 @@
 Name=MarsWM
 Comment=A modern window manager featuring dynamic tiling.
 Exec=/usr/local/bin/marswm
-TryExec=/us/localr/bin/marswm
+TryExec=/usr/local/bin/marswm
 Type=Application
