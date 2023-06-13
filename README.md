@@ -14,7 +14,7 @@ You can find documentation on how to configure the window manger on [crates.io](
 
 Features:
 * dwm-style layouts
-* workspaces (similar to i3 - unlike dwm)
+* workspaces (similar to i3 or bspwm)
 * IPC using X11 atoms (`mars-relay`)
 * YAML for configuration and key bindings
 
