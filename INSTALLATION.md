@@ -46,5 +46,5 @@ sudo cargo install --root=/usr/local/ marswm marsbar mars-relay
 ```
 
 To run `marswm` directly from your display manager of choice you will have to add a `.desktop` file.
-An example can be found in [`examples/marswm.desktop`](./examples/marswm.desktop).
+You can copy [`./marswm.desktop`](./marswm.desktop), but make sure to replace `PATH` with your actual path (e.g. `/usr/local/bin`).
 Usually it goes into `/usr/share/xsessions`.

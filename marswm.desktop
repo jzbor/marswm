@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=MarsWM
+Comment=A modern window manager featuring dynamic tiling.
+# Make sure to adjust use to your actual installation path (e.g. /usr/local/share)
+Exec=PATH/marswm
+TryExec=PATH/marswm
+Type=Application
