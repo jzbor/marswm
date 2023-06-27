@@ -749,17 +749,14 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         let cur_monitor_count = self.monitors.len();
 
         if configs.len() < cur_monitor_count {
-            let mut detached_clients = Vec::new();
-            let extra_monitors = self.monitors.iter_mut().enumerate()
-                .filter(|(i, _)| *i >= configs.len())
-                .map(|(_, m)| m);
+            let mut trailing_monitors = self.monitors.iter_mut().skip(configs.len() - 1);
+            let last_monitor = trailing_monitors.next().unwrap();
+            let extra_monitors = trailing_monitors;
             for monitor in extra_monitors {
-                detached_clients.extend(monitor.detach_all());
+                Monitor::transfer_all(monitor, last_monitor);
             }
-            let last_monitor = self.monitors.get_mut(cur_monitor_count - 1).unwrap();
-            last_monitor.attach_all(detached_clients);
             self.monitors.truncate(configs.len());
-        } else if configs.len() > self.monitors.len() {
+        } else if configs.len() > cur_monitor_count {
             for i in self.monitors.len()..configs.len() {
                 let primary = i == 0;
                 let workspace_offset = if primary {
