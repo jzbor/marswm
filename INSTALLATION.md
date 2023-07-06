@@ -38,7 +38,7 @@ For non-standard distributions (e.g. `doas` instead of `sudo`, no FHS-support) y
 But in that case chances are you know what to do anyway.
 
 First make sure you have the following libraries installed natively via your package manager: `libX11`, `libXft`, `libXinerama`, `libXrandr`.
-This should include their development version if your distribution splits up packages in this manner.
+Make sure to also include their development version if your distribution splits up packages in this manner.
 
 Then you can build and install `marswm` and its components with cargo:
 ```sh
