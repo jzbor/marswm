@@ -151,37 +151,35 @@ fn layout_dimensions_horizontal(win_area: Dimensions, ratio: f32, gap_width: u32
     let first_width: u32 = (win_area.w() as f32 * ratio) as u32;
     let gap_share = (gap_width / 2, gap_width - (gap_width / 2));
 
-    {
-        if nmain == 0 {  // all windows in stack area
-            let first_area = Dimensions::new(0, 0, 0, 0);
-            let second_x = win_area.x() + gap_width as i32;
-            let second_y = win_area.y() + gap_width as i32;
-            let second_w = win_area.w() - 2 * gap_width;
-            let second_h = win_area.h() - 2 * gap_width;
-            let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
-            (first_area, second_area)
-        } else if nclients <= nmain {  // no windows in stack area
-            let second_area = Dimensions::new(0, 0, 0, 0);
-            let first_x = win_area.x() + gap_width as i32;
-            let first_y = win_area.y() + gap_width as i32;
-            let first_w = win_area.w() - 2 * gap_width;
-            let first_h = win_area.h() - 2 * gap_width;
-            let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
-            (first_area, second_area)
-        } else {
-            let first_x = win_area.x() + gap_width as i32;
-            let first_y = win_area.y() + gap_width as i32;
-            let first_w = first_width - gap_width - gap_share.0;
-            let first_h = win_area.h() - 2 * gap_width;
-            let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
+    if nmain == 0 {  // all windows in stack area
+        let first_area = Dimensions::new(0, 0, 0, 0);
+        let second_x = win_area.x() + gap_width as i32;
+        let second_y = win_area.y() + gap_width as i32;
+        let second_w = win_area.w().saturating_sub(2 * gap_width);
+        let second_h = win_area.h().saturating_sub(2 * gap_width);
+        let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
+        (first_area, second_area)
+    } else if nclients <= nmain {  // no windows in stack area
+        let second_area = Dimensions::new(0, 0, 0, 0);
+        let first_x = win_area.x() + gap_width as i32;
+        let first_y = win_area.y() + gap_width as i32;
+        let first_w = win_area.w().saturating_sub(2 * gap_width);
+        let first_h = win_area.h().saturating_sub(2 * gap_width);
+        let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
+        (first_area, second_area)
+    } else {
+        let first_x = win_area.x() + gap_width as i32;
+        let first_y = win_area.y() + gap_width as i32;
+        let first_w = first_width.saturating_sub(gap_width).saturating_sub(gap_share.0);
+        let first_h = win_area.h().saturating_sub(2 * gap_width);
+        let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
 
-            let second_x = win_area.x() + first_width as i32 + gap_share.0 as i32;
-            let second_y = win_area.y() + gap_width as i32;
-            let second_w = win_area.w() - first_width - gap_width - gap_share.1;
-            let second_h = win_area.h() - 2 * gap_width;
-            let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
-            (first_area, second_area)
-        }
+        let second_x = win_area.x() + first_width as i32 + gap_share.0 as i32;
+        let second_y = win_area.y() + gap_width as i32;
+        let second_w = win_area.w().saturating_sub(first_width).saturating_sub(gap_width).saturating_sub(gap_share.1);
+        let second_h = win_area.h().saturating_sub(2 * gap_width);
+        let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
+        (first_area, second_area)
     }
 }
 
@@ -189,37 +187,35 @@ fn layout_dimensions_vertical(win_area: Dimensions, ratio: f32, gap_width: u32, 
     let first_height: u32 = (win_area.h() as f32 * ratio) as u32;
     let gap_share = (gap_width / 2, gap_width - (gap_width / 2));
 
-    {
-        if nmain == 0 {  // all windows in stack area
-            let first_area = Dimensions::new(0, 0, 0, 0);
-            let second_x = win_area.x() + gap_width as i32;
-            let second_y = win_area.y() + gap_width as i32;
-            let second_w = win_area.w() - 2 * gap_width;
-            let second_h = win_area.h() - 2 * gap_width;
-            let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
-            (first_area, second_area)
-        } else if nclients <= nmain {  // no windows in stack area
-            let second_area = Dimensions::new(0, 0, 0, 0);
-            let first_x = win_area.x() + gap_width as i32;
-            let first_y = win_area.y() + gap_width as i32;
-            let first_w = win_area.w() - 2 * gap_width;
-            let first_h = win_area.h() - 2 * gap_width;
-            let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
-            (first_area, second_area)
-        } else {
-            let first_x = win_area.x() + gap_width as i32;
-            let first_y = win_area.y() + gap_width as i32;
-            let first_w = win_area.w() - 2 * gap_width;
-            let first_h = first_height - gap_width - gap_share.0;
-            let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
+    if nmain == 0 {  // all windows in stack area
+        let first_area = Dimensions::new(0, 0, 0, 0);
+        let second_x = win_area.x() + gap_width as i32;
+        let second_y = win_area.y() + gap_width as i32;
+        let second_w = win_area.w().saturating_sub(2 * gap_width);
+        let second_h = win_area.h().saturating_sub(2 * gap_width);
+        let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
+        (first_area, second_area)
+    } else if nclients <= nmain {  // no windows in stack area
+        let second_area = Dimensions::new(0, 0, 0, 0);
+        let first_x = win_area.x() + gap_width as i32;
+        let first_y = win_area.y() + gap_width as i32;
+        let first_w = win_area.w().saturating_sub(2 * gap_width);
+        let first_h = win_area.h().saturating_sub(2 * gap_width);
+        let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
+        (first_area, second_area)
+    } else {
+        let first_x = win_area.x() + gap_width as i32;
+        let first_y = win_area.y() + gap_width as i32;
+        let first_w = win_area.w().saturating_sub(2 * gap_width);
+        let first_h = first_height.saturating_sub(gap_width).saturating_sub(gap_share.0);
+        let first_area = Dimensions::new(first_x, first_y, first_w, first_h);
 
-            let second_x = win_area.x() + gap_width as i32;
-            let second_y = win_area.y() + first_height as i32 + gap_share.0 as i32;
-            let second_w = win_area.w() - 2 * gap_width;
-            let second_h = win_area.h() - first_height - gap_width - gap_share.0;
-            let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
-            (first_area, second_area)
-        }
+        let second_x = win_area.x() + gap_width as i32;
+        let second_y = win_area.y() + first_height as i32 + gap_share.0 as i32;
+        let second_w = win_area.w().saturating_sub(2 * gap_width);
+        let second_h = win_area.h().saturating_sub(first_height).saturating_sub(gap_width).saturating_sub(gap_share.0);
+        let second_area = Dimensions::new(second_x, second_y, second_w, second_h);
+        (first_area, second_area)
     }
 }
 
@@ -230,9 +226,9 @@ fn stack_clients_horizontally(area: Dimensions, clients: Vec<&Rc<RefCell<impl Cl
     }
 
     let total_gaps = (nclients - 1) * gap_width;
-    let width = (area.w() - total_gaps) / nclients;
+    let width = (area.w().saturating_sub(total_gaps)) / nclients;
     let height = area.h();
-    let width_remainder = area.w()  - (nclients * width + total_gaps);
+    let width_remainder = area.w().saturating_sub(nclients * width + total_gaps);
     for (i, client_rc) in clients.iter().enumerate() {
         let mut client = client_rc.borrow_mut();
         if !client.is_fullscreen() && !client.attributes().is_moving {
@@ -252,8 +248,8 @@ fn stack_clients_vertically(area: Dimensions, clients: Vec<&Rc<RefCell<impl Clie
 
     let total_gaps = (nclients - 1) * gap_width;
     let width = area.w();
-    let height = (area.h() - total_gaps) / nclients;
-    let height_remainder = area.h() - (nclients * height + total_gaps);
+    let height = (area.h().saturating_sub(total_gaps)) / nclients;
+    let height_remainder = area.h().saturating_sub(nclients * height + total_gaps);
     for (i, client_rc) in clients.iter().enumerate() {
         let mut client = client_rc.borrow_mut();
         if !client.is_fullscreen() && !client.attributes().is_moving {
