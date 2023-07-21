@@ -75,6 +75,14 @@ impl<C: Client<Attributes>> Workspace<C> {
         self.apply_layout();
     }
 
+    pub fn inc_gaps(&mut self, i: i32) {
+        let new_gaps = self.layout_config.gap_width as i32 + i;
+        if new_gaps >= 0 && new_gaps as u32 <= self.win_area.w() / 2 && new_gaps as u32 <= self.win_area.h() / 2 {
+            self.layout_config.gap_width = new_gaps as u32;
+            self.apply_layout();
+        }
+    }
+
     pub fn index_of(&self, client_rc: &Rc<RefCell<C>>) -> Option<usize> {
         self.clients.iter().position(|c| c == client_rc)
     }

@@ -55,6 +55,8 @@ pub enum BindingAction {
     Exit,
     /// Switch between the last focused window of the main and stack area
     FocusMain,
+    /// Increase or decrease the gap width of the current workspace
+    IncGaps(i32),
     /// Increase or decrease the number of clients in the main area
     IncNMain(i32),
     /// Move the client with the mouse
@@ -156,6 +158,7 @@ impl BindingAction {
                 wm.exit(backend);
             },
             FocusMain => wm.switch_to_main(backend),
+            IncGaps(i) => wm.current_workspace_mut(backend).inc_gaps(*i),
             IncNMain(i) => wm.current_workspace_mut(backend).inc_nmain(*i),
             MouseMove => if let Some(client_rc) = client_option {
                 backend.mouse_move(wm, client_rc);
