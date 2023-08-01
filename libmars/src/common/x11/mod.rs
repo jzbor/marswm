@@ -85,8 +85,6 @@ pub fn alternative_modifiers(modifiers: u32) -> Vec<u32> {
     vec![
         modifiers,
         modifiers | xlib::Mod2Mask,
-        modifiers | xlib::Mod5Mask,
-        modifiers | xlib::Mod2Mask, xlib::Mod5Mask,
     ]
 }
 
