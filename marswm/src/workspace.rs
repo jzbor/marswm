@@ -185,10 +185,12 @@ impl<C: Client<Attributes>> Workspace<C> {
 
         self.apply_layout();
 
-        self.clients_stack.iter()
-            .filter(|c| c.borrow().attributes().is_floating)
-            .rev()
-            .for_each(|c| c.borrow().raise());
+        if self.current_layout() != LayoutType::Floating {
+            self.clients_stack.iter()
+                .filter(|c| c.borrow().attributes().is_floating)
+                .rev()
+                .for_each(|c| c.borrow().raise());
+        }
 
         if let Some(client) = fullscreen_client {
             client.borrow().raise();
