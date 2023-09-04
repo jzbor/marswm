@@ -687,7 +687,12 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         // take pinned clients from old workspace and hide other clients
         let from_workspace = self.monitors[mon_idx].current_workspace_mut();
         let pinned_clients = from_workspace.pull_pinned();
-        from_workspace.clients().for_each(|c| c.borrow_mut().hide());
+
+        // redecorate and hide old clients
+        for client_rc in from_workspace.clients().cloned().collect::<Vec<_>>() {
+            self.decorate_inactive(client_rc.clone());
+            client_rc.borrow_mut().hide();
+        }
 
         // set workspace index to new workspace
         self.monitors[mon_idx].set_cur_workspace(rel_idx);
@@ -696,10 +701,6 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         let to_workspace = self.monitors[mon_idx].current_workspace_mut();
         to_workspace.push_pinned(pinned_clients);
         to_workspace.clients().for_each(|c| c.borrow_mut().show());
-
-        // remove 'active' decoration from newly shown clients to avoid visual bugs
-        let inactive_clients: Vec<Rc<RefCell<B::Client>>> = to_workspace.clients().cloned().collect();
-        inactive_clients.iter().for_each(|c| self.decorate_inactive(c.clone()));
 
         // set focused window either to the first window or `None`
         let new_active = self.current_workspace(backend).clients().next().cloned();
