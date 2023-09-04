@@ -420,7 +420,8 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
             client_rc.borrow().raise();
         }
 
-        self.focus_client(backend, Some(client_rc));
+        self.focus_client(backend, Some(client_rc.clone()));
+        client_rc.borrow().warp_pointer_to_center();
     }
 
     fn center_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
