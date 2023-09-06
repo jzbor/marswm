@@ -383,6 +383,13 @@ impl<A: PartialEq> Client<A> for X11Client<A> {
                                self.h - bw_north - bw_south)
     }
 
+    fn is_centered_on_screen(&self, dimensions: Dimensions) -> bool {
+        let (center_x, center_y) = dimensions.center();
+
+        self.x == center_x - (self.w as i32 / 2)
+            && self.y == center_y - (self.h as i32 / 2)
+    }
+
     fn is_dialog(&self) -> bool {
         self.is_dialog
     }

@@ -645,10 +645,23 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn resize_request(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, width: u32, height: u32) -> bool {
-        if is_floating!(self, &client_rc) {
+        let window_area = self.get_monitor(&client_rc).map(|m| m.window_area());
+        let client_is_dialog = client_rc.borrow().is_dialog();
+
+        if is_floating!(self, &client_rc) || client_is_dialog {
             let mut client = client_rc.borrow_mut();
             let (x, y) = client.pos();
+            let client_was_centered = window_area.map(|a| client.is_centered_on_screen(a))
+                .unwrap_or(false);
+
             client.move_resize(x, y, width, height);
+
+            if client_is_dialog && client_was_centered {
+                if let Some(area) = window_area {
+                    client.center_on_screen(area);
+                }
+            }
+
             true
         } else {
             false

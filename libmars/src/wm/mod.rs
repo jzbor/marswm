@@ -51,6 +51,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn inner_bw(&self) -> u32;
     // dimensions excluding all borders
     fn inner_dimensions(&self) -> Dimensions;
+    fn is_centered_on_screen(&self, dimensions: Dimensions) -> bool;
     fn is_dialog(&self) -> bool;
     fn is_fullscreen(&self) -> bool;
     fn is_visible(&self) -> bool;
