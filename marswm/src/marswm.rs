@@ -294,8 +294,9 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     pub fn mouse_place(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
         let mut client = client_rc.borrow_mut();
+        let was_fullscreen = client.is_fullscreen();
         if client.is_fullscreen() {
-            return;
+            client.unset_fullscreen();
         }
 
         client.attributes_mut().is_moving = true;
@@ -306,7 +307,14 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
         client_rc.borrow_mut().attributes_mut().is_moving = false;
         if let Some(ws) = self.get_workspace_mut(&client_rc) {
+            ws.drop_fullscreen();
             ws.restack()
+        }
+
+        if was_fullscreen {
+            if let Some(mon) = self.get_monitor(&client_rc) {
+                client_rc.borrow_mut().set_fullscreen(mon.config());
+            }
         }
     }
 
