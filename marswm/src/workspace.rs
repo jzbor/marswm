@@ -109,8 +109,9 @@ impl<C: Client<Attributes>> Workspace<C> {
             index_option = Some(index);
         }
         if let Some(index) = index_option {
+            let nclients = self.clients.len();
             self.clients.remove(index);
-            if index < nmain && self.clients.len() > nmain {
+            if index < nmain && nclients > nmain {
                 self.clients.insert(nmain, client_rc);
             } else {
                 self.clients.push_front(client_rc);
