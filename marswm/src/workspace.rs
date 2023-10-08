@@ -110,7 +110,7 @@ impl<C: Client<Attributes>> Workspace<C> {
         }
         if let Some(index) = index_option {
             self.clients.remove(index);
-            if index < nmain {
+            if index < nmain && self.clients.len() > nmain {
                 self.clients.insert(nmain, client_rc);
             } else {
                 self.clients.push_front(client_rc);
