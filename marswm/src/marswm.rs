@@ -341,7 +341,11 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
         self.monitors[client_index].detach_client(&client_rc);
         Self::fix_client_to_area(client_rc.clone(), self.monitors[target_index].window_area());
-        self.monitors[target_index].attach_client(client_rc);
+        self.monitors[target_index].attach_client(client_rc.clone());
+
+        if client_rc.borrow().is_fullscreen() {
+            client_rc.borrow_mut().set_fullscreen(self.monitors[target_index].config())
+        }
     }
 
     fn fix_client_to_area(client_rc: Rc<RefCell<B::Client>>, area: Dimensions) {
