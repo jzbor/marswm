@@ -728,8 +728,14 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         to_workspace.push_pinned(pinned_clients);
         to_workspace.clients().for_each(|c| c.borrow_mut().show());
 
-        // set focused window either to the first window or `None`
-        let new_active = self.current_workspace(backend).clients().next().cloned();
+        // select new window to be focused
+        let new_active = if let Some(client_rc) = to_workspace.clients().find(|c| c.borrow().is_fullscreen()) {
+            Some(client_rc.clone())
+        } else if let Some(client_rc) = to_workspace.clients().next() {
+            Some(client_rc.clone())
+        } else {
+            None
+        };
         self.focus_client(backend, new_active);
 
         backend.export_current_workspace(workspace_idx);
