@@ -7,7 +7,7 @@ The [YAML](https://yaml.org/) format is used for configuration with the default 
 You can get the default configuration with `marswm --print-default-config`.
 
 ## Documentation
-[https://jzbor.de/marswm/marswm/docs/index.html]
+[You can find the documentation here](https://jzbor.de/marswm/marswm/docs/index.html)
 
 ## Quick Start Guide
-[https://jzbor.de/marswm/marswm/docs/quick_start/index.html]
+[You can find the documentation here](https://jzbor.de/marswm/marswm/docs/index.html)

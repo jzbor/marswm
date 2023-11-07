@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: 'latest'
+      - run: mdbook build .
+
       - name: Install X11 dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -25,8 +31,8 @@ jobs:
         with:
           command: doc
           args: --no-deps
-      - name: Create forwarding to actual index.html
-        run: echo '<meta http-equiv="refresh" content="0; url=marswm">' > ./target/doc/index.html
+      # - name: Create forwarding to actual index.html
+      #   run: echo '<meta http-equiv="refresh" content="0; url=marswm">' > ./target/doc/index.html
       - name: Fix file permissions
         shell: sh
         run: |
@@ -34,12 +40,20 @@ jobs:
           while read line; do
           echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
+
+      - name: Copy stuff around
+        shell: sh
+        run: |
+          cp -r target/book output
+          cp -r target/doc output/crate
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: './target/doc'
+          path: './output'
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
+

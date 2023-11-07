@@ -1,10 +1,9 @@
 # Quick Start Guide
 This guide shows you how to build a fully functional desktop environment with marswm.
 
-
 ## Assumptions
 There are a few assumptions made in these scripts with regards to your system in this guide and in the scripts:
-* `marswm`, `marsbar` and `mars-relay` are already installed (see [`INSTALLATION.md`](./INSTALLATION.md))
+* `marswm`, `marsbar` and `mars-relay` are already installed (see ["Installation"](/installation.html))
 * You use either [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) or [pipewire](https://pipewire.org/) with `pactl` installed (probably in the `pulseaudio` package)
 * Your distro uses [systemd](https://systemd.io/)
 
@@ -36,14 +35,8 @@ We will add further lines to this script later on.
 ## Status Script
 `marsbar` can use scripts to display status information and generate menus.
 
-An example script is provided in the marswm repo to get you started.
-You can simply install the [`mars-status`](examples/mars-status.sh) script into your `$PATH` (e.g. `~/.local/bin/mars-status`) and make it executable (`chmod +x mars-status`).
-You will also have to make sure to have the following dependencies installed:
-* `canberra-gtk-play` ([`libcanberra-gtk3`](https://pkgs.org/search/?q=libcanberra-gtk3))
-* `notify-send` ([`libnotify`](https://pkgs.org/search/?q=libnotify))
-* `powerprofilesctl` ([`power-profiles-daemon`](https://pkgs.org/search/?q=power-profiles-daemon))
-* `pactl` ([`pulseaudio`](https://pkgs.org/search/?q=pulseaudio))
-* `xmenu` ([`xmenu`](https://github.com/phillbush/xmenu))
+You can find an example script [`mars-status`](/examples/mars-status.html) in examples section.
+Read [Examples/Installing Scripts](examples.html#installing-scripts) for more information on how to install it.
 
 Now you can add the script to your `marsbar` config in `~/.config/marswm/marsbar.yaml`:
 ```yaml
@@ -53,10 +46,10 @@ action_cmd: "mars-status action"
 
 
 ## Wallpaper
-This repo also contains a simple script to set your wallpaper: [`wallpaper-daemon`](examples/wallpaper-daemon.sh).
+This repo also contains a simple script to set your wallpaper: [`wallpaper-daemon`](examples/wallpaper-daemon.md).
 It automatically adjusts your wallpaper whenever your screen configuration changes.
-Make sure to install its dependencies `xev` and `xwallpaper`.
-Add it to your `$PATH` (e.g. `~/.local/bin/wallpaper-daemon`) and make it executable (`chmod +x wallpaper-daemon`).
+Read [Examples/Installing Scripts](examples.html#installing-scripts) for more information on how to install it.
+
 
 Now we can add it to our autostart script:
 ```sh
@@ -67,8 +60,8 @@ It will load whatever wallpaper you put in `~/.background-image`.
 
 
 ## Application Menu(s)
-Another script provided in `examples/` is [`xdg-xmenu.py`](examples/xdg-xmenu.py).
-Put it in your `$PATH` (e.g. `~/.local/bin/xdg-xmenu`) and make it executable.
+Another script provided in `examples/` is [`xdg-xmenu.py`](examples/xdg-xmenu.md).
+Read [Examples/Installing Scripts](examples.html#installing-scripts) for more information on how to install it.
 
 Now we can add it to our button bindings.
 It is suggested to put it in `~/.config/marswm/buttonbindings_ext.yaml` as this way it does not interfere with other default bindings:
@@ -143,7 +136,7 @@ You may want to test this once to make sure everything works.
 
 
 ## Touch Gestures
-There is an [example config](examples/touchegg.xml) for [Touchégg](https://github.com/JoseExposito/touchegg) provided along with this repo.
+There is an [example config](examples/touchegg.md) for [Touchégg](https://github.com/JoseExposito/touchegg) provided along with this repo.
 Copy the file to `~/.config/touchegg/touchegg.conf`.
 Then [install and setup](https://github.com/JoseExposito/touchegg#installation) touchegg (it requires a server daemon to run, as well as a client).
 
