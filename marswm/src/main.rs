@@ -17,6 +17,7 @@ use crate::marswm::*;
 mod attributes;
 mod bindings;
 mod config;
+mod docs;
 mod layouts;
 mod macros;
 mod marswm;

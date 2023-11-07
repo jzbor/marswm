@@ -1,4 +1,4 @@
-# Setup Guide
+# Quick Start Guide
 This guide shows you how to build a fully functional desktop environment with marswm.
 
 
