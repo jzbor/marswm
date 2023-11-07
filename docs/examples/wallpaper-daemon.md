@@ -1,4 +1,4 @@
-# `wallpaper-daemon`
+# `wallpaper-daemon.sh`
 
 Dependencies:
 * `xev`

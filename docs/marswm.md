@@ -91,7 +91,7 @@ Here is an example:
   action: !move-workspace 0
 ```
 
-You can find documentation for actions [in the docs](crate::bindings::BindingAction) or [in the source code](src/bindings.rs).
+You can find documentation for actions [here](./crate/marswm/bindings/enum.BindingAction.html).
 
 
 ## Button Bindings
@@ -110,7 +110,7 @@ Here is an example:
   action: close-client
 ```
 
-You can find documentation for actions [in the docs](crate::bindings::BindingAction) or [in the source code](src/bindings.rs).
+You can find documentation for actions [here](./crate/marswm/bindings/enum.BindingAction.html).
 
 
 ## Window Rules
@@ -125,7 +125,7 @@ For example:
   actions: [ !move-workspace 5 ]
 ```
 
-You can find documentation for actions [in the docs](crate::bindings::BindingAction) or [in the source code](src/bindings.rs).
+You can find documentation for actions [here](./crate/marswm/bindings/enum.BindingAction.html).
 
 
 ### Identifiers:

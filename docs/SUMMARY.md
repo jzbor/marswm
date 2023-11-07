@@ -4,7 +4,7 @@
 - [Quick Start](./quickstart.md)
 - [Configuration](./configuration.md)
 	- [marswm](./marswm.md)
-	- [marsbar](./marswm.md)
+	- [marsbar](./marsbar.md)
 - [Examples](./examples.md)
 	- [mars-status.sh](examples/mars-status.md)
 	- [touchegg.conf](examples/touchegg.md)
