@@ -1,0 +1,34 @@
+<touchégg>
+
+	<settings>
+	</settings>
+
+
+	<application name="All">
+
+
+		<gesture type="SWIPE" fingers="3" direction="RIGHT">
+			<action type="RUN_COMMAND">
+				<repeat>false</repeat>
+				<command>mars-relay switch-workspace-prev &</command>
+				<on>begin</on>
+			</action>
+		</gesture>
+
+		<gesture type="SWIPE" fingers="3" direction="LEFT">
+			<action type="RUN_COMMAND">
+				<repeat>false</repeat>
+				<command>mars-relay switch-workspace-next &</command>
+				<on>begin</on>
+			</action>
+		</gesture>
+
+		<gesture type="SWIPE" fingers="3" direction="DOWN">
+			<action type="RUN_COMMAND">
+				<repeat>false</repeat>
+				<command>mars-relay menu &</command>
+				<on>begin</on>
+			</action>
+		</gesture>
+	</application>
+</touchégg>
