@@ -1,7 +1,16 @@
 # Installation
 
-## NetBSD ([Official repositories](https://pkgsrc.se/wm/marswm/))
+## Archlinux ([AUR](https://aur.archlinux.org/packages/marswm))
+```sh
+paru -S marswm
+# or
+yay -S marswm
+```
 
+[`marswm-git`](https://aur.archlinux.org/packages/marswm) is also available as the development version.
+
+
+## NetBSD ([Official repositories](https://pkgsrc.se/wm/marswm/))
 ```sh
 pkgin install marswm
 ```
@@ -14,24 +23,13 @@ make install
 ```
 
 
-## Archlinux ([AUR](https://aur.archlinux.org/packages/marswm-git))
-
-```sh
-paru -S marswm-git
-# or
-yay -S marswm-git
-```
-
-
 ## Nix
-
 `marswm` is currently not officially packaged for Nix.
 You can use the derivation in [`examples/default.nix`](./examples/default.nix) to install it on your machine.
 Make sure to update the version number and hash accordingly.
 
 
 ## Other ([cargo](https://crates.io/crates/marswm))
-
 This guide shows installation for a standard Linux distribution that supports the Standard File Hierarchy.
 
 For non-standard distributions (e.g. `doas` instead of `sudo`, no FHS-support) you will have to change some things.

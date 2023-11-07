@@ -32,6 +32,8 @@ Although not currently planned a wayland backend (as well as other backends) wou
 ## Installation (with package manager)
 See [INSTALLATION.md](./INSTALLATION.md).
 
+For a guide on how to setup a working desktop environment with marswm as base take a look at [SETUP.md](./SETUP.md).
+
 
 ## Building from Source
 You have to install the following libraries natively: `libX11`, `libXft`, `libXinerama`, `libXrandr`.

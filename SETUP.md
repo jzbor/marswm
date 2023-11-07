@@ -83,7 +83,7 @@ Make sure to restart the WM for the bindings to take effect.
 After installing the script you can generate the icon cache it by running `xdg-xmenu -f`.
 Now you should be able to access the menu when right-clicking the desktop.
 
-### Rofi /dmenu
+### Rofi / dmenu
 You will probably also want a keyboard-driven option to access your applications.
 By default `marswm` comes with keybindings for [`Rofi`](https://github.com/davatorium/rofi) preconfigured.
 Make sure to install and customize it to your liking, then you should be able to run it by pressing `MOD + d`.
