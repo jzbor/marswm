@@ -30,9 +30,9 @@ Although not currently planned a wayland backend (as well as other backends) wou
 
 
 ## Installation (with package manager)
-See [INSTALLATION.md](./INSTALLATION.md).
+See [installation.md](./docs/installation.md).
 
-For a guide on how to setup a working desktop environment with marswm as base take a look at [SETUP.md](./SETUP.md).
+For a guide on how to setup a working desktop environment with marswm as base take a look at [the quickstart guide](https://jzbor.de/marswm/quickstart.html).
 
 
 ## Building from Source
