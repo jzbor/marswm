@@ -115,6 +115,10 @@ impl Bar {
     }
 
     fn arrange(&mut self) {
+        // arrange title segment
+        self.active_window = self.get_active_window();
+        self.arrange_title(self.get_active_window_title());
+
         // arrange desktop segment
         let result = self.root.x11_get_text_list_property(self.display, NetDesktopNames);
         let desktop_names = match result {
@@ -128,10 +132,6 @@ impl Bar {
         if let Ok(idx) = self.get_active_workspace() {
             self.set_active_workspace(idx);
         }
-
-        // arrange title segment
-        self.active_window = self.get_active_window();
-        self.arrange_title(self.get_active_window_title());
 
         // arrange tray segment
         self.arrange_tray();
