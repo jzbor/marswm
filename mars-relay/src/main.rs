@@ -119,35 +119,38 @@ where
 
 
 impl Command {
-    fn execute<C: WMController<xlib::Window>>(&self, controller: &C, window: xlib::Window, args: Args) -> Result<(), String> {
+    fn execute<C: WMController<xlib::Window>>(&self, controller: &C, window_result: Result<xlib::Window, String>,
+                                              args: Args) -> Result<(), String> {
+
         if *self == Command::Menu {
-            Self::menu(controller, window, args)
+            Self::menu(controller, window_result, args)
         } else {
             let result = match self {
-                Command::Activate => controller.activate_window(window),
-                Command::Center => controller.center_window(window),
-                Command::Close => controller.close_window(window),
+                Command::Activate => controller.activate_window(window_result?),
+                Command::Center => controller.center_window(window_result?),
+                Command::Close => controller.close_window(window_result?),
                 Command::Fullscreen(mode) => handle_window_setting(C::window_is_fullscreen, C::fullscreen_window, controller,
-                                                                   window, *mode),
-                Command::Pinned(mode) => handle_window_setting(C::window_is_pinned, C::pin_window, controller, window, *mode),
-                Command::SendToWorkspace(ws) => controller.send_window_to_workspace(window, ws.index),
+                                                                   window_result?, *mode),
+                Command::Pinned(mode) => handle_window_setting(C::window_is_pinned, C::pin_window, controller, window_result?, *mode),
+                Command::SendToWorkspace(ws) => controller.send_window_to_workspace(window_result?, ws.index),
                 Command::SetStatus(status) => controller.set_status(status.text.to_owned()),
                 Command::SwitchWorkspace(ws) => controller.switch_workspace(ws.index),
                 Command::SwitchWorkspaceNext => Self::switch_workspace_relative(controller, 1),
                 Command::SwitchWorkspacePrev => Self::switch_workspace_relative(controller, -1),
-                Command::Tiled(mode) => handle_window_setting(C::window_is_tiled, C::tile_window, controller, window, *mode),
+                Command::Tiled(mode) => handle_window_setting(C::window_is_tiled, C::tile_window, controller, window_result?, *mode),
                 Command::Menu => panic!("unhandled command"),
             };
             result.map_err(|e| e.to_string())
         }
     }
 
-    fn menu(controller: &impl WMController<xlib::Window>, window: xlib::Window, args: Args) -> Result<(), String> {
+    fn menu(controller: &impl WMController<xlib::Window>, window_result: Result<xlib::Window, String>, args: Args)
+            -> Result<(), String> {
         let command = match display_menu() {
             Ok(cmd) => cmd,
             Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu".to_owned()); },
         };
-        command.execute(controller, window, args)
+        command.execute(controller, window_result, args)
     }
 
     fn switch_workspace_relative(controller: &impl WMController<xlib::Window>, inc: i32) -> Result<(), MarsError> {
@@ -164,23 +167,17 @@ fn main() {
     let controller = match X11Controller::new() {
         Ok(ctrl) => ctrl,
         Err(e) => {
-            eprintln!("Unable to get active window: {}", e);
+            eprintln!("Unable to initialise X11Controller: {}", e);
             std::process::exit(1);
         },
     };
 
     let command = args.command.clone();
-    let window = match args.window {
-        Some(window) => window,
-        None => match controller.get_active_window() {
-            Ok(window) => window,
-            Err(e) => {
-                eprintln!("Unable to get active window: {}", e);
-                std::process::exit(1);
-            },
-        },
+    let window_result = match args.window {
+        Some(window) => Ok(window),
+        None => controller.get_active_window().map_err(|_| format!("Unable to get active window")),
     };
-    if let Err(msg) = command.execute(&controller, window, args) {
+    if let Err(msg) = command.execute(&controller, window_result, args) {
         eprintln!("Error: {}", msg);
         std::process::exit(1);
     }
