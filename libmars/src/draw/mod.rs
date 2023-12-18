@@ -1,11 +1,13 @@
 //! A very basic toolkit for creating simple applications and drawing on windows.
 //!
 //! Currently only X11 is supported.
+use crate::common::*;
 use crate::common::error::*;
 
 pub mod x11;
 
 pub trait Canvas {
+    fn dimensions(&self) -> Dimensions;
     fn draw_line(&mut self, pt1: (i32, i32), pt2: (i32, i32));
     fn draw_line_with(&mut self, pt1: (i32, i32), pt2: (i32, i32), color: u64, line_width: u32);
     fn draw_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32);

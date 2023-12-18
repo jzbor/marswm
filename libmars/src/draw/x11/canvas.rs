@@ -141,6 +141,10 @@ impl X11Canvas {
 }
 
 impl Canvas for X11Canvas {
+    fn dimensions(&self) -> Dimensions {
+        self.pixbuffer.x11_dimensions(self.display).unwrap()
+    }
+
     fn draw_line(&mut self, pt1: (i32, i32), pt2: (i32, i32)) {
         unsafe {
             xlib::XDrawLine(self.display, self.pixbuffer, self.gc,
