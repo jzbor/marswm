@@ -216,7 +216,7 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
     let mut button_bindings = match read_config_file(CONFIG_DIR, BUTTON_BINDINGS_FILE) {
         Ok(config) => config,
         Err(msg) => {
-            println!("Unable to read button bindings: {}", msg);
+            eprintln!("Unable to read button bindings: {}", msg);
             default_button_bindings()
         },
     };
@@ -225,7 +225,7 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
     match read_config_file::<Vec<ButtonBinding>>(CONFIG_DIR, BUTTON_BINDINGS_EXT_FILE) {
         Ok(config) => button_bindings.extend(config),
         Err(msg) => {
-            println!("Unable to read extended button bindings: {}", msg);
+            eprintln!("Unable to read extended button bindings: {}", msg);
         },
     }
 
@@ -236,7 +236,7 @@ pub fn read_config() -> Configuration {
     return match read_config_file(CONFIG_DIR, CONFIG_FILE) {
         Ok(config) => config,
         Err(msg) => {
-            println!("Unable to read configuration: {}", msg);
+            eprintln!("Unable to read configuration: {}", msg);
             Configuration::default()
         },
     };
@@ -247,7 +247,7 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     let mut keybindings = match read_config_file(CONFIG_DIR, KEY_BINDINGS_FILE) {
         Ok(config) => config,
         Err(msg) => {
-            println!("Unable to read key bindings: {}", msg);
+            eprintln!("Unable to read key bindings: {}", msg);
             default_key_bindings(nworkspaces)
         },
     };
@@ -256,7 +256,7 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     match read_config_file::<Vec<KeyBinding>>(CONFIG_DIR, KEY_BINDINGS_EXT_FILE) {
         Ok(config) => keybindings.extend(config),
         Err(msg) => {
-            println!("Unable to read extended key bindings: {}", msg);
+            eprintln!("Unable to read extended key bindings: {}", msg);
         },
     }
 
@@ -268,7 +268,7 @@ pub fn read_rules() -> Vec<Rule> {
     return match result {
         Ok(rules) => rules,
         Err(msg) => {
-            println!("Unable to read window rules: {}", msg);
+            eprintln!("Unable to read window rules: {}", msg);
             Vec::new()
         },
     };
