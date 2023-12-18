@@ -6,6 +6,7 @@
 	- [marswm](./marswm.md)
 	- [marsbar](./marsbar.md)
 - [Examples](./examples.md)
+	- [mars-help.sh](examples/mars-status.md)
 	- [mars-status.sh](examples/mars-status.md)
 	- [touchegg.conf](examples/touchegg.md)
 	- [wallpaper-daemon.sh](examples/wallpaper-daemon.md)
