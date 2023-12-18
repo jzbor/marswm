@@ -143,6 +143,25 @@ Then [install and setup](https://github.com/JoseExposito/touchegg#installation) 
 You will then be able to cycle through workspaces using three fingers on your touchpad, as well as accessing the window menu (swipe down).
 
 
+## Help View
+It is hard to keep track of what key binding you used for what program and even harder to remember the default keys.
+To make this easier you leverage a simple script that displays the keybinding configuration.
+The script takes into account whether you have overwritten the original default keybindings.
+
+You can find the script [`mars-help`](/examples/mars-help.html) in examples section.
+Read [Examples/Installing Scripts](examples.html#installing-scripts) for more information on how to install it.
+
+Then add the following keybinding to `~/.config/marswm/keybindings_ext.yml` (where you replace `$TERMINAL` with your terminal emulator of choice):
+```yaml
+- modifiers: [ Mod4, Shift ]
+  key: slash
+  action: !execute $TERMINAL -e "sleep 0.1; mars-relay fullscreen set; mars-help"
+```
+
+Now when you press `Mod4 + Shift + slash` (`Mod4 + question`) on an American keyboard you get a searchable overview of the configured keybindings.
+Of course you can change the binding for this to whatever you like.
+
+
 ## Additional Suggestions
 These are additional programs suggested to complete your desktop setup:
 * `nmapplet` - applet for managing your network (e.g. Wifi setup) (only works if your machine uses NetworkManager)
