@@ -3,7 +3,8 @@
 set +o nounset
 
 SEPARATOR='\x1f'
-BATTERY_PATH="$(find /sys/class/power_supply -maxdepth 1 -mindepth 1 | grep -i bat | head -n 1)"
+BATTERY_PATH="$(find /sys/class/power_supply -maxdepth 1 -mindepth 1 | { grep -i bat || true; } \
+	| { grep -vi hid || true; } | head -n 1)"
 
 
 ### HELPERS
