@@ -20,6 +20,7 @@ pub enum MarsErrorKind {
     PropertyUnavailable,
     Unknown,
     UnsupportedProtocol,
+    WMAlreadyRunning,
 }
 
 
@@ -79,6 +80,13 @@ impl MarsError {
             info: Some("XOpenDisplay".to_owned()),
         }
     }
+
+    pub fn wm_already_running() -> MarsError {
+        MarsError {
+            kind: MarsErrorKind::WMAlreadyRunning,
+            info: None,
+        }
+    }
 }
 
 
@@ -108,9 +116,53 @@ impl Display for MarsErrorKind {
             Self::PropertyUnavailable => "Property not available",
             Self::Unknown => "Unknown error",
             Self::UnsupportedProtocol => "Protocol not supported",
+            Self::WMAlreadyRunning => "Another WM is already running",
         };
         write!(f, "{}", name)
     }
 }
+
+#[cfg(feature = "platform-x11rb")]
+impl From<x11rb::errors::ConnectError> for MarsError {
+    fn from(value: x11rb::errors::ConnectError) -> Self {
+        MarsError {
+            kind: MarsErrorKind::ConnectionFailed,
+            info: Some(value.to_string())
+        }
+    }
+}
+
+#[cfg(feature = "platform-x11rb")]
+impl From<x11rb::errors::ConnectionError> for MarsError {
+    fn from(value: x11rb::errors::ConnectionError) -> Self {
+        MarsError {
+            kind: MarsErrorKind::ConnectionFailed,
+            info: Some(value.to_string())
+        }
+    }
+}
+
+#[cfg(feature = "platform-x11rb")]
+impl From<x11rb::errors::ReplyOrIdError> for MarsError {
+    fn from(value: x11rb::errors::ReplyOrIdError) -> Self {
+        MarsError {
+            kind: MarsErrorKind::FailedRequest,
+            info: Some(value.to_string())
+        }
+    }
+}
+
+#[cfg(feature = "platform-x11rb")]
+impl From<x11rb::errors::ReplyError> for MarsError {
+    fn from(value: x11rb::errors::ReplyError) -> Self {
+        MarsError {
+            kind: MarsErrorKind::FailedRequest,
+            info: Some(value.to_string())
+        }
+    }
+}
+
+
+
 
 

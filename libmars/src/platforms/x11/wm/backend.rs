@@ -92,7 +92,7 @@ const SUPPORTED_ATOMS: &[X11Atom; 22] = & [
 
 impl<A: PartialEq + Default> X11Backend<A> {
     /// Register window manager and initialize backend with new connection.
-    pub fn init(name: &str) -> Result<X11Backend<A>> {
+    pub fn init(name: &str) -> Result<Self> {
         // open new connection to x11 server
         let display = open_display()?;
         Self::init_with_connection(display, name)

@@ -9,6 +9,9 @@ use crate::*;
 enum_with_values! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     vis pub enum X11Atom {
+        XAAtom,
+        XAWindow,
+
         // ICCCM
         UTF8String,
         WMClass,
@@ -66,7 +69,41 @@ enum_with_values! {
 
 impl Display for X11Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let string = match self {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl X11Atom {
+    pub fn from_xlib_atom(display: *mut xlib::Display, atom: xlib::Atom) -> Option<X11Atom> {
+        let name = unsafe {
+            let raw_string = xlib::XGetAtomName(display, atom);
+            // FIXME use CStr and XFree instead
+            CString::from_raw(raw_string).into_string().unwrap()
+        };
+        for atom in Self::VALUES {
+            if atom.to_string() == name {
+                return Some(*atom);
+            }
+        }
+        None
+    }
+
+    pub fn to_xlib_atom(&self, display: *mut xlib::Display) -> xlib::Atom {
+        let atom_name = CString::new(self.to_string()).unwrap().into_raw();
+        unsafe {
+            xlib::XInternAtom(display, atom_name, xlib::False)
+        }
+    }
+
+    pub fn as_bytes(&self) -> &'static [u8] {
+        self.as_str().as_bytes()
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            X11Atom::XAAtom => "XA_ATOM",
+            X11Atom::XAWindow => "XA_WINDOW",
+
             X11Atom::UTF8String => "UTF8_STRING",
             X11Atom::WMClass => "WM_CLASS",
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
@@ -113,30 +150,6 @@ impl Display for X11Atom {
             X11Atom::MarsCenter => "_MARS_CENTER",
             X11Atom::MarsStatus => "_MARS_STATUS",
             X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
-        };
-        write!(f, "{}", string)
-    }
-}
-
-impl X11Atom {
-    pub fn from_xlib_atom(display: *mut xlib::Display, atom: xlib::Atom) -> Option<X11Atom> {
-        let name = unsafe {
-            let raw_string = xlib::XGetAtomName(display, atom);
-            // FIXME use CStr and XFree instead
-            CString::from_raw(raw_string).into_string().unwrap()
-        };
-        for atom in Self::VALUES {
-            if atom.to_string() == name {
-                return Some(*atom);
-            }
-        }
-        None
-    }
-
-    pub fn to_xlib_atom(&self, display: *mut xlib::Display) -> xlib::Atom {
-        let atom_name = CString::new(self.to_string()).unwrap().into_raw();
-        unsafe {
-            xlib::XInternAtom(display, atom_name, xlib::False)
         }
     }
 }
