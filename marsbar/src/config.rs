@@ -1,4 +1,4 @@
-use libmars::draw::x11::widget::*;
+use libmars::platforms::x11::draw::widget::*;
 use libmars::utils::configuration::read_config_file;
 use libmars::utils::configuration::read_file;
 use serde::{Serialize, Deserialize};

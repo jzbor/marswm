@@ -1,11 +1,11 @@
 extern crate x11;
 
 use libmars::common::*;
-use libmars::common::x11::atoms::X11Atom::*;
-use libmars::common::x11::window::X11Window;
-use libmars::draw::*;
-use libmars::draw::x11::canvas::*;
-use libmars::draw::x11::widget::*;
+use libmars::platforms::x11::misc::atoms::X11Atom::*;
+use libmars::platforms::x11::misc::window::X11Window;
+use libmars::interfaces::draw::*;
+use libmars::platforms::x11::draw::canvas::*;
+use libmars::platforms::x11::draw::widget::*;
 use std::cmp;
 use std::mem::MaybeUninit;
 use x11::xlib;
@@ -132,7 +132,7 @@ impl SystemTrayWidget {
         }
 
 
-        tray_icon.x11_set_state(self.display, libmars::common::x11::NORMAL_STATE);
+        tray_icon.x11_set_state(self.display, libmars::platforms::x11::misc::NORMAL_STATE);
         self.tray_icons.push(tray_icon);
 
         self.resize_to_content();

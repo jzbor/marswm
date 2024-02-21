@@ -1,6 +1,6 @@
 use libmars::common::*;
-use libmars::common::x11::WINDOW_MIN_SIZE;
-use libmars::wm::{ Backend, Client, WindowManager };
+use libmars::platforms::x11::misc::WINDOW_MIN_SIZE;
+use libmars::interfaces::wm::{ Backend, Client, WindowManager };
 use std::cell::RefCell;
 use std::env;
 use std::marker::PhantomData;

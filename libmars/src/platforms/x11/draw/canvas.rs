@@ -9,8 +9,9 @@ use x11::xlib;
 use x11::xrender;
 
 use crate::common::*;
-use crate::common::x11::window::*;
-use crate::draw::*;
+use crate::common::error::*;
+use crate::interfaces::draw::*;
+use crate::platforms::x11::misc::window::*;
 
 #[derive(Clone, Copy)]
 struct CanvasStyle {

@@ -1,5 +1,5 @@
 use libmars::common::*;
-use libmars::wm::Client;
+use libmars::interfaces::wm::Client;
 use std::cell::RefCell;
 use std::rc::Rc;
 

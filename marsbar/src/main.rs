@@ -5,11 +5,11 @@ extern crate x11;
 
 use clap::Parser;
 use libmars::common::*;
-use libmars::common::x11::atoms::X11Atom::{self, *};
-use libmars::common::x11::window::X11Window;
-use libmars::draw::*;
-use libmars::draw::x11::widget::*;
-use libmars::draw::x11::canvas::*;
+use libmars::platforms::x11::misc::atoms::X11Atom::{self, *};
+use libmars::platforms::x11::misc::window::X11Window;
+use libmars::interfaces::draw::*;
+use libmars::platforms::x11::draw::widget::*;
+use libmars::platforms::x11::draw::canvas::*;
 use libmars::utils::configuration::print_config;
 use std::ffi::*;
 use std::iter;
@@ -72,7 +72,7 @@ impl Bar {
               default_client_event_mask: i64, create_tray: bool) -> Result<Bar, String> {
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window_type = Some(NetWMWindowTypeDock);
-        let window = libmars::common::x11::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
+        let window = libmars::platforms::x11::misc::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
         let mut dimensions = dimensions;
         dimensions.set_h(config.style.height);
 
@@ -462,7 +462,7 @@ impl Bar {
     }
 
     fn await_map_notify(&mut self) {
-        libmars::common::x11::await_map_notify(self.display, self.window);
+        libmars::platforms::x11::misc::await_map_notify(self.display, self.window);
         self.draw();
         println!("Window mapped: 0x{:x}, {:?}", self.window, self.window.x11_dimensions(self.display));
     }
@@ -476,7 +476,7 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
             xlib::XNextEvent(bar.display, event.as_mut_ptr());
             let event = event.assume_init();
             if have_xrandr && event.get_type() == xrr_event_base + xrandr::RRNotify {
-                let monitors = libmars::common::x11::query_monitor_config(display, true);
+                let monitors = libmars::platforms::x11::misc::query_monitor_config(display, true);
                 bar.reconfigure(monitors.first().unwrap().clone());
             } else {
                 bar.handle_xevent(event);
@@ -503,7 +503,7 @@ fn main() {
     }
 
     // test();
-    let display = libmars::common::x11::open_display().unwrap();
+    let display = libmars::platforms::x11::misc::open_display().unwrap();
 
     // unsafe {
     //     #[cfg(debug_assertions)]
@@ -523,7 +523,7 @@ fn main() {
     };
 
     let status_cmd = config.status_cmd.clone();
-    let monitors = libmars::common::x11::query_monitor_config(display, true);
+    let monitors = libmars::platforms::x11::misc::query_monitor_config(display, true);
     let mut bar = Bar::create_for_monitor(display, monitors.first().unwrap(), config, true).unwrap();
     bar.await_map_notify();
 
@@ -544,7 +544,7 @@ fn main() {
     if let Some(mut proc) = status_cmd_proc {
         let _result = proc.kill();
     }
-    libmars::common::x11::close_display(display);
+    libmars::platforms::x11::misc::close_display(display);
 }
 
 extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEvent) -> c_int {

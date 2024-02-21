@@ -2,8 +2,8 @@ extern crate x11;
 
 use clap::Parser;
 use libmars::common::error::MarsError;
-use libmars::control::*;
-use libmars::control::x11::X11Controller;
+use libmars::interfaces::control::*;
+use libmars::platforms::x11::control::X11Controller;
 use x11::xlib;
 
 use crate::menu::*;

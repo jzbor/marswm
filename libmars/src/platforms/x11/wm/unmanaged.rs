@@ -1,5 +1,5 @@
 use x11::xlib;
-use crate::common::x11::window::*;
+use crate::platforms::x11::misc::window::X11Window;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum UnmanagedType {

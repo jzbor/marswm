@@ -8,7 +8,7 @@ use std::slice;
 use x11::xlib;
 
 use crate::common::error::*;
-use crate::common::x11::*;
+use crate::platforms::x11::misc::*;
 
 
 pub trait X11Window {
@@ -247,7 +247,7 @@ impl X11Window for xlib::Window {
 
     fn x11_dimensions(&self, display: *mut xlib::Display) -> Result<Dimensions> {
         self.x11_geometry(display)
-            .map(|(_root, x, y, w, h, _bw, _depth)| Dimensions { x, y, w, h })
+            .map(|(_root, x, y, w, h, _bw, _depth)| Dimensions::new(x, y, w, h))
     }
 
     fn x11_geometry(&self, display: *mut xlib::Display) -> Result<(u64, i32, i32, u32, u32, u32, u32)> {

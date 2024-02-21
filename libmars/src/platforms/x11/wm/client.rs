@@ -5,13 +5,16 @@ use std::ffi::*;
 use x11::xlib;
 
 use crate::common::error::*;
-use crate::common::x11::*;
-use crate::common::x11::atoms::*;
-use crate::common::x11::atoms::X11Atom::*;
-use crate::common::x11::window::*;
-use crate::draw::x11::widget::*;
-use crate::wm::*;
-use crate::wm::x11::*;
+use crate::common::*;
+use crate::interfaces::wm::*;
+use crate::platforms::x11::{
+    draw::widget::*,
+    misc::*,
+    misc::atoms::*,
+    misc::atoms::X11Atom::*,
+    misc::window::*,
+    wm::*,
+};
 
 
 pub struct X11Client<A: PartialEq> {

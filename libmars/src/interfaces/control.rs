@@ -3,9 +3,6 @@
 use crate::common::error::*;
 
 
-pub mod x11;
-
-
 pub enum SettingMode {
     Set, Unset, Toggle
 }

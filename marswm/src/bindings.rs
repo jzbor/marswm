@@ -1,6 +1,6 @@
 extern crate x11;
 
-use libmars::common::x11::get_keysym;
+use libmars::platforms::x11::misc::get_keysym;
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
 use std::cmp;

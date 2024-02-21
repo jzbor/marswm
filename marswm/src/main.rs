@@ -2,8 +2,8 @@
 
 use clap::Parser;
 use libmars::utils::configuration::*;
-use libmars::wm::*;
-use libmars::wm::x11::backend::X11Backend;
+use libmars::interfaces::wm::*;
+use libmars::platforms::x11::wm::backend::X11Backend;
 use std::cell::RefCell;
 use std::rc::Rc;
 

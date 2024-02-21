@@ -1,12 +1,13 @@
 extern crate x11;
 
-use x11::xlib;
 use std::cmp;
+use x11::xlib;
 
 use crate::common::*;
-use crate::common::x11::window::*;
-use crate::draw::*;
-use crate::draw::x11::canvas::X11Canvas;
+use crate::common::error::*;
+use crate::platforms::x11::misc::window::*;
+use crate::interfaces::draw::*;
+use crate::platforms::x11::draw::canvas::X11Canvas;
 
 
 pub const MIN_SIZE: (u32, u32) = (10, 10);

@@ -1,6 +1,6 @@
 use libmars::common::*;
 use libmars::enum_with_values;
-use libmars::wm::Client;
+use libmars::interfaces::wm::Client;
 use serde::{Serialize, Deserialize};
 use std::cell::RefCell;
 use std::rc::Rc;

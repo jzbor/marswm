@@ -11,9 +11,11 @@ use x11::xrandr;
 
 use crate::common::error::*;
 use crate::common::*;
-use crate::common::x11::atoms::*;
-use crate::common::x11::atoms::X11Atom::*;
-use crate::common::x11::window::*;
+use crate::platforms::x11::misc::{
+    atoms::*,
+    atoms::X11Atom::*,
+    window::*,
+};
 
 pub mod atoms;
 pub mod window;
@@ -42,13 +44,9 @@ pub const MWM_DECOR_TITLE: u64 = 1 << 3;
 
 impl From<xinerama::XineramaScreenInfo> for MonitorConfig {
     fn from(info: xinerama::XineramaScreenInfo) -> MonitorConfig {
-        let area = Dimensions { x: info.x_org.into(), y: info.y_org.into(),
-                                w: info.width.try_into().unwrap(), h: info.height.try_into().unwrap() };
-        MonitorConfig {
-            name: format!("output{}", info.screen_number),
-            dims: area,
-            win_area: area,
-        }
+        let area = Dimensions::new(info.x_org.into(), info.y_org.into(),
+            info.width.try_into().unwrap(), info.height.try_into().unwrap());
+        MonitorConfig::new( format!("output{}", info.screen_number), area, area)
     }
 }
 
@@ -58,14 +56,10 @@ impl From<(*mut xlib::Display, &xrandr::XRRMonitorInfo)> for MonitorConfig {
             Some(name) => name,
             None => format!("monitor{}", monitor_info.noutput),
         };
-        let area = Dimensions { x: monitor_info.x, y: monitor_info.y,
-                                w: monitor_info.width as u32, h: monitor_info.height as u32 };
+        let area = Dimensions::new(monitor_info.x, monitor_info.y,
+            monitor_info.width as u32, monitor_info.height as u32);
 
-        MonitorConfig {
-            name,
-            dims: area,
-            win_area: area,
-        }
+        MonitorConfig::new(name, area, area)
     }
 }
 
@@ -75,7 +69,7 @@ impl From<*mut xlib::Screen> for MonitorConfig {
         let h = unsafe { xlib::XHeightOfScreen(screen).try_into().unwrap() };
         let dims = Dimensions::new(0, 0, w, h);
 
-        MonitorConfig { name: "output".to_owned(), dims, win_area: dims }
+        MonitorConfig::new("output".to_owned(), dims, dims)
     }
 }
 

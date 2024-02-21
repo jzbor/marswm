@@ -1,9 +1,11 @@
 extern crate x11;
 
-use core::marker::PhantomData;
+use std::cell::RefCell;
 use std::ffi::*;
+use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 use x11::xlib;
 use x11::xrandr;
@@ -11,11 +13,15 @@ use x11::xrandr;
 use super::*;
 use super::unmanaged::*;
 use super::client::*;
-use crate::wm::*;
-use crate::common::x11::*;
-use crate::common::x11::atoms::*;
-use crate::common::x11::atoms::X11Atom::*;
-use crate::common::x11::window::*;
+use crate::common::*;
+use crate::common::error::Result;
+use crate::interfaces::wm::*;
+use crate::platforms::x11::misc::{
+    *,
+    atoms::*,
+    atoms::X11Atom::*,
+    window::*,
+};
 
 
 

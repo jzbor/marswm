@@ -5,11 +5,14 @@ use std::ffi::*;
 use x11::xlib::{self, XDefaultRootWindow};
 
 use crate::common::error::*;
-use crate::common::x11::atoms::X11Atom::*;
-use crate::common::x11::atoms::X11Atom;
-use crate::common::x11::send_client_message;
-use crate::common::x11::window::X11Window;
-use crate::control::*;
+use crate::interfaces::control::*;
+use crate::platforms::x11::misc::{
+    atoms::X11Atom,
+    atoms::X11Atom::*,
+    send_client_message,
+    window::X11Window,
+};
+
 
 pub type EventHandlerFn = Option<unsafe extern "C" fn(_: *mut xlib::Display, _: *mut xlib::XErrorEvent) -> c_int>;
 
@@ -18,6 +21,7 @@ pub struct X11Controller {
     root: xlib::Window,
     event_handler: EventHandlerFn,
 }
+
 
 impl X11Controller {
     pub fn new_from_display(display: *mut xlib::Display, event_handler: EventHandlerFn) -> X11Controller {

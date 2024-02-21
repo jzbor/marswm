@@ -6,8 +6,6 @@ use std::rc::Rc;
 use crate::common::*;
 use crate::common::error::*;
 
-pub mod x11;
-
 pub trait WindowManager<B: Backend<A>, A> {
     fn active_client(&self) -> Option<Rc<RefCell<B::Client>>>;
     fn active_workspace(&self, backend: &mut B) -> u32;
@@ -77,7 +75,7 @@ pub trait Client<A>: Eq + Dimensioned {
     fn warp_pointer_to_corner(&self);
 }
 
-type MouseActionFn<B, WM, C> = fn(&mut B, &mut WM, &Rc<RefCell<C>>, (i32, i32), (u32, u32), (i32, i32));
+pub type MouseActionFn<B, WM, C> = fn(&mut B, &mut WM, &Rc<RefCell<C>>, (i32, i32), (u32, u32), (i32, i32));
 
 pub trait Backend<A> {
     /// Associated client type

@@ -1,7 +1,7 @@
 use core::result::Result as CoreResult;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-use crate::common::x11::atoms::X11Atom;
+use crate::platforms::x11::misc::atoms::X11Atom;
 
 pub type Result<T> = CoreResult<T, MarsError>;
 

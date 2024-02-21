@@ -1,9 +1,9 @@
 extern crate x11;
 
 use libmars::common::error::*;
-use libmars::control::WMController;
-use libmars::control::x11::X11Controller;
-use libmars::draw::x11::widget::*;
+use libmars::interfaces::control::WMController;
+use libmars::platforms::x11::control::X11Controller;
+use libmars::platforms::x11::draw::widget::*;
 
 pub struct StatusEventHandler {
     block: usize,

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use serde::{Serialize, Deserialize};
-use libmars::wm::Client;
+use libmars::interfaces::wm::Client;
 
 use crate::attributes::*;
 use crate::bindings::*;
