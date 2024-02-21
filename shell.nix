@@ -2,7 +2,7 @@
   pkgs.mkShell {
     nativeBuildInputs = with pkgs; [
       pkg-config
-      clang
+      xorg.xinit
     ];
     buildInputs = with pkgs; [
       xorg.libX11
