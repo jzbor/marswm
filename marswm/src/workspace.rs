@@ -1,6 +1,7 @@
 use libmars::common::*;
 use libmars::interfaces::wm::Client;
 use std::cell::RefCell;
+use std::cmp;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
@@ -267,7 +268,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.clients.iter().filter(|c| !c.borrow().attributes().is_floating));
+        Box::new(self.clients.iter().filter(|c| !c.borrow().attributes().is_floating))
     }
 
     pub fn update_window_area(&mut self, win_area: Dimensions) {
@@ -279,13 +280,18 @@ impl<C: Client<Attributes>> Workspace<C> {
 impl<C: Client<Attributes>> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         client_rc.borrow_mut().export_workspace(self.global_index);
-        self.clients.push_front(client_rc.clone());
+        let stack_top = cmp::min(self.clients.len(), self.layout_config.nmain.try_into().unwrap());
+        match self.layout_config.attach_position {
+            AttachPosition::Main => self.clients.push_front(client_rc.clone()),
+            AttachPosition::StackTop => self.clients.insert(stack_top, client_rc.clone()),
+            AttachPosition::StackBottom => self.clients.push_back(client_rc.clone()),
+        }
         self.clients_stack.push_front(client_rc);
         self.restack();
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.clients.iter());
+        Box::new(self.clients.iter())
     }
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {

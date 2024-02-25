@@ -36,6 +36,16 @@ enum_with_values! {
 enum_with_values! {
     #[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
     #[serde(rename_all = "kebab-case")]
+    vis pub enum AttachPosition {
+        Main,
+        StackTop,
+        StackBottom
+    }
+}
+
+enum_with_values! {
+    #[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
+    #[serde(rename_all = "kebab-case")]
     vis pub enum StackMode {
         Deck,
         Split

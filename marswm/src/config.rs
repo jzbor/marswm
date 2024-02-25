@@ -7,6 +7,7 @@ use crate::bindings::*;
 use crate::layouts::LayoutType;
 use crate::layouts::StackMode;
 use crate::layouts::StackPosition;
+use crate::layouts::AttachPosition;
 use crate::rules::*;
 
 const BUTTON_BINDINGS_FILE: &str = "buttonbindings.yaml";
@@ -60,6 +61,9 @@ pub struct LayoutConfiguration {
 
     /// mode of laying out the windows in the stack area (dynamic layout)
     pub stack_mode: StackMode,
+
+    /// where to attach new clients in a tiling layout
+    pub attach_position: AttachPosition,
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
@@ -146,6 +150,7 @@ impl Default for LayoutConfiguration {
             nmain: 1,
             stack_position: StackPosition::Right,
             stack_mode: StackMode::Split,
+            attach_position: AttachPosition::Main,
         }
     }
 }
@@ -233,13 +238,13 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
 }
 
 pub fn read_config() -> Configuration {
-    return match read_config_file(CONFIG_DIR, CONFIG_FILE) {
+    match read_config_file(CONFIG_DIR, CONFIG_FILE) {
         Ok(config) => config,
         Err(msg) => {
             eprintln!("Unable to read configuration: {}", msg);
             Configuration::default()
         },
-    };
+    }
 }
 
 pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
@@ -265,12 +270,12 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
 
 pub fn read_rules() -> Vec<Rule> {
     let result = read_config_file(CONFIG_DIR, RULES_FILE);
-    return match result {
+    match result {
         Ok(rules) => rules,
         Err(msg) => {
             eprintln!("Unable to read window rules: {}", msg);
             Vec::new()
         },
-    };
+    }
 }
 

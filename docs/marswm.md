@@ -38,13 +38,14 @@ All of the following options belong in the `layout` section:
 * `gap_width` - size of the gap between windows and between the windowing area and the screen edge
 * `main_ratio` - share of space that the main windows take on the screen
 * `nmain` - how many windows the main area contains on a new workspace
+* `attach_position` - where to attach new windows in a tiling layout (one of `main`, `stack-top`, `stack-bottom`)
 
 Some of these values can be changed at runtime through respective key bindings.
 
 ### The `dynamic` Layout
 As the name suggest the dynamic layout can be used to implement a variety of different layouts.
 It is configured by these two parameters (also in the `layout` section of the configuration file):
-* `stack_position` - specifies where the stack windows should be placed in relation to the main windows
+* `stack_position` - specifies where the stack windows should be placed in relation to the main windows (one of `right`, `left`, `bottom`, `top`)
 * `stack_mode` - describes whether the stack windows should be in a `split` or `deck` configuration
 
 
