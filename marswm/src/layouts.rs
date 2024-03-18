@@ -96,7 +96,7 @@ fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &
     let stack_clients_1 = stack_clients_0.split_off(stack_clients_0.len() / 2);
     let adjusted_main_ratio = config.main_ratio / (2. - config.main_ratio);
 
-    let (main_width, main_dimensions) = if main_clients.len() != 0 {
+    let (main_width, main_dimensions) = if !main_clients.is_empty() {
         let main_width: u32 = (win_area.w() as f32 * adjusted_main_ratio) as u32;
         let main_dimensions = Dimensions::new(
             win_area.center().0 - main_width as i32 / 2 + config.gap_width as i32 / 2,

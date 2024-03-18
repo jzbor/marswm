@@ -108,6 +108,7 @@ pub struct ThemingConfiguration {
 
 #[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
 #[serde(default)]
+#[derive(Default)]
 pub struct NoDecorThemingConfiguration {
     /// width of the frame that client windows are reparented to
     pub frame_width: (u32, u32, u32, u32),
@@ -174,15 +175,7 @@ impl Default for ThemingConfiguration {
     }
 }
 
-impl Default for NoDecorThemingConfiguration {
-    fn default() -> Self {
-        NoDecorThemingConfiguration {
-            frame_width: (0, 0, 0, 0),
-            inner_border_width: 0,
-            outer_border_width: 0,
-        }
-    }
-}
+
 
 impl Default for WindowPlacement {
     fn default() -> Self {

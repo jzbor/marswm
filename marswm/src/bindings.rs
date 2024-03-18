@@ -193,8 +193,7 @@ impl BindingAction {
             },
             MoveWorkspace(ws) => if let Some(client_rc) = client_option {
                 let ws_index_option = wm.get_monitor_mut(&client_rc)
-                    .map(|m| m.workspace(*ws))
-                    .flatten()
+                    .and_then(|m| m.workspace(*ws))
                     .map(|ws| ws.global_index());
                 if let Some(ws_index) = ws_index_option {
                     wm.move_to_workspace(backend, client_rc, ws_index);

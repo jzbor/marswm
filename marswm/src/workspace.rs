@@ -159,7 +159,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn raise_client(&mut self, client_rc: &Rc<RefCell<C>>) {
-        if !self.contains(&client_rc) {
+        if !self.contains(client_rc) {
             return;
         }
 

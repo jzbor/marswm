@@ -34,7 +34,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         // stores exec path to enable reloading after rebuild
         // might have security implications
         let mut wm = MarsWM {
-            backend_phantom: PhantomData::default(),
+            backend_phantom: PhantomData,
             exec_path: env::current_exe().unwrap(),
             config,
             active_client: None,
@@ -217,7 +217,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                     clients.iter()
                         .filter(|c| *c != &active)
                         .map(|c| (c, y_diff(c)))
-                        .filter(|(c, v)| v.abs() >= x_diff(&c).abs())
+                        .filter(|(c, v)| v.abs() >= x_diff(c).abs())
                         .filter(|(_, v)| *v < 0)
                         .fold((&active, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
                             if cur_d > acc_d {
@@ -231,7 +231,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                     clients.iter()
                         .filter(|c| *c != &active)
                         .map(|c| (c, y_diff(c)))
-                        .filter(|(c, v)| v.abs() >= x_diff(&c).abs())
+                        .filter(|(c, v)| v.abs() >= x_diff(c).abs())
                         .filter(|(_, v)| *v > 0)
                         .fold((&active, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
                             if cur_d < acc_d {
@@ -245,7 +245,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                     clients.iter()
                         .filter(|c| *c != &active)
                         .map(|c| (c, x_diff(c)))
-                        .filter(|(c, v)| v.abs() >= y_diff(&c).abs())
+                        .filter(|(c, v)| v.abs() >= y_diff(c).abs())
                         .filter(|(_, v)| *v < 0)
                         .fold((&active, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
                             if cur_d > acc_d {
@@ -259,7 +259,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                     clients.iter()
                         .filter(|c| *c != &active)
                         .map(|c| (c, x_diff(c)))
-                        .filter(|(c, v)| v.abs() >= y_diff(&c).abs())
+                        .filter(|(c, v)| v.abs() >= y_diff(c).abs())
                         .filter(|(_, v)| *v > 0)
                         .fold((&active, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
                             if cur_d < acc_d {
@@ -286,7 +286,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
                 if let Some(selected) = clients.first() {
                     if selected != &active {
                         selected.borrow().warp_pointer_to_center();
-                        ws.raise_client(&selected);
+                        ws.raise_client(selected);
                     }
                 }
             } else {
@@ -327,7 +327,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         let mut tiled_clients = self.monitors.iter()
             .flat_map(|m| m.workspaces())
             .flat_map(|ws| ws.tiled_clients());
-        tiled_clients.find(|c| *c == client_rc).is_some()
+        tiled_clients.any(|c| c == client_rc)
     }
 
     pub fn get_monitor(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Monitor<B::Client>> {
@@ -363,7 +363,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         client_rc.borrow_mut().move_resize(dest_x, dest_y, size.0, size.1);
         let client_center = client_rc.borrow().center();
 
-        if let Some(workspace) = wm.get_workspace_mut(&client_rc) {
+        if let Some(workspace) = wm.get_workspace_mut(client_rc) {
             let other_index_option = workspace.tiled_clients()
                 .enumerate()
                 .find(|(_, c)| *c != client_rc && c.borrow().dimensions().contains_point(client_center))
@@ -826,11 +826,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
         // select new window to be focused
         let new_active = if let Some(client_rc) = to_workspace.clients().find(|c| c.borrow().is_fullscreen()) {
             Some(client_rc.clone())
-        } else if let Some(client_rc) = to_workspace.clients().next() {
-            Some(client_rc.clone())
-        } else {
-            None
-        };
+        } else { to_workspace.clients().next().cloned() };
         self.focus_client(backend, new_active);
 
         backend.export_current_workspace(workspace_idx);
