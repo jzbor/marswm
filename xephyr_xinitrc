@@ -2,4 +2,4 @@
 xclock &
 xterm &
 
-exec ./target/debug/marswm
+RUST_BACKTRACE=1 exec ./target/debug/marswm

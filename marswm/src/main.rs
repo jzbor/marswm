@@ -3,7 +3,7 @@
 use clap::Parser;
 use libmars::utils::configuration::*;
 use libmars::interfaces::wm::*;
-use libmars::platforms::x11::wm::backend::X11Backend;
+use libmars::platforms::x11rb::wm::backend::X11RBBackend;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -139,7 +139,7 @@ fn main() {
             }
         }
 
-        let mut backend = X11Backend::init("marswm").unwrap();
+        let mut backend = X11RBBackend::init("marswm").unwrap();
         let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);
         backend.run(&mut wm);
     }

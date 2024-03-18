@@ -10,6 +10,7 @@ enum_with_values! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     vis pub enum X11Atom {
         XAAtom,
+        XACardinal,
         XAWindow,
 
         // ICCCM
@@ -22,6 +23,7 @@ enum_with_values! {
         WMNormalHints,
         WMProtocols,
         WMState,
+        WMTransientFor,
 
         // EWMH
         NetActiveWindow,
@@ -102,6 +104,7 @@ impl X11Atom {
     pub fn as_str(&self) -> &'static str {
         match self {
             X11Atom::XAAtom => "XA_ATOM",
+            X11Atom::XACardinal => "XA_CARDINAL",
             X11Atom::XAWindow => "XA_WINDOW",
 
             X11Atom::UTF8String => "UTF8_STRING",
@@ -109,10 +112,11 @@ impl X11Atom {
             X11Atom::WMDeleteWindow => "WM_DELETE_WINDOW",
             X11Atom::WMIconName => "WM_ICON_NAME",
             X11Atom::WMIconSize => "WM_ICON_SIZE",
-            X11Atom::WMProtocols => "WM_PROTOCOLS",
             X11Atom::WMName => "WM_NAME",
             X11Atom::WMNormalHints => "WM_NORMAL_HINTS",
+            X11Atom::WMProtocols => "WM_PROTOCOLS",
             X11Atom::WMState => "WM_STATE",
+            X11Atom::WMTransientFor => "WM_TRANSIENT_FOR",
 
             X11Atom::NetActiveWindow => "_NET_ACTIVE_WINDOW",
             X11Atom::NetClientList => "_NET_CLIENT_LIST",

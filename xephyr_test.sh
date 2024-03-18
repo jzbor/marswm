@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # export RUSTFLAGS="-C prefer-dynamic"
-cargo build --features xlib || exit 1
+cargo build || exit 1
 XEPHYR=$(whereis -b Xephyr | cut -f2 -d' ')
 xinit ./xephyr_xinitrc -- \
     "$XEPHYR" \
