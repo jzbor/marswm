@@ -31,6 +31,7 @@ Currently the following layouts are supported:
 * `monocle` - all window are stacked on top of each other and fill the whole area
 * `deck` - other windows are stacked to the right of the main windows on top of each other
 * `dynamic` - this one is a little more complicated and is described in more detail down below
+* `centered` - the main window is centered in the middle with the stack laid out to the left and right
 
 You can influence the layout of the windows with different parameters.
 All of the following options belong in the `layout` section:

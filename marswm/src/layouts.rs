@@ -18,7 +18,8 @@ enum_with_values! {
         BottomStack,
         Monocle,
         Deck,
-        Dynamic
+        Dynamic,
+        Centered
     }
 }
 
@@ -77,6 +78,9 @@ impl<C: Client<Attributes>> Layout<C> {
             LayoutType::Dynamic => Layout {
                 apply: apply_layout_dynamic,
             },
+            LayoutType::Centered => Layout {
+                apply: apply_layout_centered,
+            },
         }
     }
 
@@ -84,6 +88,52 @@ impl<C: Client<Attributes>> Layout<C> {
         (self.apply)(win_area, clients, config);
     }
 }
+
+fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+    let mut clients = clients.iter();
+    let main_clients: Vec<_> = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
+    let mut stack_clients_0: Vec<_> = clients.collect();
+    let stack_clients_1 = stack_clients_0.split_off(stack_clients_0.len() / 2);
+    let adjusted_main_ratio = config.main_ratio / (2. - config.main_ratio);
+
+    let (main_width, main_dimensions) = if main_clients.len() != 0 {
+        let main_width: u32 = (win_area.w() as f32 * adjusted_main_ratio) as u32;
+        let main_dimensions = Dimensions::new(
+            win_area.center().0 - main_width as i32 / 2 + config.gap_width as i32 / 2,
+            win_area.y() + config.gap_width as i32,
+            main_width.saturating_sub(config.gap_width),
+            win_area.h().saturating_sub(config.gap_width * 2),
+        );
+        (main_width, main_dimensions)
+    } else {
+        let main_width: u32 = 0;
+        let main_dimensions = Dimensions::new(0, 0, 0, 0);
+        (main_width, main_dimensions)
+    };
+
+
+    let stack_width_0 = (win_area.w() - main_width) / 2;
+    let stack_width_1 = win_area.w() - main_width - stack_width_0;
+
+    let stack_dimensions_0 = Dimensions::new(
+        win_area.x() + config.gap_width as i32,
+        win_area.y() + config.gap_width as i32,
+        stack_width_0.saturating_sub(config.gap_width + config.gap_width / 2),
+        win_area.h().saturating_sub(config.gap_width * 2),
+    );
+
+    let stack_dimensions_1 = Dimensions::new(
+        win_area.x() + stack_width_0 as i32 + main_width as i32 + config.gap_width as i32 / 2,
+        win_area.y() + config.gap_width as i32,
+        stack_width_1.saturating_sub(config.gap_width + config.gap_width / 2),
+        win_area.h().saturating_sub(config.gap_width * 2),
+    );
+
+    stack_clients_vertically(main_dimensions, main_clients, config.gap_width);
+    stack_clients_vertically(stack_dimensions_0, stack_clients_0, config.gap_width);
+    stack_clients_vertically(stack_dimensions_1, stack_clients_1, config.gap_width);
+}
+
 
 fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
     let mut config = *config;
