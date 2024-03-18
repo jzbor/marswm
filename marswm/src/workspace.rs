@@ -48,6 +48,10 @@ impl<C: Client<Attributes>> Workspace<C> {
         }
     }
 
+    pub fn clients_as_stacked(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
+        Box::new(self.clients_stack.iter())
+    }
+
     pub fn current_layout(&self) -> LayoutType {
         self.cur_layout
     }

@@ -53,6 +53,8 @@ pub enum BindingAction {
     Execute(String),
     /// Exit the window manager
     Exit,
+    /// Focus next client in the specified direction
+    FocusDirection(Direction),
     /// Switch between the last focused window of the main and stack area
     FocusMain,
     /// Increase or decrease the gap width of the current workspace
@@ -99,6 +101,14 @@ pub enum Modifier {
     Mod4,
     Shift,
     Control,
+}
+
+#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Copy,Clone)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
@@ -157,6 +167,7 @@ impl BindingAction {
             Exit => {
                 wm.exit(backend);
             },
+            FocusDirection(d) => wm.focus_direction(backend, *d),
             FocusMain => wm.switch_to_main(backend),
             IncGaps(i) => wm.current_workspace_mut(backend).inc_gaps(*i),
             IncNMain(i) => wm.current_workspace_mut(backend).inc_nmain(*i),
@@ -279,6 +290,7 @@ impl Modifier {
 pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
     use BindingAction::*;
     use Modifier::*;
+    use Direction::*;
     let mut bindings = vec![
         KeyBinding::new(vec![DEFAULT_MODKEY], "Delete", CloseClient),
         KeyBinding::new(vec![DEFAULT_MODKEY], "n", CycleLayout),
@@ -293,10 +305,10 @@ pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         KeyBinding::new(vec![DEFAULT_MODKEY], "x", IncNMain(-1)),
         KeyBinding::new(vec![DEFAULT_MODKEY, Control], "a", ChangeMainRatio(0.10)),
         KeyBinding::new(vec![DEFAULT_MODKEY, Control], "x", ChangeMainRatio(-0.10)),
-        KeyBinding::new(vec![DEFAULT_MODKEY], "j", CycleClient(1)),
-        KeyBinding::new(vec![DEFAULT_MODKEY], "k", CycleClient(-1)),
-        KeyBinding::new(vec![DEFAULT_MODKEY], "h", FocusMain),
-        KeyBinding::new(vec![DEFAULT_MODKEY], "l", FocusMain),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "j", FocusDirection(Down)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "k", FocusDirection(Up)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "h", FocusDirection(Left)),
+        KeyBinding::new(vec![DEFAULT_MODKEY], "l", FocusDirection(Right)),
         KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "j", StackMove(1)),
         KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "k", StackMove(-1)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "period", CycleWorkspace(1)),

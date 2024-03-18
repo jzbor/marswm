@@ -202,6 +202,101 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         self.switch_workspace(backend, new_workspace_idx);
     }
 
+    pub fn focus_direction(&mut self, backend: &mut B, dir: Direction) {
+        use Direction::*;
+        if let Some(active) = self.active_client.clone() {
+            let ws = self.current_workspace_mut(backend);
+            let clients: Vec<_> = ws.clients_as_stacked().cloned().collect();
+
+            let client_center = active.borrow().center();
+            let x_diff = |c: &Rc<RefCell<B::Client>>| c.borrow().center().0 - client_center.0;
+            let y_diff = |c: &Rc<RefCell<B::Client>>| c.borrow().center().1 - client_center.1;
+
+            let (selected, _) = match dir {
+                Up => {
+                    clients.iter()
+                        .filter(|c| *c != &active)
+                        .map(|c| (c, y_diff(c)))
+                        .filter(|(c, v)| v.abs() >= x_diff(&c).abs())
+                        .filter(|(_, v)| *v < 0)
+                        .fold((&active, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                            if cur_d > acc_d {
+                                (cur_c, cur_d)
+                            } else {
+                                (acc_c, acc_d)
+                            }
+                        })
+                },
+                Down => {
+                    clients.iter()
+                        .filter(|c| *c != &active)
+                        .map(|c| (c, y_diff(c)))
+                        .filter(|(c, v)| v.abs() >= x_diff(&c).abs())
+                        .filter(|(_, v)| *v > 0)
+                        .fold((&active, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                            if cur_d < acc_d {
+                                (cur_c, cur_d)
+                            } else {
+                                (acc_c, acc_d)
+                            }
+                        })
+                },
+                Left => {
+                    clients.iter()
+                        .filter(|c| *c != &active)
+                        .map(|c| (c, x_diff(c)))
+                        .filter(|(c, v)| v.abs() >= y_diff(&c).abs())
+                        .filter(|(_, v)| *v < 0)
+                        .fold((&active, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                            if cur_d > acc_d {
+                                (cur_c, cur_d)
+                            } else {
+                                (acc_c, acc_d)
+                            }
+                        })
+                },
+                Right => {
+                    clients.iter()
+                        .filter(|c| *c != &active)
+                        .map(|c| (c, x_diff(c)))
+                        .filter(|(c, v)| v.abs() >= y_diff(&c).abs())
+                        .filter(|(_, v)| *v > 0)
+                        .fold((&active, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                            if cur_d < acc_d {
+                                (cur_c, cur_d)
+                            } else {
+                                (acc_c, acc_d)
+                            }
+                        })
+                },
+            };
+
+            let selected = selected.clone();
+            if selected == active {
+                let mut clients: Vec<_> = ws.clients()
+                    .cloned()
+                    .filter(|c| x_diff(c) == 0 && y_diff(c) == 0)
+                    .collect();
+                if dir == Up || dir == Left {
+                    clients.reverse();
+                }
+                if let Some(i) = clients.iter().position(|c| c == &active) {
+                    clients.rotate_left(i + 1);
+                }
+                if let Some(selected) = clients.first() {
+                    if selected != &active {
+                        selected.borrow().warp_pointer_to_center();
+                        ws.raise_client(&selected);
+                    }
+                }
+            } else {
+                selected.borrow().warp_pointer_to_center();
+                ws.raise_client(&selected);
+            }
+        }
+    }
+
+
     pub fn decorate_active(&self, client_rc: Rc<RefCell<B::Client>>) {
         let mut client = (*client_rc).borrow_mut();
         if self.config.theming.invert_border_color {
