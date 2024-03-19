@@ -129,7 +129,7 @@ fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &
         win_area.h().saturating_sub(config.gap_width * 2),
     );
 
-    stack_clients_vertically(main_dimensions, main_clients, config.gap_width);
+    stack_clients_horizontally(main_dimensions, main_clients, config.gap_width);
     stack_clients_vertically(stack_dimensions_0, stack_clients_0, config.gap_width);
     stack_clients_vertically(stack_dimensions_1, stack_clients_1, config.gap_width);
 }
