@@ -77,14 +77,16 @@
       inherit buildInputs;
     };
   }) // {
-    nixosModules.default = { config, lib, system, ... }: with lib; let
+
+    ### NIXOS MODULE ###
+    nixosModules.default = { config, lib, pkgs, ... }: with lib; let
       cfg = config.services.xserver.windowManager.marswm;
     in {
       options.services.xserver.windowManager.marswm = {
         enable = mkEnableOption "marswm";
         package = mkOption {
           type        = types.package;
-          default     = self.packages.${system}.default;
+          default     = pkgs.marswm;
           description = lib.mdDoc ''
           marswm package to use.
           '';
@@ -92,14 +94,19 @@
         installScripts = mkEnableOption "install marswm scripts";
       };
       config = mkIf cfg.enable {
-        services.xserver.windowManager.session = {
-          manage = "desktop";
+        services.xserver.windowManager.session = singleton {
           name = "marswm";
           start = "${cfg.package}/bin/marswm";
         };
 
-        environment.systemPackages = [ cfg.package ] ++ (if cfg.installScripts then [ self.packages.${system}.marswm-scripts ] else []);
+        environment.systemPackages = [ cfg.package ] ++ (if cfg.installScripts then [ pkgs.marswm-scripts ] else []);
       };
+    };
+
+    ### OVERLAY ###
+    overlays.default = final: prev: {
+      marswm = self.packages.${prev.system}.default;
+      marswm-scripts = self.packages.${prev.system}.marswm-scripts;
     };
   };
 }
