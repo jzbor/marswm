@@ -87,6 +87,8 @@ pub enum BindingAction {
     SetStackPosition(StackPosition),
     /// Move the client up or down the stack
     StackMove(i32),
+    /// Swap with next client in direction
+    SwapDirection(Direction),
     /// Switch to a different workspace
     SwitchWorkspace(u32),
     /// Toggle floating state on the window
@@ -210,6 +212,7 @@ impl BindingAction {
             StackMove(i) => if let Some(client_rc) = client_option {
                 wm.current_workspace_mut(backend).stack_move(client_rc, *i);
             },
+            SwapDirection(dir) => wm.swap_direction(backend, *dir),
             SwitchWorkspace(ws) => {
                 let ws_index_option = wm.current_monitor(backend).workspace(*ws)
                     .map(|ws| ws.global_index());
@@ -308,8 +311,10 @@ pub fn default_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         KeyBinding::new(vec![DEFAULT_MODKEY], "k", FocusDirection(Up)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "h", FocusDirection(Left)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "l", FocusDirection(Right)),
-        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "j", StackMove(1)),
-        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "k", StackMove(-1)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "j", SwapDirection(Down)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "k", SwapDirection(Up)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "h", SwapDirection(Left)),
+        KeyBinding::new(vec![DEFAULT_MODKEY, Shift], "l", SwapDirection(Right)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "period", CycleWorkspace(1)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "comma", CycleWorkspace(-1)),
         KeyBinding::new(vec![DEFAULT_MODKEY], "f", ToggleFullscreen),

@@ -129,6 +129,96 @@ impl<C: Client<Attributes>> Workspace<C> {
         &self.name
     }
 
+    pub fn next_in_direction(&self, client_rc: Rc<RefCell<C>>, dir: Direction) -> Option<Rc<RefCell<C>>> {
+        use Direction::*;
+        let clients: Vec<_> = self.clients_as_stacked().cloned().collect();
+
+        let client_center = client_rc.borrow().center();
+        let x_diff = |c: &Rc<RefCell<C>>| c.borrow().center().0 - client_center.0;
+        let y_diff = |c: &Rc<RefCell<C>>| c.borrow().center().1 - client_center.1;
+
+        let (selected, _) = match dir {
+            Up => {
+                clients.iter()
+                    .filter(|c| *c != &client_rc)
+                    .map(|c| (c, y_diff(c)))
+                    .filter(|(c, v)| v.abs() >= x_diff(c).abs())
+                    .filter(|(_, v)| *v < 0)
+                    .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                        if cur_d > acc_d {
+                            (cur_c, cur_d)
+                        } else {
+                            (acc_c, acc_d)
+                        }
+                    })
+            },
+            Down => {
+                clients.iter()
+                    .filter(|c| *c != &client_rc)
+                    .map(|c| (c, y_diff(c)))
+                    .filter(|(c, v)| v.abs() >= x_diff(c).abs())
+                    .filter(|(_, v)| *v > 0)
+                    .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                        if cur_d < acc_d {
+                            (cur_c, cur_d)
+                        } else {
+                            (acc_c, acc_d)
+                        }
+                    })
+            },
+            Left => {
+                clients.iter()
+                    .filter(|c| *c != &client_rc)
+                    .map(|c| (c, x_diff(c)))
+                    .filter(|(c, v)| v.abs() >= y_diff(c).abs())
+                    .filter(|(_, v)| *v < 0)
+                    .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                        if cur_d > acc_d {
+                            (cur_c, cur_d)
+                        } else {
+                            (acc_c, acc_d)
+                        }
+                    })
+            },
+            Right => {
+                clients.iter()
+                    .filter(|c| *c != &client_rc)
+                    .map(|c| (c, x_diff(c)))
+                    .filter(|(c, v)| v.abs() >= y_diff(c).abs())
+                    .filter(|(_, v)| *v > 0)
+                    .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                        if cur_d < acc_d {
+                            (cur_c, cur_d)
+                        } else {
+                            (acc_c, acc_d)
+                        }
+                    })
+            },
+        };
+
+        let selected = selected.clone();
+        if selected == client_rc {
+            let mut clients: Vec<_> = self.clients()
+                .cloned()
+                .filter(|c| x_diff(c) == 0 && y_diff(c) == 0)
+                .collect();
+            if dir == Up || dir == Left {
+                clients.reverse();
+            }
+            if let Some(i) = clients.iter().position(|c| c == &client_rc) {
+                clients.rotate_left(i + 1);
+            }
+            if let Some(selected) = clients.first() {
+                if selected != &client_rc {
+                    return Some(selected.clone());
+                }
+            }
+        } else {
+            return Some(selected);
+        }
+        None
+    }
+
     pub fn pull_pinned(&mut self) -> Vec<Rc<RefCell<C>>> {
         let mut vec = Vec::new();
 
@@ -268,6 +358,16 @@ impl<C: Client<Attributes>> Workspace<C> {
             self.clients.remove(pos);
             self.clients.insert(i, client_rc.clone());
             // self.apply_layout();
+        }
+    }
+
+    pub fn swap_clients(&mut self, client_a: Rc<RefCell<C>>, client_b: Rc<RefCell<C>>) {
+        if let Some(pos_a) = self.clients.iter().position(|c| c == &client_a) {
+            if let Some(pos_b) = self.clients.iter().position(|c| c == &client_b) {
+                self.clients.swap(pos_a, pos_b);
+                self.apply_layout();
+                client_a.borrow().warp_pointer_to_center();
+            }
         }
     }
 
