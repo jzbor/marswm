@@ -1,6 +1,7 @@
 extern crate x11;
 
 use std::ffi::*;
+use std::mem::align_of;
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr;
@@ -280,7 +281,7 @@ impl X11Window for xlib::Window {
             let result = xlib::XGetWindowProperty(display, *self, NetWMWindowType.to_xlib_atom(display),
                 0, 8, xlib::False, xlib::XA_ATOM,
                 &mut da, &mut di, &mut nitems, &mut dl, &mut win_types_ptr);
-            if result == xlib::Success.into() {
+            if result == xlib::Success.into() && !win_types_ptr.is_null() {
                 let temp = slice::from_raw_parts(win_types_ptr as *mut xlib::Atom, nitems.try_into().unwrap());
                 types = temp.to_vec();
             }
