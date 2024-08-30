@@ -117,6 +117,8 @@ impl X11Window for xlib::Window {
                 Err(MarsError::property_unavailable(property))
             } else if xlib::Xutf8TextPropertyToTextList(display, text.as_ptr(), &mut data_ptr, &mut nitems) != 0 {
                 return Err(MarsError::failed_conversion(text.as_ptr(), stringify!(*mut *mut i8), stringify!(xlib::TextProperty)));
+            } else if data_ptr.is_null() {
+                Err(MarsError::property_unavailable(property))
             } else {
                 for ptr in slice::from_raw_parts(data_ptr, nitems.try_into().unwrap()) {
                     let cstr = CStr::from_ptr(*ptr);
