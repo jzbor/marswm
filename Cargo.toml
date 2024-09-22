@@ -16,11 +16,11 @@ license-file = "LICENSE"
 readme = "README.md"
 
 [workspace.dependencies]
-clap = { version = "4.3.11", features = ["derive"] }
+clap = { version = "4.5.17", features = ["derive"] }
 libmars = { path = "./libmars", version = "0.5.3" }
-serde = { version = "1.0.151", features = ["derive"] }
-serde_yaml = { version = "0.9.16" }
-x11 = { version = "2.19.1", features = ["xlib"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_yaml_ng = { version = "0.10.0" }
+x11 = { version = "2.21.0", features = ["xlib"] }
 
 
 [profile.release]
