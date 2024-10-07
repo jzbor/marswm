@@ -204,6 +204,10 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     pub fn focus_direction(&mut self, backend: &mut B, dir: Direction) {
         if let Some(active) = self.active_client.clone() {
+            if active.borrow().is_fullscreen() {
+                return;
+            }
+
             let ws = self.current_workspace_mut(backend);
             if let Some(selected) = ws.next_in_direction(active, dir) {
                 selected.borrow().warp_pointer_to_center();
