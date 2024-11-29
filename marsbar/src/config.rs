@@ -16,11 +16,6 @@ const DEFAULT_TEXT_PADDING_HORZ: u32 = 5;
 const DEFAULT_TEXT_PADDING_VERT: u32 = 0;
 
 
-pub trait CreateWidget<W: Widget> {
-    fn create_widget(&self, display: *mut xlib::Display, parent: xlib::Window) -> Result<W, String>;
-}
-
-
 #[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
 #[serde(default)]
 pub struct BarStyle {
