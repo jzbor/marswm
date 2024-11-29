@@ -29,8 +29,10 @@
     ];
   in {
     ### PACKAGES ###
-    packages = {
-      default = craneLib.buildPackage {
+    packages = rec {
+      default = marswm;
+
+      marswm = craneLib.buildPackage {
         pname = "marswm";
 
         src = ./.;
@@ -76,6 +78,21 @@
       nativeBuildInputs = nativeBuildInputs ++ devInputs;
       inherit buildInputs;
     };
+
+    ### APPS ###
+    apps = let
+      open-docs-script = pkgs.writeShellApplication {
+        name = "open-docs";
+        text = "xdg-open ${self.packages.${system}.docs}/index.html";
+      };
+    in rec {
+      open-docs = open-documentation;
+      open-documentation = {
+        type = "app";
+        program = "${open-docs-script}/bin/open-docs";
+      };
+    };
+
   }) // {
 
     ### NIXOS MODULE ###
