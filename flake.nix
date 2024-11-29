@@ -72,7 +72,7 @@
 
     ### DEVELOPMENT SHELLS ###
     devShells.default = pkgs.mkShellNoCC {
-      name = self.packages.${system}.default.name;
+      inherit (self.packages.${system}.default) name;
       nativeBuildInputs = nativeBuildInputs ++ devInputs;
       inherit buildInputs;
     };
@@ -104,9 +104,9 @@
     };
 
     ### OVERLAY ###
-    overlays.default = final: prev: {
+    overlays.default = _: prev: {
       marswm = self.packages.${prev.system}.default;
-      marswm-scripts = self.packages.${prev.system}.marswm-scripts;
+      inherit (self.packages.${prev.system}) marswm-scripts;
     };
   };
 }
