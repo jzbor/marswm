@@ -145,10 +145,7 @@ impl X11Window for xlib::Window {
 
     fn x11_net_wm_state_add(&self, display: *mut xlib::Display, state: X11Atom) {
         let states_result = self.x11_read_property_long(display, NetWMState, xlib::XA_ATOM);
-        let mut states = match states_result {
-            Ok(states) => states,
-            Err(_) => Vec::new(),
-        };
+        let mut states = states_result.unwrap_or_default();
 
         let atom = state.to_xlib_atom(display);
         if !states.contains(&atom) {
@@ -205,7 +202,7 @@ impl X11Window for xlib::Window {
 
     fn x11_read_property_string(&self, display: *mut xlib::Display, property: X11Atom) -> Result<String> {
         let v = self.x11_get_text_list_property(display, property)?;
-        match v.get(0) {
+        match v.first() {
             Some(string) => Ok(string.to_owned()),
             None => Err(MarsError::property_unavailable(property)),
         }

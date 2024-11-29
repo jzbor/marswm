@@ -54,7 +54,7 @@ enum_with_values! {
 }
 
 pub struct Layout<C: Client<Attributes>> {
-    apply: fn(Dimensions, &Vec<Rc<RefCell<C>>>, &LayoutConfiguration),
+    apply: fn(Dimensions, &[Rc<RefCell<C>>], &LayoutConfiguration),
 }
 
 impl<C: Client<Attributes>> Layout<C> {
@@ -84,12 +84,12 @@ impl<C: Client<Attributes>> Layout<C> {
         }
     }
 
-    pub fn apply_layout(&self, win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+    pub fn apply_layout(&self, win_area: Dimensions, clients: &[Rc<RefCell<C>>], config: &LayoutConfiguration) {
         (self.apply)(win_area, clients, config);
     }
 }
 
-fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &[Rc<RefCell<C>>], config: &LayoutConfiguration) {
     let mut clients = clients.iter();
     let main_clients: Vec<_> = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
     let mut stack_clients_0: Vec<_> = clients.collect();
@@ -135,14 +135,14 @@ fn apply_layout_centered<C: Client<Attributes>>(win_area: Dimensions, clients: &
 }
 
 
-fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_bottom_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &[Rc<RefCell<C>>], config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Bottom;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
 }
 
-fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &[Rc<RefCell<C>>], config: &LayoutConfiguration) {
     let nclients: u32 = clients.len().try_into().unwrap();
     let mut clients = clients.iter();
     let main_clients = (&mut clients).take(config.nmain.try_into().unwrap()).collect();
@@ -188,19 +188,19 @@ fn apply_layout_dynamic<C: Client<Attributes>>(win_area: Dimensions, clients: &V
     }
 }
 
-fn apply_layout_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &Vec<Rc<RefCell<C>>>, config: &LayoutConfiguration) {
+fn apply_layout_stack<C: Client<Attributes>>(win_area: Dimensions, clients: &[Rc<RefCell<C>>], config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Split;
     apply_layout_dynamic(win_area, clients, &config);
 }
 
-fn apply_layout_monocle(win_area: Dimensions, clients: &Vec<Rc<RefCell<impl Client<Attributes>>>>, _config: &LayoutConfiguration) {
+fn apply_layout_monocle(win_area: Dimensions, clients: &[Rc<RefCell<impl Client<Attributes>>>], _config: &LayoutConfiguration) {
     let clients = clients.iter().collect();
     stack_clients_ontop(win_area, clients);
 }
 
-fn apply_layout_deck(win_area: Dimensions, clients: &Vec<Rc<RefCell<impl Client<Attributes>>>>, config: &LayoutConfiguration) {
+fn apply_layout_deck(win_area: Dimensions, clients: &[Rc<RefCell<impl Client<Attributes>>>], config: &LayoutConfiguration) {
     let mut config = *config;
     config.stack_position = StackPosition::Right;
     config.stack_mode = StackMode::Deck;

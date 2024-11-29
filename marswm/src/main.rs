@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![allow(clippy::comparison_chain)]
 
 use clap::Parser;
 use libmars::utils::configuration::*;

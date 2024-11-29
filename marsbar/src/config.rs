@@ -86,22 +86,22 @@ impl Default for TextWidgetStyle {
 impl ContainerWidgetStyle {
     pub fn create_flow_layout_widget<W: Widget>(&self, display: *mut xlib::Display, parent: xlib::Window)
             -> Result<X11FlowLayoutWidget<W>, String> {
-        X11FlowLayoutWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert, self.spacing,
-                                     Vec::new(), self.outer_background)
+        let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_vert);
+        X11FlowLayoutWidget::new(display, parent, params, self.spacing, Vec::new(), self.outer_background)
             .map_err(|e| e.to_string())
     }
 
     pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
             -> Result<X11TextWidget, String> {
-        X11TextWidget::new(display, parent, 0, 0, self.text_padding_horz, self.text_padding_vert,
-                               "".to_string(), font, self.foreground, self.inner_background)
+        let params = X11WidgetParams::new(0, 0, self.text_padding_horz, self.text_padding_vert);
+        X11TextWidget::new(display, parent, params, "".to_string(), font, self.foreground, self.inner_background)
             .map_err(|e| e.to_string())
     }
 
     pub fn create_systray_widget(&self, display: *mut xlib::Display, parent: xlib::Window, parent_height: u32)
             -> Result<SystemTrayWidget, String> {
-        SystemTrayWidget::new(display, parent, 0, 0, parent_height - 2 * self.spacing, self.padding_horz,
-                                     self.padding_horz, self.padding_vert, self.inner_background)
+        let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_vert);
+        SystemTrayWidget::new(display, parent, params, parent_height - 2 * self.spacing, self.padding_horz, self.inner_background)
             .map_err(|e| e.to_string())
     }
 
@@ -135,8 +135,8 @@ impl ContainerWidgetStyle {
 impl TextWidgetStyle {
     pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
             -> Result<X11TextWidget, String> {
-        X11TextWidget::new(display, parent, 0, 0, self.padding_horz, self.padding_vert,
-                               "".to_string(), font, self.foreground, self.background)
+        let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_horz);
+        X11TextWidget::new(display, parent, params, "".to_string(), font, self.foreground, self.background)
             .map_err(|e| e.to_string())
     }
 }
@@ -149,12 +149,12 @@ pub fn read_config(overwrite_path: Option<path::PathBuf>) -> Configuration {
         read_config_file(CONFIG_NAME, CONFIG_FILE)
     };
 
-    return match result {
+    match result {
         Ok(config) => config,
         Err(msg) => {
             println!("Unable to read configuration: {}", msg);
             Configuration::default()
         },
-    };
+    }
 }
 

@@ -175,7 +175,7 @@ fn main() {
     let command = args.command.clone();
     let window_result = match args.window {
         Some(window) => Ok(window),
-        None => controller.get_active_window().map_err(|_| format!("Unable to get active window")),
+        None => controller.get_active_window().map_err(|_| "Unable to get active window".to_string()),
     };
     if let Err(msg) = command.execute(&controller, window_result, args) {
         eprintln!("Error: {}", msg);

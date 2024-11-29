@@ -50,22 +50,22 @@ pub struct SystemTrayWidget {
 
 
 impl SystemTrayWidget {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, height: u32,
-               ipad: u32, hpad: u32, vpad: u32, bg_color: u64) -> Result<SystemTrayWidget, String> {
-        if height < 2*vpad {
-            return Err(format!("Padding bigger than height (h: {}, vpad: {})", height, vpad));
+    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams, height: u32,
+               ipad: u32, bg_color: u64) -> Result<SystemTrayWidget, String> {
+        if height < 2*params.vpad() {
+            return Err(format!("Padding bigger than height (h: {}, vpad: {})", height, params.vpad()));
         }
 
-        let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
+        let outer_dimensions = Dimensions::new(params.x(), params.y(), MIN_SIZE.0, MIN_SIZE.1);
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = X11Canvas::new_for_window(display, window)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         canvas.set_foreground(bg_color)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
         canvas.set_background(bg_color)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         // get required input selections (the default doesn't fit very well)
         let mask = xlib::StructureNotifyMask | xlib::SubstructureNotifyMask | xlib::ExposureMask;
@@ -97,8 +97,10 @@ impl SystemTrayWidget {
             width: height, height,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
-            icon_width: height - 2*vpad,
-            ipad, hpad, vpad,
+            icon_width: height - 2*params.vpad(),
+            ipad,
+            hpad: params.hpad(),
+            vpad: params.vpad(),
             bg_color,
         };
 
@@ -143,10 +145,7 @@ impl SystemTrayWidget {
             return;
         }
 
-        match event.data.get_long(1) {
-            SYSTEM_TRAY_REQUEST_DOCK => self.dock(event.data.get_long(2) as u64),
-            _ => (),
-        }
+        if event.data.get_long(1) == SYSTEM_TRAY_REQUEST_DOCK { self.dock(event.data.get_long(2) as u64) }
     }
 
     pub fn handle_icon_destroyed(&mut self, event: xlib::XDestroyWindowEvent) {
@@ -188,7 +187,6 @@ impl SystemTrayWidget {
         } else {
             self.min_size.0
         };
-        self.height = self.height;
         self.width = cmp::min(cmp::max(self.width, self.min_size.0), self.max_size.0);
         self.height = cmp::min(cmp::max(self.height, self.min_size.1), self.max_size.1);
 

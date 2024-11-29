@@ -25,6 +25,7 @@
     ];
     devInputs = with pkgs; [
       xorg.xinit
+      rust-analyzer
     ];
   in {
     ### PACKAGES ###

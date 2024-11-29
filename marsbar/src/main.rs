@@ -83,11 +83,11 @@ impl Bar {
 
         // TODO destroy window on failure
         let mut canvas = X11Canvas::new_for_window(display, window)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
         canvas.set_foreground(config.style.background)
             .and(canvas.set_background(config.style.background))
             .and(canvas.set_font(&config.style.font))
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         let workspace_widget = config.style.workspaces.create_flow_layout_widget(display, window)?;
         let title_widget = config.style.title.create_text_widget(display, window, &config.style.font)?;
@@ -365,10 +365,7 @@ impl Bar {
     }
 
     fn handle_bar_event(&mut self, event: xlib::XEvent) {
-        match event.get_type() {
-            xlib::Expose => self.draw(),
-            _ => (),
-        }
+        if event.get_type() == xlib::Expose { self.draw() }
     }
 
     fn handle_root_event(&mut self, event: xlib::XEvent) {

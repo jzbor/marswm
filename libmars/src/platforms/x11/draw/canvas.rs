@@ -40,7 +40,7 @@ impl X11Canvas {
         let style = CanvasStyle::default();
         let pixbuffer = Self::create_pixmap(display, screen, window)?;
         let gc = Self::create_default_gc(display, window, false)
-            .map_err(|e| unsafe { xlib::XFreePixmap(display, pixbuffer); e })?;
+            .inspect_err(|_| unsafe { xlib::XFreePixmap(display, pixbuffer); })?;
 
         Ok( X11Canvas {
             display, screen, window, pixbuffer, gc, style,

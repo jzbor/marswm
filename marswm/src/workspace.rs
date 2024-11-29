@@ -34,7 +34,7 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn apply_layout(&self) {
-        let tiled_clients = self.clients.iter()
+        let tiled_clients: Vec<_> = self.clients.iter()
             .filter(|c| !c.borrow().attributes().is_floating && !c.borrow().is_dialog())
             .cloned().collect();
         Layout::get(self.cur_layout).apply_layout(self.win_area, &tiled_clients, &self.layout_config);
@@ -198,9 +198,7 @@ impl<C: Client<Attributes>> Workspace<C> {
 
         let selected = selected.clone();
         if selected == client_rc {
-            let mut clients: Vec<_> = self.clients()
-                .cloned()
-                .filter(|c| x_diff(c) == 0 && y_diff(c) == 0)
+            let mut clients: Vec<_> = self.clients().filter(|&c| x_diff(c) == 0 && y_diff(c) == 0).cloned()
                 .collect();
             if dir == Up || dir == Left {
                 clients.reverse();

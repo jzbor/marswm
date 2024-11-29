@@ -104,7 +104,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
             let root = xlib::XDefaultRootWindow(display);
 
             let mut x11b = X11Backend {
-                attribute_phantom: PhantomData::default(),
+                attribute_phantom: PhantomData,
                 display,
                 root,
                 xrandr: XRandrInfo::query(display),
@@ -493,7 +493,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
                 xlib::XConfigureWindow(self.display, event.window, event.value_mask as u32, &mut wc);
             }
 
-            if  self.unmanaged_clients.iter().find(|u| u.window() == event.window && u.get_type() == UnmanagedType::Dock).is_some() {
+            if  self.unmanaged_clients.iter().any(|u| u.window() == event.window && u.get_type() == UnmanagedType::Dock) {
                 self.apply_dock_insets();
                 wm.update_monitor_config(self, self.monitors.clone());
             }
@@ -615,10 +615,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
     pub fn on_property_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XPropertyEvent) {
         if let Some(client_rc) = Self::client_by_window(wm, event.window) {
             if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom) {
-                match atom {
-                    WMName => client_rc.borrow_mut().update_title(),
-                    _ => (),
-                }
+                if atom == WMName { client_rc.borrow_mut().update_title() }
             }
         }
     }
@@ -926,5 +923,5 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
 
 #[allow(dead_code)]
 fn event_type<T>(_: &T) -> &str {
-    return std::any::type_name::<T>();
+    std::any::type_name::<T>()
 }

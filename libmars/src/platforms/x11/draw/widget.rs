@@ -35,6 +35,14 @@ pub enum WidgetEvent {
     Redraw(),
 }
 
+#[derive(Copy,Clone,Debug)]
+pub struct X11WidgetParams {
+    x: i32,
+    y: i32,
+    hpad: u32,
+    vpad: u32,
+}
+
 pub struct X11FlowLayoutWidget<W: Widget> {
     display: *mut xlib::Display,
     children: Vec<W>,
@@ -67,16 +75,16 @@ pub struct X11TextWidget {
 }
 
 impl<W: Widget> X11FlowLayoutWidget<W> {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32, ipad: u32,
+    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams, ipad: u32,
                children: Vec<W>, bg_color: u64) -> Result<X11FlowLayoutWidget<W>> {
-        let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
+        let outer_dimensions = Dimensions::new(params.x, params.y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = X11Canvas::new_for_window(display, window)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         canvas.set_foreground(bg_color)
             .and(canvas.set_background(bg_color))
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         let mut widget = X11FlowLayoutWidget {
             display,
@@ -86,7 +94,9 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
             width: MIN_SIZE.0, height: MIN_SIZE.1,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
-            hpad, vpad, ipad,
+            hpad: params.hpad,
+            vpad: params.vpad,
+            ipad,
         };
 
         widget.rearrange();
@@ -167,18 +177,18 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
 }
 
 impl X11TextWidget {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, x: i32, y: i32, hpad: u32, vpad: u32,
+    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams,
                label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<X11TextWidget> {
 
-        let outer_dimensions = Dimensions::new(x, y, MIN_SIZE.0, MIN_SIZE.1);
+        let outer_dimensions = Dimensions::new(params.x, params.y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
         let mut canvas = X11Canvas::new_for_window(display, window)
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         canvas.set_foreground(fg_color)
             .and(canvas.set_background(bg_color))
             .and(canvas.set_font(font))
-            .map_err(|err| unsafe { xlib::XDestroyWindow(display, window); err })?;
+            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
 
         let mut widget = X11TextWidget {
             display,
@@ -188,7 +198,8 @@ impl X11TextWidget {
             width: MIN_SIZE.0, height: MIN_SIZE.1,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
-            hpad, vpad,
+            hpad: params.hpad,
+            vpad: params.vpad,
             fg_color, bg_color,
         };
 
@@ -241,6 +252,28 @@ impl X11TextWidget {
         self.label = label;
         self.resize_to_content();
         self.redraw();
+    }
+}
+
+impl X11WidgetParams {
+    pub fn new(x: i32, y: i32, hpad: u32, vpad: u32) -> Self {
+        X11WidgetParams { x, y, hpad, vpad }
+    }
+
+    pub fn x(&self) -> i32 {
+        self.x
+    }
+
+    pub fn y(&self) -> i32 {
+        self.y
+    }
+
+    pub fn hpad(&self) -> u32 {
+        self.hpad
+    }
+
+    pub fn vpad(&self) -> u32 {
+        self.vpad
     }
 }
 

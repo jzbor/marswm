@@ -17,6 +17,8 @@ use crate::platforms::x11::{
 };
 
 
+type Decoration = (u32, u32, (u32, u32, u32, u32));
+
 pub struct X11Client<A: PartialEq> {
     name: String,
     display: *mut xlib::Display,
@@ -39,7 +41,7 @@ pub struct X11Client<A: PartialEq> {
     visible: bool,
 
     frame_color: u64,
-    saved_decorations: Option<(u32, u32, (u32, u32, u32, u32))>,
+    saved_decorations: Option<Decoration>,
     saved_dimensions: Option<Dimensions>,
 }
 
@@ -254,7 +256,8 @@ impl<A: PartialEq> X11Client<A> {
 impl<A: PartialEq> Client<A> for X11Client<A> {
     fn add_title(&mut self, font: &str, hpad: u32, vpad: u32, color: u64) -> Result<()> {
         let title = self.title();
-        let mut widget = X11TextWidget::new(self.display, self.frame, 0, 0, hpad, vpad,
+        let params = X11WidgetParams::new(0, 0, hpad, vpad);
+        let mut widget = X11TextWidget::new(self.display, self.frame, params,
                                         title.clone(), font, color, self.frame_color)?;
         unsafe {
             xlib::XLowerWindow(self.display, widget.wid());
