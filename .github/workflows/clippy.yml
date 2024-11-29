@@ -1,0 +1,17 @@
+on: push
+name: clippy
+
+# Make sure CI fails on all warnings, including Clippy lints
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  clippy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get install -y libx11-dev libxft-dev libxinerama-dev libxrandr-dev
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
+
