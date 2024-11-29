@@ -1,6 +1,7 @@
 name: flake
 
 on:
+  workflow_dispatch:
   push:
 
 jobs:
