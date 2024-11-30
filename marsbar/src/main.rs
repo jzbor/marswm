@@ -466,7 +466,8 @@ impl Bar {
 
 }
 
-fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_event_base: i32) {
+fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool,
+                xrr_event_base: i32, status_process: &mut Option<process::Child>) {
     loop {
         let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
         unsafe {
@@ -478,6 +479,11 @@ fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool, xrr_e
             } else {
                 bar.handle_xevent(event);
             }
+        }
+
+        // clean up child process if necessary
+        if let Some(process) = status_process {
+            let _ = process.try_wait();
         }
     }
 }
@@ -525,7 +531,7 @@ fn main() {
     bar.await_map_notify();
 
     // spawn status command
-    let status_cmd_proc = match &status_cmd {
+    let mut status_cmd_proc = match &status_cmd {
         Some(status_cmd) => {
             match process::Command::new("sh").arg("-c").arg(status_cmd).spawn() {
                 Ok(proc) => Some(proc),
@@ -535,7 +541,7 @@ fn main() {
         None => None,
     };
 
-    eventloop(display, bar, have_xrandr, xrr_event_base);
+    eventloop(display, bar, have_xrandr, xrr_event_base, &mut status_cmd_proc);
 
     // clean up
     if let Some(mut proc) = status_cmd_proc {
