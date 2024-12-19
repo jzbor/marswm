@@ -2,6 +2,8 @@ name: clippy
 on:
   workflow_dispatch:
   push:
+  pull_request:
+    types: [opened, reopened]
 
 # Make sure CI fails on all warnings, including Clippy lints
 env:

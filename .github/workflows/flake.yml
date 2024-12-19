@@ -3,6 +3,8 @@ name: flake
 on:
   workflow_dispatch:
   push:
+  pull_request:
+    types: [opened, reopened]
 
 jobs:
   call:
