@@ -245,7 +245,7 @@ impl<A: PartialEq> X11Client<A> {
     }
 
     pub fn title_window(&self) -> Option<u64> {
-        return self.title_widget.as_ref().map(|w| w.wid());
+        self.title_widget.as_ref().map(|w| w.wid())
     }
 
     pub fn window(&self) -> u64 {

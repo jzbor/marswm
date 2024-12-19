@@ -121,7 +121,7 @@ impl<B: Backend<Attributes>> MarsWM<B> {
         });
 
         if let Some(monitor) = monitor_by_pointer {
-            return self.monitors.iter().position(|m| m == monitor).unwrap();
+            self.monitors.iter().position(|m| m == monitor).unwrap()
         } else {
             0
         }
@@ -129,20 +129,20 @@ impl<B: Backend<Attributes>> MarsWM<B> {
 
     pub fn current_monitor(&self, backend: &B) -> &Monitor<B::Client> {
         let index = self.current_monitor_index(backend);
-        return self.monitors.get(index).unwrap();
+        self.monitors.get(index).unwrap()
     }
 
     pub fn current_monitor_mut(&mut self, backend: &B) -> &mut Monitor<B::Client> {
         let index = self.current_monitor_index(backend);
-        return self.monitors.get_mut(index).unwrap();
+        self.monitors.get_mut(index).unwrap()
     }
 
     pub fn current_workspace(&self, backend: &mut B) -> &Workspace<B::Client> {
-        return self.current_monitor(backend).current_workspace();
+        self.current_monitor(backend).current_workspace()
     }
 
     pub fn current_workspace_mut(&mut self, backend: &mut B) -> &mut Workspace<B::Client> {
-        return self.current_monitor_mut(backend).current_workspace_mut();
+        self.current_monitor_mut(backend).current_workspace_mut()
     }
 
     pub fn switch_to_main(&mut self, backend: &mut B) {
@@ -250,11 +250,11 @@ impl<B: Backend<Attributes>> MarsWM<B> {
     }
 
     pub fn get_monitor(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Monitor<B::Client>> {
-        return self.monitors.iter().find(|m| m.contains(client_rc));
+        self.monitors.iter().find(|m| m.contains(client_rc))
     }
 
     pub fn get_monitor_mut(&mut self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&mut Monitor<B::Client>> {
-        return self.monitors.iter_mut().find(|m| m.contains(client_rc));
+        self.monitors.iter_mut().find(|m| m.contains(client_rc))
     }
 
     pub fn get_workspace(&self, client_rc: &Rc<RefCell<B::Client>>) -> Option<&Workspace<B::Client>> {
@@ -437,7 +437,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn active_workspace(&self, backend: &mut B) -> u32 {
-        return self.current_monitor(backend).current_workspace().global_index();
+        self.current_monitor(backend).current_workspace().global_index()
     }
 
     fn activate_client(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
@@ -468,7 +468,7 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<B::Client>>> + '_> {
-        return Box::new(self.clients.iter());
+        Box::new(self.clients.iter())
     }
 
     fn client_switches_monitor(&mut self, client_rc: Rc<RefCell<B::Client>>, monitor: u32) {

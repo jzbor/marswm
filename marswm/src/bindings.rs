@@ -244,7 +244,7 @@ impl KeyBinding {
     }
 
     pub fn modifiers(&self) -> u32 {
-        return self.modifiers.iter().fold(0, |a, b| a | b.mask());
+        self.modifiers.iter().fold(0, |a, b| a | b.mask())
     }
 
     pub fn key(&self) -> u32 {
@@ -266,11 +266,11 @@ impl ButtonBinding {
     }
 
     pub fn matches(&self, modifiers: u32, button: u32, target: ButtonTarget) -> bool {
-        return modifiers == self.modifiers() && button == self.button && self.targets.iter().any(|t| *t == target);
+        modifiers == self.modifiers() && button == self.button && self.targets.iter().any(|t| *t == target)
     }
 
     pub fn modifiers(&self) -> u32 {
-        return self.modifiers.iter().fold(0, |a, b| a | b.mask());
+        self.modifiers.iter().fold(0, |a, b| a | b.mask())
     }
 
     pub fn targets(&self) -> &[ButtonTarget] {

@@ -91,11 +91,11 @@ impl<C: Client<Attributes>> Monitor<C> {
     }
 
     pub fn workspace(&self, index: u32) -> Option<&Workspace<C>> {
-        return self.workspaces.get(index as usize);
+        self.workspaces.get(index as usize)
     }
 
     pub fn workspace_mut(&mut self, index: u32) -> Option<&mut Workspace<C>> {
-        return self.workspaces.get_mut(index as usize);
+        self.workspaces.get_mut(index as usize)
     }
     pub fn workspace_count(&self) -> u32 {
         self.workspaces.len() as u32
@@ -106,11 +106,11 @@ impl<C: Client<Attributes>> Monitor<C> {
     }
 
     pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
-        return Box::new(self.workspaces.iter());
+        Box::new(self.workspaces.iter())
     }
 
     pub fn workspaces_mut(&mut self) -> Box<dyn Iterator<Item = &mut Workspace<C>> + '_>{
-        return Box::new(self.workspaces.iter_mut());
+        Box::new(self.workspaces.iter_mut())
     }
 }
 
@@ -122,7 +122,7 @@ impl<C: Client<Attributes>> ClientList<C> for Monitor<C> {
     }
 
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        return Box::new(self.workspaces.iter().flat_map(|ws| ws.clients()));
+        Box::new(self.workspaces.iter().flat_map(|ws| ws.clients()))
     }
 
     fn detach_client(&mut self, client_rc: &Rc<RefCell<C>>) {

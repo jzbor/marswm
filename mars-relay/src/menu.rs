@@ -40,12 +40,12 @@ pub fn display_menu() -> Result<Command, String> {
     let output = String::from_utf8_lossy(&output.stdout)
         .to_string();
 
-    return match output.trim() {
+    match output.trim() {
         "close" => Ok(Command::Close),
         "center" => Ok(Command::Center),
         "tile" => Ok(Command::Tiled(Modifier::Toggle.into())),
         "fullscreen" => Ok(Command::Fullscreen(Modifier::Toggle.into())),
         "pin" => Ok(Command::Pinned(Modifier::Toggle.into())),
-        _ => return Err("no match".to_string()),
-    };
+        _ => Err("no match".to_string()),
+    }
 }

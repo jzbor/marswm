@@ -115,19 +115,19 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
     }
 
     pub fn children(&self) -> Box<dyn Iterator<Item = &W> + '_> {
-        return Box::new(self.children.iter());
+        Box::new(self.children.iter())
     }
 
     pub fn children_mut(&mut self) -> Box<dyn Iterator<Item = &mut W> + '_> {
-        return Box::new(self.children.iter_mut());
+        Box::new(self.children.iter_mut())
     }
 
     pub fn child(&self, index: usize) -> Option<&W> {
-        return self.children.get(index);
+        self.children.get(index)
     }
 
     pub fn child_mut(&mut self, index: usize) -> Option<&mut W> {
-        return self.children.get_mut(index);
+        self.children.get_mut(index)
     }
 
     pub fn count_children(&self) -> usize {

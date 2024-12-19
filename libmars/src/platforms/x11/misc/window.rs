@@ -284,7 +284,7 @@ impl X11Window for xlib::Window {
                 types = temp.to_vec();
             }
         }
-        return types.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect();
+        types.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect()
     }
 
     fn x11_is_transient_for(&self, display: *mut xlib::Display) -> Option<xlib::Window> {
@@ -343,7 +343,7 @@ impl X11Window for xlib::Window {
                 supported_atoms.push(*n);
             }
         }
-        return supported_atoms.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect();
+        supported_atoms.iter().filter_map(|xa| X11Atom::from_xlib_atom(display, *xa)).collect()
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {

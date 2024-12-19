@@ -103,8 +103,8 @@ impl WMController<xlib::Window> for X11Controller {
         require_ewmh_atom(self.display, NetActiveWindow)?;
         let data = self.root.x11_read_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW)
                 .map_err(MarsError::unknown)?;
-        return data.first().copied()
-            .ok_or(MarsError::invalid_response("reading property _NET_ACTIVE_WINDOW"));
+        data.first().copied()
+            .ok_or(MarsError::invalid_response("reading property _NET_ACTIVE_WINDOW"))
     }
 
     fn get_workspace(&self, window: xlib::Window) -> Result<u32> {
