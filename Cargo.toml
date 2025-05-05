@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 authors = ["jzbor"]
 repository = "https://github.com/jzbor/marswm"
@@ -17,7 +17,7 @@ readme = "README.md"
 
 [workspace.dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
-libmars = { path = "./libmars", version = "0.6.0" }
+libmars = { path = "./libmars", version = "0.6.1" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_norway = { version = "0.9.42" }
 x11 = { version = "2.21.0", features = ["xlib"] }

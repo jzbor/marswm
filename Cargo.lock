@@ -106,9 +106,9 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "hashbrown"
-version = "0.15.2"
+version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
+checksum = "84b26c544d002229e640969970a2e74021aadf6e2f96372b9c58eff97de08eb3"
 
 [[package]]
 name = "heck"
@@ -146,7 +146,7 @@ checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
 
 [[package]]
 name = "libmars"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "serde",
  "serde_norway",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "mars-relay"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "clap",
  "libmars",
@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "marsbar"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "clap",
  "libmars",
@@ -175,7 +175,7 @@ dependencies = [
 
 [[package]]
 name = "marswm"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "clap",
  "libmars",
@@ -260,9 +260,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"
-version = "2.0.100"
+version = "2.0.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b09a44accad81e1ba1cd74a32461ba89dee89095ba17b32f5d03683b1b1fc2a0"
+checksum = "8ce2b7fc941b3a24138a0a7cf8e858bfc6a992e7978a068a5c760deb0ed43caf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -372,6 +372,6 @@ dependencies = [
 
 [[package]]
 name = "xdg"
-version = "2.5.2"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213b7324336b53d2414b2db8537e56544d981803139155afa84f76eeebb7a546"
+checksum = "2fb433233f2df9344722454bc7e96465c9d03bff9d77c248f9e7523fe79585b5"

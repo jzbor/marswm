@@ -15,7 +15,7 @@ readme.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_norway = { workspace = true, optional = true }
 x11 = { workspace = true, features = ["xinerama", "xrandr", "xft"] }
-xdg = { version = "2.5.2", optional = true }
+xdg = { version = "3.0.0", optional = true }
 
 [features]
 configuration = ["dep:serde", "dep:serde_norway", "dep:xdg"]
