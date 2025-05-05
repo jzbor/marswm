@@ -43,8 +43,7 @@ pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, Str
 /// * `config_name` - The name of the applications configuration subdirectory
 /// * `file_name` - The file name (with extension)
 pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_name: &str, file_name: &str) -> Result<T, String> {
-    let config_dir = xdg::BaseDirectories::with_prefix(config_name)
-        .map_err(|e| format!("unable to open config dir ({})", e))?;
+    let config_dir = xdg::BaseDirectories::with_prefix(config_name);
     if let Some(path) = config_dir.find_config_file(file_name) {
         deserialize_file(&path).map_err(|(_, msg)| msg)
     } else {
