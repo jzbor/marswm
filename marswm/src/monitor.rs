@@ -3,9 +3,9 @@ use libmars::interfaces::wm::Client;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::*;
 use crate::config::Configuration;
 use crate::workspace::*;
+use crate::*;
 
 pub struct Monitor<C: Client<Attributes>> {
     config: MonitorConfig,
@@ -16,12 +16,22 @@ pub struct Monitor<C: Client<Attributes>> {
 }
 
 impl<C: Client<Attributes>> Monitor<C> {
-    pub fn new(monitor_config: MonitorConfig, config: &Configuration, primary: bool, workspace_offset: u32)
-                -> Monitor<C> {
-
+    pub fn new(
+        monitor_config: MonitorConfig,
+        config: &Configuration,
+        primary: bool,
+        workspace_offset: u32,
+    ) -> Monitor<C> {
         let workspaces: Vec<Workspace<C>> = if primary {
             (0..config.primary_workspaces)
-                .map(|i| Workspace::new((i + 1).to_string(), workspace_offset + i,  monitor_config.window_area(), config.layout))
+                .map(|i| {
+                    Workspace::new(
+                        (i + 1).to_string(),
+                        workspace_offset + i,
+                        monitor_config.window_area(),
+                        config.layout,
+                    )
+                })
                 .collect()
         } else {
             (0..config.secondary_workspaces)
@@ -31,7 +41,12 @@ impl<C: Client<Attributes>> Monitor<C> {
                     } else {
                         format!("{}:{}", monitor_config.name(), i + 1)
                     };
-                    Workspace::new(name, workspace_offset + i, monitor_config.window_area(), config.layout)
+                    Workspace::new(
+                        name,
+                        workspace_offset + i,
+                        monitor_config.window_area(),
+                        config.layout,
+                    )
                 })
                 .collect()
         };
@@ -72,7 +87,6 @@ impl<C: Client<Attributes>> Monitor<C> {
     pub fn set_cur_workspace(&mut self, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
         } else if workspace_idx >= self.workspace_count() {
-            return;
         } else {
             self.prev_workspace = self.cur_workspace;
             self.cur_workspace = workspace_idx;
@@ -105,11 +119,11 @@ impl<C: Client<Attributes>> Monitor<C> {
         self.workspace_offset
     }
 
-    pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_>{
+    pub fn workspaces(&self) -> Box<dyn Iterator<Item = &Workspace<C>> + '_> {
         Box::new(self.workspaces.iter())
     }
 
-    pub fn workspaces_mut(&mut self) -> Box<dyn Iterator<Item = &mut Workspace<C>> + '_>{
+    pub fn workspaces_mut(&mut self) -> Box<dyn Iterator<Item = &mut Workspace<C>> + '_> {
         Box::new(self.workspaces.iter_mut())
     }
 }

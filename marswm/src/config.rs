@@ -122,7 +122,9 @@ pub struct NoDecorThemingConfiguration {
 
 #[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
 #[serde(rename_all = "kebab-case")]
+#[derive(Default)]
 pub enum WindowPlacement {
+    #[default]
     Centered,
     Pointer,
     Wherever,
@@ -177,11 +179,6 @@ impl Default for ThemingConfiguration {
 
 
 
-impl Default for WindowPlacement {
-    fn default() -> Self {
-        Self::Centered
-    }
-}
 
 
 impl WindowPlacement {

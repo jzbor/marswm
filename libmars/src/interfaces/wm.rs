@@ -116,7 +116,7 @@ pub trait Backend<A> {
     fn pointer_pos(&self) -> (i32, i32);
 
     /// Run window manager event loop
-    fn run(self, wm: &mut (dyn WindowManager<Self, A>));
+    fn run(self, wm: &mut dyn WindowManager<Self, A>);
 
     /// Set client that receives mouse and keyboard inputs
     fn set_input_focus(&self, client_rc: Rc<RefCell<Self::Client>>);
