@@ -12,6 +12,7 @@
   let
     pkgs = nixpkgs.legacyPackages.${system};
     craneLib = crane.mkLib pkgs;
+
     nativeBuildInputs = with pkgs; [
       clang
       pkg-config
@@ -26,21 +27,31 @@
       xorg.xinit
       rust-analyzer
     ];
+
+    mdFilter = path: _type: builtins.match ".*md$" path != null;
+    cargoFilter = path: type: (mdFilter path type) || (craneLib.filterCargoSources path type);
+
+    commonArgs = {
+      pname = "marswm";
+
+      src = pkgs.lib.cleanSourceWith {
+        src = ./.;
+        filter = cargoFilter;
+        name = "source";
+      };
+
+      strictDeps = true;
+      inherit buildInputs nativeBuildInputs;
+    };
+    cargoArtifacts = craneLib.buildDepsOnly commonArgs;
   in {
     ### PACKAGES ###
     packages = rec {
       default = marswm;
 
-      marswm = craneLib.buildPackage {
-        pname = "marswm";
-
-        src = ./.;
-
-        # Add extra inputs here or any other derivation settings
-        # doCheck = true;
-        inherit nativeBuildInputs;
-        inherit buildInputs;
-      };
+      marswm = craneLib.buildPackage (commonArgs // {
+        inherit cargoArtifacts;
+      });
 
       docs = pkgs.stdenvNoCC.mkDerivation {
         name = "marswm-docs";
@@ -69,6 +80,15 @@
           })
         ];
       };
+    };
+
+    ### CI checks ###
+    checks = {
+      inherit (self.packages.${system}) default;
+
+      clippy = craneLib.cargoClippy (commonArgs // {
+        inherit cargoArtifacts;
+      });
     };
 
     ### DEVELOPMENT SHELLS ###
