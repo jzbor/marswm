@@ -206,11 +206,10 @@ impl<C: Client<Attributes>> Workspace<C> {
             if let Some(i) = clients.iter().position(|c| c == &client_rc) {
                 clients.rotate_left(i + 1);
             }
-            if let Some(selected) = clients.first() {
-                if selected != &client_rc {
+            if let Some(selected) = clients.first()
+                && selected != &client_rc {
                     return Some(selected.clone());
                 }
-            }
         } else {
             return Some(selected);
         }
@@ -360,13 +359,12 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn swap_clients(&mut self, client_a: Rc<RefCell<C>>, client_b: Rc<RefCell<C>>) {
-        if let Some(pos_a) = self.clients.iter().position(|c| c == &client_a) {
-            if let Some(pos_b) = self.clients.iter().position(|c| c == &client_b) {
+        if let Some(pos_a) = self.clients.iter().position(|c| c == &client_a)
+            && let Some(pos_b) = self.clients.iter().position(|c| c == &client_b) {
                 self.clients.swap(pos_a, pos_b);
                 self.apply_layout();
                 client_a.borrow().warp_pointer_to_center();
             }
-        }
     }
 
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {

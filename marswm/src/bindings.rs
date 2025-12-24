@@ -180,15 +180,11 @@ impl BindingAction {
             MousePlace => if let Some(client_rc) = client_option {
                 wm.mouse_place(backend, client_rc);
             },
-            MouseResize => if let Some(client_rc) = client_option {
-                if is_floating!(wm, &client_rc) {
-                    backend.mouse_resize(wm, client_rc);
-                }
+            MouseResize => if let Some(client_rc) = client_option && is_floating!(wm, &client_rc) {
+                backend.mouse_resize(wm, client_rc);
             },
-            MouseResizeCentered => if let Some(client_rc) = client_option {
-                if is_floating!(wm, &client_rc) {
-                    wm.mouse_resize_centered(backend, client_rc);
-                }
+            MouseResizeCentered => if let Some(client_rc) = client_option && is_floating!(wm, &client_rc) {
+                wm.mouse_resize_centered(backend, client_rc);
             },
             MoveMonitor(inc) => if let Some(client_rc) = client_option {
                 wm.move_client_to_monitor(client_rc, *inc);

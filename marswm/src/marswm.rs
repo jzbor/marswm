@@ -325,11 +325,10 @@ impl<B: Backend<Attributes>> MarsWM<B> {
             ws.restack()
         }
 
-        if was_fullscreen {
-            if let Some(mon) = self.get_monitor(&client_rc) {
+        if was_fullscreen
+            && let Some(mon) = self.get_monitor(&client_rc) {
                 client_rc.borrow_mut().set_fullscreen(mon.config());
             }
-        }
     }
 
     pub fn mouse_resize_centered(&mut self, backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
@@ -460,10 +459,8 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn center_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>) {
-        if is_floating!(self, &client_rc) {
-            if let Some(mon) = self.get_monitor(&client_rc) {
-                client_rc.borrow_mut().center_on_screen(mon.config().window_area());
-            }
+        if is_floating!(self, &client_rc) && let Some(mon) = self.get_monitor(&client_rc) {
+            client_rc.borrow_mut().center_on_screen(mon.config().window_area());
         }
     }
 
@@ -691,11 +688,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
 
             client.move_resize(x, y, width, height);
 
-            if client_is_dialog && client_was_centered {
-                if let Some(area) = window_area {
+            if client_is_dialog && client_was_centered
+                && let Some(area) = window_area {
                     client.center_on_screen(area);
                 }
-            }
 
             true
         } else {
@@ -710,11 +706,10 @@ impl<B: Backend<Attributes>> WindowManager<B, Attributes> for MarsWM<B> {
     }
 
     fn tile_client(&mut self, _backend: &mut B, client_rc: Rc<RefCell<B::Client>>, state: bool) {
-        if let Some(ws) = self.get_workspace_mut(&client_rc) {
-            if ws.current_layout() != LayoutType::Floating {
+        if let Some(ws) = self.get_workspace_mut(&client_rc)
+            && ws.current_layout() != LayoutType::Floating {
                 ws.set_floating(client_rc, !state);
             }
-        }
     }
 
     fn switch_workspace(&mut self, backend: &mut B, workspace_idx: u32) {

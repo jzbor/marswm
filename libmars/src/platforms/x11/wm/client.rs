@@ -108,14 +108,13 @@ impl<A: Default + PartialEq> X11Client<A> {
 impl<A: PartialEq> X11Client<A> {
     pub fn apply_motif_hints(&mut self) {
         let motif_atom = MotifWMHints.to_xlib_atom(self.display);
-        if let Ok(hints) = self.x11_read_property_long(self.display, MotifWMHints, motif_atom) {
-            if hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0
+        if let Ok(hints) = self.x11_read_property_long(self.display, MotifWMHints, motif_atom)
+            && hints[MWM_HINTS_FLAGS_FIELD] & MWM_HINTS_DECORATIONS != 0
                     && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_ALL == 0
                     && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_BORDER == 0
                     && hints[MWM_HINTS_DECORATIONS_FIELD] & MWM_DECOR_TITLE == 0 {
                 self.dont_decorate = true;
             }
-        }
     }
 
     pub fn apply_size_hints(&mut self) {

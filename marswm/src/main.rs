@@ -132,13 +132,12 @@ fn main() {
         let rules = read_rules();
 
         // run startup script
-        if let Some(startup_cmd) = &config.on_startup {
-            if let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(startup_cmd).spawn() {
+        if let Some(startup_cmd) = &config.on_startup
+            && let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(startup_cmd).spawn() {
                 std::thread::spawn(move || {
                     let _ignored = handle.wait();
                 });
             }
-        }
 
         let mut backend = X11Backend::init("marswm").unwrap();
         let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);

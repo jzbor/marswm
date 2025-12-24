@@ -613,11 +613,9 @@ impl<A: PartialEq + Default> X11Backend<A> {
     }
 
     pub fn on_property_notify(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), event: xlib::XPropertyEvent) {
-        if let Some(client_rc) = Self::client_by_window(wm, event.window) {
-            if let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom) {
-                if atom == WMName { client_rc.borrow_mut().update_title() }
-            }
-        }
+        if let Some(client_rc) = Self::client_by_window(wm, event.window)
+            && let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom)
+                && atom == WMName { client_rc.borrow_mut().update_title() }
     }
 
     fn remove_unmanaged_client(&mut self, wm: &mut (impl WindowManager<Self, A> + ?Sized), window: xlib::Window) -> bool {
@@ -819,11 +817,10 @@ impl<A: PartialEq + Default> Backend<A> for X11Backend<A> {
                     action(self, wm, &client_rc, orig_client_pos, orig_client_size, delta);
                     if let Some(old_mon) = old_mon {
                         let new_center = client_rc.borrow().center();
-                        if let Some(new_mon) = self.point_to_monitor(new_center) {
-                            if old_mon != new_mon {
+                        if let Some(new_mon) = self.point_to_monitor(new_center)
+                            && old_mon != new_mon {
                                 wm.client_switches_monitor(client_rc.clone(), new_mon);
                             }
-                        }
                     }
                 } else if event.get_type() == xlib::ButtonRelease || event.get_type() == xlib::ButtonPress {
                     break;
