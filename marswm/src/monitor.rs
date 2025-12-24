@@ -72,7 +72,6 @@ impl<C: Client<Attributes>> Monitor<C> {
     pub fn set_cur_workspace(&mut self, workspace_idx: u32) {
         if workspace_idx == self.cur_workspace {
         } else if workspace_idx >= self.workspace_count() {
-            return;
         } else {
             self.prev_workspace = self.cur_workspace;
             self.cur_workspace = workspace_idx;

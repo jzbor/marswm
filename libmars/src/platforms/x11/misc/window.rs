@@ -116,7 +116,7 @@ impl X11Window for xlib::Window {
             if xlib::XGetTextProperty(display, *self, text.as_mut_ptr(), property.to_xlib_atom(display)) == 0 {
                 Err(MarsError::property_unavailable(property))
             } else if xlib::Xutf8TextPropertyToTextList(display, text.as_ptr(), &mut data_ptr, &mut nitems) != 0 {
-                return Err(MarsError::failed_conversion(text.as_ptr(), stringify!(*mut *mut i8), stringify!(xlib::TextProperty)));
+                Err(MarsError::failed_conversion(text.as_ptr(), stringify!(*mut *mut i8), stringify!(xlib::TextProperty)))
             } else if data_ptr.is_null() {
                 Err(MarsError::property_unavailable(property))
             } else {
@@ -132,7 +132,7 @@ impl X11Window for xlib::Window {
                     data.push(s.to_owned());
                 }
                 xlib::XFreeStringList(data_ptr);
-                return Ok(data);
+                Ok(data)
             }
         }
     }

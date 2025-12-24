@@ -266,7 +266,7 @@ impl ButtonBinding {
     }
 
     pub fn matches(&self, modifiers: u32, button: u32, target: ButtonTarget) -> bool {
-        modifiers == self.modifiers() && button == self.button && self.targets.iter().any(|t| *t == target)
+        modifiers == self.modifiers() && button == self.button && self.targets.contains(&target)
     }
 
     pub fn modifiers(&self) -> u32 {
