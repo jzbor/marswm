@@ -19,6 +19,7 @@ pub trait WMController<W> {
     fn pin_window(&self, window: W, mode: SettingMode) -> Result<()>;
     fn send_window_to_workspace(&self, window: W, workspace: u32) -> Result<()>;
     fn set_status(&self, status: String) -> Result<()>;
+    fn set_swallow(&self, window: W, mode: SettingMode) -> Result<()>;
     fn switch_workspace(&self, workspace: u32) -> Result<()>;
     fn tile_window(&self, window: W, mode: SettingMode) -> Result<()>;
     fn window_is_fullscreen(&self, window: W) -> Result<bool>;

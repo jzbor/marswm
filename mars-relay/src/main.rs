@@ -1,5 +1,7 @@
 extern crate x11;
 
+use std::process;
+
 use clap::Parser;
 use libmars::common::error::MarsError;
 use libmars::interfaces::control::*;
@@ -63,6 +65,12 @@ pub enum Command {
 
     /// Set status string
     SetStatus(Status),
+
+    /// "Swallow" the window created by the command
+    Swallow {
+        cmd: String,
+        args: Vec<String>
+    },
 
     /// Switch current workspace
     SwitchWorkspace(Workspace),
@@ -134,6 +142,7 @@ impl Command {
                 Command::Pinned(mode) => handle_window_setting(C::window_is_pinned, C::pin_window, controller, window_result?, *mode),
                 Command::SendToWorkspace(ws) => controller.send_window_to_workspace(window_result?, ws.index),
                 Command::SetStatus(status) => controller.set_status(status.text.to_owned()),
+                Command::Swallow { cmd, args } => Self::swallow(controller, window_result?, cmd, args),
                 Command::SwitchWorkspace(ws) => controller.switch_workspace(ws.index),
                 Command::SwitchWorkspaceNext => Self::switch_workspace_relative(controller, 1),
                 Command::SwitchWorkspacePrev => Self::switch_workspace_relative(controller, -1),
@@ -151,6 +160,16 @@ impl Command {
             Err(e) => { eprintln!("Error: {}", e); return Err("unable to display menu".to_owned()); },
         };
         command.execute(controller, window_result, args)
+    }
+
+    fn swallow(controller: &impl WMController<xlib::Window>, window: xlib::Window, cmd: &str, args: &[String]) -> Result<(), MarsError> {
+        controller.set_swallow(window, SettingMode::Set)?;
+        let res = process::Command::new(cmd)
+            .args(args)
+            .status()
+            .map_err(|e| MarsError::unknown(format!("{}", e)));
+        controller.set_swallow(window, SettingMode::Unset)?;
+        process::exit(res?.code().unwrap_or(1));
     }
 
     fn switch_workspace_relative(controller: &impl WMController<xlib::Window>, inc: i32) -> Result<(), MarsError> {

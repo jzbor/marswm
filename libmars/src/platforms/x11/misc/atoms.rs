@@ -60,6 +60,7 @@ enum_with_values! {
         // MARS (custom)
         MarsCenter,
         MarsStatus,
+        MarsSwallow,
         MarsWMStateTiled
     }
 }
@@ -112,6 +113,7 @@ impl Display for X11Atom {
 
             X11Atom::MarsCenter => "_MARS_CENTER",
             X11Atom::MarsStatus => "_MARS_STATUS",
+            X11Atom::MarsSwallow => "_MARS_SWALLOW",
             X11Atom::MarsWMStateTiled => "_MARS_WM_STATE_TILED",
         };
         write!(f, "{}", string)

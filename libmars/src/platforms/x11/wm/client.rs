@@ -251,6 +251,16 @@ impl<A: PartialEq> X11Client<A> {
     pub fn window(&self) -> u64 {
         self.window
     }
+
+    pub fn swallow_hint(&self) -> bool {
+        self.window.x11_net_wm_state(self.display)
+            .unwrap_or(Vec::new())
+            .contains(|at| at == X11Atom::MarsSwallow)
+    }
+
+    pub fn swallow(&self, window: xlib::Window) -> bool {
+        self.window = window
+    }
 }
 
 impl<A: PartialEq> Client<A> for X11Client<A> {

@@ -161,6 +161,16 @@ impl WMController<xlib::Window> for X11Controller {
         Ok(())
     }
 
+    fn set_swallow(&self, window: xlib::Window, mode: SettingMode) -> Result<()> {
+        require_ewmh_atom(self.display, NetWMState)?;
+        require_ewmh_atom(self.display, MarsSwallow)?;
+        let mut data = xlib::ClientMessageData::new();
+        data.set_long(0, i64::from(mode));
+        data.set_long(1, MarsSwallow.to_xlib_atom(self.display) as i64);
+        send_client_message(self.display, NetWMState, window, data);
+        Ok(())
+    }
+
     fn switch_workspace(&self, workspace: u32) -> Result<()> {
         require_ewmh_atom(self.display, NetCurrentDesktop)?;
         let mut data = xlib::ClientMessageData::new();
