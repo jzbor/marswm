@@ -47,6 +47,7 @@ style:
   workspaces:
     foreground: 0x262626           # foreground (text) color of the workspace widget
     inner_background: 0x5F87AF     # background of the individual workspaces
+    occupied_background: 0x87875F  # background of workspaces that have windows but are not active
     outer_background: 0x262626     # background *around* the individual workspaces
     padding_horz: 0                # horizontal padding around the workspaces
     padding_vert: 0                # vertical padding around the workspaces
