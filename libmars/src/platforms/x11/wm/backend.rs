@@ -1,7 +1,6 @@
 extern crate x11;
 
 use std::cell::RefCell;
-use std::ffi::*;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;

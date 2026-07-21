@@ -1,7 +1,6 @@
 extern crate x11;
 
 use std::cmp;
-use std::ffi::*;
 use x11::xlib;
 
 use crate::common::error::*;
