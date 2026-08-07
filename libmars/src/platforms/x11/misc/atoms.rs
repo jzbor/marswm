@@ -1,8 +1,8 @@
 extern crate x11;
 
+use std::ffi::*;
 use std::fmt::{Display, Formatter, Result};
 use x11::xlib;
-use std::ffi::*;
 
 use crate::*;
 
@@ -135,9 +135,7 @@ impl X11Atom {
 
     pub fn to_xlib_atom(&self, display: *mut xlib::Display) -> xlib::Atom {
         let atom_name = CString::new(self.to_string()).unwrap().into_raw();
-        unsafe {
-            xlib::XInternAtom(display, atom_name, xlib::False)
-        }
+        unsafe { xlib::XInternAtom(display, atom_name, xlib::False) }
     }
 }
 

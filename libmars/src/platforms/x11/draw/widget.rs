@@ -3,16 +3,14 @@ extern crate x11;
 use std::cmp;
 use x11::xlib;
 
-use crate::common::*;
 use crate::common::error::*;
-use crate::platforms::x11::misc::window::*;
+use crate::common::*;
 use crate::interfaces::draw::*;
 use crate::platforms::x11::draw::canvas::X11Canvas;
-
+use crate::platforms::x11::misc::window::*;
 
 pub const MIN_SIZE: (u32, u32) = (10, 10);
 pub const MAX_SIZE: (u32, u32) = (u32::MAX, u32::MAX);
-
 
 pub trait WidgetEventHandler {
     fn handle_action_event(&self, event: WidgetEvent, already_handled: bool) -> bool;
@@ -29,13 +27,13 @@ pub trait Widget {
     fn wid(&self) -> xlib::Window;
 }
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum WidgetEvent {
     ButtonPressed(u32),
     Redraw(),
 }
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct X11WidgetParams {
     x: i32,
     y: i32,
@@ -75,23 +73,35 @@ pub struct X11TextWidget {
 }
 
 impl<W: Widget> X11FlowLayoutWidget<W> {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams, ipad: u32,
-               children: Vec<W>, bg_color: u64) -> Result<X11FlowLayoutWidget<W>> {
+    pub fn new(
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        params: X11WidgetParams,
+        ipad: u32,
+        children: Vec<W>,
+        bg_color: u64,
+    ) -> Result<X11FlowLayoutWidget<W>> {
         let outer_dimensions = Dimensions::new(params.x, params.y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = X11Canvas::new_for_window(display, window)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+        let mut canvas = X11Canvas::new_for_window(display, window).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
 
-        canvas.set_foreground(bg_color)
+        canvas
+            .set_foreground(bg_color)
             .and(canvas.set_background(bg_color))
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+            .inspect_err(|_| unsafe {
+                xlib::XDestroyWindow(display, window);
+            })?;
 
         let mut widget = X11FlowLayoutWidget {
             display,
             children,
-            window, canvas,
+            window,
+            canvas,
             event_handlers: Vec::new(),
-            width: MIN_SIZE.0, height: MIN_SIZE.1,
+            width: MIN_SIZE.0,
+            height: MIN_SIZE.1,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
             hpad: params.hpad,
@@ -177,30 +187,43 @@ impl<W: Widget> X11FlowLayoutWidget<W> {
 }
 
 impl X11TextWidget {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams,
-               label: String, font: &str, fg_color: u64, bg_color: u64) -> Result<X11TextWidget> {
-
+    pub fn new(
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        params: X11WidgetParams,
+        label: String,
+        font: &str,
+        fg_color: u64,
+        bg_color: u64,
+    ) -> Result<X11TextWidget> {
         let outer_dimensions = Dimensions::new(params.x, params.y, MIN_SIZE.0, MIN_SIZE.1);
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = X11Canvas::new_for_window(display, window)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+        let mut canvas = X11Canvas::new_for_window(display, window).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
 
-        canvas.set_foreground(fg_color)
+        canvas
+            .set_foreground(fg_color)
             .and(canvas.set_background(bg_color))
             .and(canvas.set_font(font))
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+            .inspect_err(|_| unsafe {
+                xlib::XDestroyWindow(display, window);
+            })?;
 
         let mut widget = X11TextWidget {
             display,
             label,
-            window, canvas,
+            window,
+            canvas,
             event_handlers: Vec::new(),
-            width: MIN_SIZE.0, height: MIN_SIZE.1,
+            width: MIN_SIZE.0,
+            height: MIN_SIZE.1,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
             hpad: params.hpad,
             vpad: params.vpad,
-            fg_color, bg_color,
+            fg_color,
+            bg_color,
         };
 
         widget.resize_to_content();
@@ -304,7 +327,7 @@ impl<W: Widget> Widget for X11FlowLayoutWidget<W> {
                     xlib::ButtonPress => {
                         let button = event.button.button;
                         Some(WidgetEvent::ButtonPressed(button))
-                    },
+                    }
                     xlib::Expose => {
                         self.redraw();
                         None
@@ -313,10 +336,11 @@ impl<W: Widget> Widget for X11FlowLayoutWidget<W> {
                 };
 
                 if let Some(widget_event) = widget_event {
-                    let _handled = self.event_handlers.iter()
-                        .fold(false, {
-                            |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
-                        });
+                    let _handled = self.event_handlers.iter().fold(false, {
+                        |already_handled, handler| {
+                            handler.handle_action_event(widget_event, already_handled)
+                        }
+                    });
                 }
                 true
             } else {
@@ -358,15 +382,26 @@ impl Widget for X11TextWidget {
     }
 
     fn redraw(&mut self) {
-        self.canvas.fill_rectangle_with(0, 0, self.width, self.height, self.bg_color);
+        self.canvas
+            .fill_rectangle_with(0, 0, self.width, self.height, self.bg_color);
         if let Ok(text_size) = self.canvas.text_size(&self.label) {
             // center text if possible
             // the min() call is necessary as the text_size might be bigger than the max size
             let x = (self.width - cmp::min(self.width, text_size.0)) / 2;
-            let _ = self.canvas.draw_text(x as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
+            let _ = self.canvas.draw_text(
+                x as i32,
+                self.vpad as i32,
+                self.height - 2 * self.vpad,
+                &self.label,
+            );
         } else {
             // otherwise just align to the left
-            let _ = self.canvas.draw_text(self.hpad as i32, self.vpad as i32, self.height - 2*self.vpad, &self.label);
+            let _ = self.canvas.draw_text(
+                self.hpad as i32,
+                self.vpad as i32,
+                self.height - 2 * self.vpad,
+                &self.label,
+            );
         }
         self.canvas.flush();
     }
@@ -382,7 +417,7 @@ impl Widget for X11TextWidget {
                     xlib::ButtonPress => {
                         let button = event.button.button;
                         Some(WidgetEvent::ButtonPressed(button))
-                    },
+                    }
                     xlib::Expose => {
                         self.redraw();
                         None
@@ -391,10 +426,11 @@ impl Widget for X11TextWidget {
                 };
 
                 if let Some(widget_event) = widget_event {
-                    let _handled = self.event_handlers.iter()
-                        .fold(false, {
-                            |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
-                        });
+                    let _handled = self.event_handlers.iter().fold(false, {
+                        |already_handled, handler| {
+                            handler.handle_action_event(widget_event, already_handled)
+                        }
+                    });
                 }
                 true
             } else {
@@ -434,15 +470,26 @@ impl Drop for X11TextWidget {
     }
 }
 
-pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, dimensions: Dimensions) -> Result<xlib::Window> {
+pub fn create_widget_window(
+    display: *mut xlib::Display,
+    parent: xlib::Window,
+    dimensions: Dimensions,
+) -> Result<xlib::Window> {
     unsafe {
         let screen = xlib::XDefaultScreen(display);
         let border_width = 0;
 
-        let win = xlib::XCreateSimpleWindow(display, xlib::XDefaultRootWindow(display),
-                                       dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h(), border_width,
-                                       xlib::XBlackPixel(display, screen),
-                                       xlib::XWhitePixel(display, screen));
+        let win = xlib::XCreateSimpleWindow(
+            display,
+            xlib::XDefaultRootWindow(display),
+            dimensions.x(),
+            dimensions.y(),
+            dimensions.w(),
+            dimensions.h(),
+            border_width,
+            xlib::XBlackPixel(display, screen),
+            xlib::XWhitePixel(display, screen),
+        );
 
         // subscribe to StructureNotifyMask for MapNotify events
         // subscribe to ExposureMask for Expose events
@@ -466,7 +513,10 @@ pub fn create_widget_window(display: *mut xlib::Display, parent: xlib::Window, d
     }
 }
 
-pub fn distribute_widget_event<'a, I: Iterator<Item=&'a mut dyn Widget>>(widgets: &mut I, xevent: xlib::XEvent) {
+pub fn distribute_widget_event<'a, I: Iterator<Item = &'a mut dyn Widget>>(
+    widgets: &mut I,
+    xevent: xlib::XEvent,
+) {
     for widget in widgets {
         if widget.handle_xevent(xevent) {
             return;

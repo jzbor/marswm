@@ -2,9 +2,10 @@
 
 use crate::common::error::*;
 
-
 pub enum SettingMode {
-    Set, Unset, Toggle
+    Set,
+    Unset,
+    Toggle,
 }
 
 pub trait WMController<W> {

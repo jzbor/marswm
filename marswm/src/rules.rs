@@ -1,14 +1,13 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-use serde::{Serialize, Deserialize};
 use libmars::interfaces::wm::Client;
+use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::attributes::*;
 use crate::bindings::*;
 use crate::config::WindowPlacement;
 
-
-#[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct Rule {
     identifiers: Identifiers,
@@ -27,7 +26,7 @@ pub struct Rule {
     workspace: Option<u32>,
 }
 
-#[derive(Serialize,Deserialize,Default,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 struct Identifiers {
     /// application name - WM class for X11 (exact match)
@@ -65,7 +64,8 @@ impl Rule {
 
 impl Identifiers {
     pub fn matches(&self, client_rc: Rc<RefCell<impl Client<Attributes>>>) -> bool {
-        return (self.application.is_none() || self.application == Some(client_rc.borrow().application()))
+        return (self.application.is_none()
+            || self.application == Some(client_rc.borrow().application()))
             && (self.title.is_none() || self.title == Some(client_rc.borrow().title()));
     }
 }

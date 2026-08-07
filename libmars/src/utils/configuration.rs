@@ -1,9 +1,8 @@
 //! Loading configuration files using [serde_norway].
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path;
-use serde::{Serialize, Deserialize};
-
 
 fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, (bool, String)> {
     let fs_result = fs::read(path);
@@ -34,7 +33,10 @@ pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, Str
     if path.is_file() {
         deserialize_file(path).map_err(|(_, msg)| msg)
     } else {
-        Err(format!("configuration {} not found", path.to_string_lossy()))
+        Err(format!(
+            "configuration {} not found",
+            path.to_string_lossy()
+        ))
     }
 }
 
@@ -42,7 +44,10 @@ pub fn read_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, Str
 ///
 /// * `config_name` - The name of the applications configuration subdirectory
 /// * `file_name` - The file name (with extension)
-pub fn read_config_file<T: for<'a> Deserialize<'a>>(config_name: &str, file_name: &str) -> Result<T, String> {
+pub fn read_config_file<T: for<'a> Deserialize<'a>>(
+    config_name: &str,
+    file_name: &str,
+) -> Result<T, String> {
     let config_dir = xdg::BaseDirectories::with_prefix(config_name);
     if let Some(path) = config_dir.find_config_file(file_name) {
         deserialize_file(&path).map_err(|(_, msg)| msg)

@@ -1,8 +1,6 @@
 use std::cmp;
 
-
 pub mod error;
-
 
 pub trait Dimensioned {
     /// Get x coordinate
@@ -66,8 +64,7 @@ pub trait Dimensioned {
     }
 }
 
-
-#[derive(Copy,Clone,PartialEq,Eq,Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Dimensions {
     x: i32,
     y: i32,
@@ -75,17 +72,16 @@ pub struct Dimensions {
     h: u32,
 }
 
-#[derive(Clone,PartialEq,Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MonitorConfig {
     name: String,
     dims: Dimensions,
     win_area: Dimensions,
 }
 
-
 impl Dimensions {
     pub fn new(x: i32, y: i32, w: u32, h: u32) -> Dimensions {
-        Dimensions {x, y, w, h}
+        Dimensions { x, y, w, h }
     }
 
     pub fn as_tuple(&self) -> (i32, i32, u32, u32) {
@@ -95,16 +91,25 @@ impl Dimensions {
 
 impl MonitorConfig {
     pub fn new(name: String, dimensions: Dimensions, win_area: Dimensions) -> MonitorConfig {
-        MonitorConfig { name, dims: dimensions, win_area }
+        MonitorConfig {
+            name,
+            dims: dimensions,
+            win_area,
+        }
     }
 
     pub fn add_inset_top(&mut self, inset: u32) {
-        self.win_area.set_y(cmp::max(self.win_area.y(), self.win_area.y() + inset as i32));
-        self.win_area.set_h(cmp::min(self.win_area.h(), self.win_area.h() - inset));
+        self.win_area.set_y(cmp::max(
+            self.win_area.y(),
+            self.win_area.y() + inset as i32,
+        ));
+        self.win_area
+            .set_h(cmp::min(self.win_area.h(), self.win_area.h() - inset));
     }
 
     pub fn add_inset_bottom(&mut self, inset: u32) {
-        self.win_area.set_h(cmp::min(self.win_area.h(), self.win_area.h() - inset));
+        self.win_area
+            .set_h(cmp::min(self.win_area.h(), self.win_area.h() - inset));
     }
 
     pub fn contains_point(&self, point: (i32, i32)) -> bool {
@@ -129,18 +134,43 @@ impl MonitorConfig {
 }
 
 impl Dimensioned for Dimensions {
-    fn x(&self) -> i32 { self.x }
-    fn y(&self) -> i32 { self.y }
-    fn w(&self) -> u32 { self.w }
-    fn h(&self) -> u32 { self.h }
-    fn pos(&self) -> (i32, i32) { (self.x, self.y) }
-    fn size(&self) -> (u32, u32) { (self.w, self.h) }
-    fn set_x(&mut self, x: i32) { self.x = x; }
-    fn set_y(&mut self, y: i32) { self.y = y; }
-    fn set_w(&mut self, w: u32) { self.w = w; }
-    fn set_h(&mut self, h: u32) { self.h = h; }
-    fn set_pos(&mut self, pos: (i32, i32)) { (self.x, self.y) = pos; }
-    fn set_size(&mut self, size: (u32, u32)) { (self.w, self.h) = size; }
-    fn dimensions(&self) -> Dimensions { *self }
+    fn x(&self) -> i32 {
+        self.x
+    }
+    fn y(&self) -> i32 {
+        self.y
+    }
+    fn w(&self) -> u32 {
+        self.w
+    }
+    fn h(&self) -> u32 {
+        self.h
+    }
+    fn pos(&self) -> (i32, i32) {
+        (self.x, self.y)
+    }
+    fn size(&self) -> (u32, u32) {
+        (self.w, self.h)
+    }
+    fn set_x(&mut self, x: i32) {
+        self.x = x;
+    }
+    fn set_y(&mut self, y: i32) {
+        self.y = y;
+    }
+    fn set_w(&mut self, w: u32) {
+        self.w = w;
+    }
+    fn set_h(&mut self, h: u32) {
+        self.h = h;
+    }
+    fn set_pos(&mut self, pos: (i32, i32)) {
+        (self.x, self.y) = pos;
+    }
+    fn set_size(&mut self, size: (u32, u32)) {
+        (self.w, self.h) = size;
+    }
+    fn dimensions(&self) -> Dimensions {
+        *self
+    }
 }
-

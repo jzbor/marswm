@@ -1,13 +1,13 @@
-use std::cmp;
 use libmars::common::*;
-use serde::{Serialize, Deserialize};
 use libmars::utils::configuration::*;
+use serde::{Deserialize, Serialize};
+use std::cmp;
 
 use crate::bindings::*;
+use crate::layouts::AttachPosition;
 use crate::layouts::LayoutType;
 use crate::layouts::StackMode;
 use crate::layouts::StackPosition;
-use crate::layouts::AttachPosition;
 use crate::rules::*;
 
 const BUTTON_BINDINGS_FILE: &str = "buttonbindings.yaml";
@@ -18,8 +18,7 @@ const KEY_BINDINGS_FILE: &str = "keybindings.yaml";
 const KEY_BINDINGS_EXT_FILE: &str = "keybindings_ext.yaml";
 const RULES_FILE: &str = "rules.yaml";
 
-
-#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct Configuration {
     /// number of workspaces for primary monitor
@@ -41,7 +40,7 @@ pub struct Configuration {
     pub theming: ThemingConfiguration,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Debug,Copy,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
 #[serde(default)]
 pub struct LayoutConfiguration {
     /// default layout for each workspace
@@ -66,7 +65,7 @@ pub struct LayoutConfiguration {
     pub attach_position: AttachPosition,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(default)]
 pub struct ThemingConfiguration {
     /// color for active window frame
@@ -106,7 +105,7 @@ pub struct ThemingConfiguration {
     pub font: String,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Eq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(default)]
 #[derive(Default)]
 pub struct NoDecorThemingConfiguration {
@@ -120,7 +119,7 @@ pub struct NoDecorThemingConfiguration {
     pub outer_border_width: u32,
 }
 
-#[derive(Serialize,Deserialize,Clone,Copy,Debug,PartialEq,Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 #[derive(Default)]
 pub enum WindowPlacement {
@@ -129,7 +128,6 @@ pub enum WindowPlacement {
     Pointer,
     Wherever,
 }
-
 
 impl Default for Configuration {
     fn default() -> Self {
@@ -177,12 +175,13 @@ impl Default for ThemingConfiguration {
     }
 }
 
-
-
-
-
 impl WindowPlacement {
-    pub fn calc(&self, client_dimensions: Dimensions, window_area: Dimensions, pointer: (i32, i32)) -> (i32, i32) {
+    pub fn calc(
+        &self,
+        client_dimensions: Dimensions,
+        window_area: Dimensions,
+        pointer: (i32, i32),
+    ) -> (i32, i32) {
         use WindowPlacement::*;
         match self {
             Pointer => {
@@ -191,20 +190,25 @@ impl WindowPlacement {
                 y -= (client_dimensions.h() / 2) as i32;
                 x = cmp::max(x, window_area.x());
                 y = cmp::max(y, window_area.y());
-                x = cmp::min(x, window_area.x() + window_area.w() as i32 - client_dimensions.w() as i32);
-                y = cmp::min(y, window_area.y() + window_area.h() as i32 - client_dimensions.h() as i32);
+                x = cmp::min(
+                    x,
+                    window_area.x() + window_area.w() as i32 - client_dimensions.w() as i32,
+                );
+                y = cmp::min(
+                    y,
+                    window_area.y() + window_area.h() as i32 - client_dimensions.h() as i32,
+                );
                 (x, y)
-            },
+            }
             Centered => {
                 let x = window_area.center().0 - (client_dimensions.w() as i32 / 2);
                 let y = window_area.center().1 - (client_dimensions.h() as i32 / 2);
                 (x, y)
-            },
+            }
             Wherever => client_dimensions.pos(),
         }
     }
 }
-
 
 pub fn read_button_bindings() -> Vec<ButtonBinding> {
     // read keybindings file
@@ -213,7 +217,7 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
         Err(msg) => {
             eprintln!("Unable to read button bindings: {}", msg);
             default_button_bindings()
-        },
+        }
     };
 
     // read extended keybindings
@@ -221,7 +225,7 @@ pub fn read_button_bindings() -> Vec<ButtonBinding> {
         Ok(config) => button_bindings.extend(config),
         Err(msg) => {
             eprintln!("Unable to read extended button bindings: {}", msg);
-        },
+        }
     }
 
     button_bindings
@@ -233,7 +237,7 @@ pub fn read_config() -> Configuration {
         Err(msg) => {
             eprintln!("Unable to read configuration: {}", msg);
             Configuration::default()
-        },
+        }
     }
 }
 
@@ -244,7 +248,7 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         Err(msg) => {
             eprintln!("Unable to read key bindings: {}", msg);
             default_key_bindings(nworkspaces)
-        },
+        }
     };
 
     // read extended keybindings
@@ -252,7 +256,7 @@ pub fn read_key_bindings(nworkspaces: u32) -> Vec<KeyBinding> {
         Ok(config) => keybindings.extend(config),
         Err(msg) => {
             eprintln!("Unable to read extended key bindings: {}", msg);
-        },
+        }
     }
 
     keybindings
@@ -265,7 +269,6 @@ pub fn read_rules() -> Vec<Rule> {
         Err(msg) => {
             eprintln!("Unable to read window rules: {}", msg);
             Vec::new()
-        },
+        }
     }
 }
-
