@@ -5,26 +5,31 @@ use std::cmp;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use crate::*;
 use crate::config::LayoutConfiguration;
 use crate::layouts::*;
+use crate::*;
 
 #[derive(PartialEq)]
 pub struct Workspace<C: Client<Attributes>> {
     name: String,
     global_index: u32,
-    clients: VecDeque<Rc<RefCell<C>>>,  // sorted by user
-    clients_stack: VecDeque<Rc<RefCell<C>>>,  // sorted by stacking order
+    clients: VecDeque<Rc<RefCell<C>>>,       // sorted by user
+    clients_stack: VecDeque<Rc<RefCell<C>>>, // sorted by stacking order
     win_area: Dimensions,
     cur_layout: LayoutType,
     layout_config: LayoutConfiguration,
 }
 
-
 impl<C: Client<Attributes>> Workspace<C> {
-    pub fn new(name: String, global_index: u32, win_area: Dimensions, layout_config: LayoutConfiguration) -> Workspace<C> {
+    pub fn new(
+        name: String,
+        global_index: u32,
+        win_area: Dimensions,
+        layout_config: LayoutConfiguration,
+    ) -> Workspace<C> {
         Workspace {
-            name, global_index,
+            name,
+            global_index,
             clients: VecDeque::new(),
             clients_stack: VecDeque::new(),
             win_area,
@@ -34,10 +39,17 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn apply_layout(&self) {
-        let tiled_clients: Vec<_> = self.clients.iter()
+        let tiled_clients: Vec<_> = self
+            .clients
+            .iter()
             .filter(|c| !c.borrow().attributes().is_floating && !c.borrow().is_dialog())
-            .cloned().collect();
-        Layout::get(self.cur_layout).apply_layout(self.win_area, &tiled_clients, &self.layout_config);
+            .cloned()
+            .collect();
+        Layout::get(self.cur_layout).apply_layout(
+            self.win_area,
+            &tiled_clients,
+            &self.layout_config,
+        );
     }
 
     pub fn change_main_ratio(&mut self, i: f32) {
@@ -57,7 +69,10 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn cycle_layout(&mut self) {
-        let cur_idx = LayoutType::VALUES.iter().position(|l| *l == self.cur_layout).unwrap();
+        let cur_idx = LayoutType::VALUES
+            .iter()
+            .position(|l| *l == self.cur_layout)
+            .unwrap();
         self.cur_layout = LayoutType::VALUES[(cur_idx + 1) % LayoutType::SIZE];
         self.apply_layout();
     }
@@ -82,7 +97,10 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn inc_gaps(&mut self, i: i32) {
         let new_gaps = self.layout_config.gap_width as i32 + i;
-        if new_gaps >= 0 && new_gaps as u32 <= self.win_area.w() / 2 && new_gaps as u32 <= self.win_area.h() / 2 {
+        if new_gaps >= 0
+            && new_gaps as u32 <= self.win_area.w() / 2
+            && new_gaps as u32 <= self.win_area.h() / 2
+        {
             self.layout_config.gap_width = new_gaps as u32;
             self.apply_layout();
         }
@@ -104,7 +122,10 @@ impl<C: Client<Attributes>> Workspace<C> {
     }
 
     pub fn last_active_stack(&self) -> Option<Rc<RefCell<C>>> {
-        self.clients_stack.iter().find(|c| !self.is_main(c)).cloned()
+        self.clients_stack
+            .iter()
+            .find(|c| !self.is_main(c))
+            .cloned()
     }
 
     pub fn move_main(&mut self, client_rc: Rc<RefCell<C>>) {
@@ -129,7 +150,11 @@ impl<C: Client<Attributes>> Workspace<C> {
         &self.name
     }
 
-    pub fn next_in_direction(&self, client_rc: Rc<RefCell<C>>, dir: Direction) -> Option<Rc<RefCell<C>>> {
+    pub fn next_in_direction(
+        &self,
+        client_rc: Rc<RefCell<C>>,
+        dir: Direction,
+    ) -> Option<Rc<RefCell<C>>> {
         use Direction::*;
         let clients: Vec<_> = self.clients_as_stacked().cloned().collect();
 
@@ -138,67 +163,66 @@ impl<C: Client<Attributes>> Workspace<C> {
         let y_diff = |c: &Rc<RefCell<C>>| c.borrow().center().1 - client_center.1;
 
         let (selected, _) = match dir {
-            Up => {
-                clients.iter()
-                    .filter(|c| *c != &client_rc)
-                    .map(|c| (c, y_diff(c)))
-                    .filter(|(c, v)| v.abs() >= x_diff(c).abs())
-                    .filter(|(_, v)| *v < 0)
-                    .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
-                        if cur_d > acc_d {
-                            (cur_c, cur_d)
-                        } else {
-                            (acc_c, acc_d)
-                        }
-                    })
-            },
-            Down => {
-                clients.iter()
-                    .filter(|c| *c != &client_rc)
-                    .map(|c| (c, y_diff(c)))
-                    .filter(|(c, v)| v.abs() >= x_diff(c).abs())
-                    .filter(|(_, v)| *v > 0)
-                    .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
-                        if cur_d < acc_d {
-                            (cur_c, cur_d)
-                        } else {
-                            (acc_c, acc_d)
-                        }
-                    })
-            },
-            Left => {
-                clients.iter()
-                    .filter(|c| *c != &client_rc)
-                    .map(|c| (c, x_diff(c)))
-                    .filter(|(c, v)| v.abs() >= y_diff(c).abs())
-                    .filter(|(_, v)| *v < 0)
-                    .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
-                        if cur_d > acc_d {
-                            (cur_c, cur_d)
-                        } else {
-                            (acc_c, acc_d)
-                        }
-                    })
-            },
-            Right => {
-                clients.iter()
-                    .filter(|c| *c != &client_rc)
-                    .map(|c| (c, x_diff(c)))
-                    .filter(|(c, v)| v.abs() >= y_diff(c).abs())
-                    .filter(|(_, v)| *v > 0)
-                    .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
-                        if cur_d < acc_d {
-                            (cur_c, cur_d)
-                        } else {
-                            (acc_c, acc_d)
-                        }
-                    })
-            },
+            Up => clients
+                .iter()
+                .filter(|c| *c != &client_rc)
+                .map(|c| (c, y_diff(c)))
+                .filter(|(c, v)| v.abs() >= x_diff(c).abs())
+                .filter(|(_, v)| *v < 0)
+                .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                    if cur_d > acc_d {
+                        (cur_c, cur_d)
+                    } else {
+                        (acc_c, acc_d)
+                    }
+                }),
+            Down => clients
+                .iter()
+                .filter(|c| *c != &client_rc)
+                .map(|c| (c, y_diff(c)))
+                .filter(|(c, v)| v.abs() >= x_diff(c).abs())
+                .filter(|(_, v)| *v > 0)
+                .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                    if cur_d < acc_d {
+                        (cur_c, cur_d)
+                    } else {
+                        (acc_c, acc_d)
+                    }
+                }),
+            Left => clients
+                .iter()
+                .filter(|c| *c != &client_rc)
+                .map(|c| (c, x_diff(c)))
+                .filter(|(c, v)| v.abs() >= y_diff(c).abs())
+                .filter(|(_, v)| *v < 0)
+                .fold((&client_rc, i32::MIN), |(acc_c, acc_d), (cur_c, cur_d)| {
+                    if cur_d > acc_d {
+                        (cur_c, cur_d)
+                    } else {
+                        (acc_c, acc_d)
+                    }
+                }),
+            Right => clients
+                .iter()
+                .filter(|c| *c != &client_rc)
+                .map(|c| (c, x_diff(c)))
+                .filter(|(c, v)| v.abs() >= y_diff(c).abs())
+                .filter(|(_, v)| *v > 0)
+                .fold((&client_rc, i32::MAX), |(acc_c, acc_d), (cur_c, cur_d)| {
+                    if cur_d < acc_d {
+                        (cur_c, cur_d)
+                    } else {
+                        (acc_c, acc_d)
+                    }
+                }),
         };
 
         let selected = selected.clone();
         if selected == client_rc {
-            let mut clients: Vec<_> = self.clients().filter(|&c| x_diff(c) == 0 && y_diff(c) == 0).cloned()
+            let mut clients: Vec<_> = self
+                .clients()
+                .filter(|&c| x_diff(c) == 0 && y_diff(c) == 0)
+                .cloned()
                 .collect();
             if dir == Up || dir == Left {
                 clients.reverse();
@@ -207,9 +231,10 @@ impl<C: Client<Attributes>> Workspace<C> {
                 clients.rotate_left(i + 1);
             }
             if let Some(selected) = clients.first()
-                && selected != &client_rc {
-                    return Some(selected.clone());
-                }
+                && selected != &client_rc
+            {
+                return Some(selected.clone());
+            }
         } else {
             return Some(selected);
         }
@@ -219,7 +244,12 @@ impl<C: Client<Attributes>> Workspace<C> {
     pub fn pull_pinned(&mut self) -> Vec<Rc<RefCell<C>>> {
         let mut vec = Vec::new();
 
-        while let Some(client_rc) = self.clients.iter().find(|c| c.borrow().attributes().is_pinned).cloned() {
+        while let Some(client_rc) = self
+            .clients
+            .iter()
+            .find(|c| c.borrow().attributes().is_pinned)
+            .cloned()
+        {
             // pull client from clients
             let index_option = self.clients.iter().position(|c| *c == client_rc);
             if let Some(index) = index_option {
@@ -279,7 +309,8 @@ impl<C: Client<Attributes>> Workspace<C> {
         self.apply_layout();
 
         if self.current_layout() != LayoutType::Floating {
-            self.clients_stack.iter()
+            self.clients_stack
+                .iter()
                 .filter(|c| c.borrow().attributes().is_floating)
                 .rev()
                 .for_each(|c| c.borrow().raise());
@@ -306,7 +337,12 @@ impl<C: Client<Attributes>> Workspace<C> {
             let mut client = client_rc.borrow_mut();
             let dimensions_option = client.attributes_mut().floating_dimensions.take();
             if let Some(dimensions) = dimensions_option {
-                client.move_resize(dimensions.x(), dimensions.y(), dimensions.w(), dimensions.h());
+                client.move_resize(
+                    dimensions.x(),
+                    dimensions.y(),
+                    dimensions.w(),
+                    dimensions.h(),
+                );
             } else {
                 client.center_on_screen(self.win_area);
             }
@@ -316,7 +352,7 @@ impl<C: Client<Attributes>> Workspace<C> {
             let dimensions = Some(client.dimensions());
             client.attributes_mut().floating_dimensions = dimensions;
         } else {
-            return;  // client already has desired state
+            return; // client already has desired state
         }
 
         client_rc.borrow().export_tiled(state);
@@ -326,7 +362,9 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn set_pinned(&mut self, client_rc: Rc<RefCell<C>>, state: bool) {
         client_rc.borrow_mut().attributes_mut().is_pinned = state;
-        client_rc.borrow().export_pinned(state, Some(self.global_index))
+        client_rc
+            .borrow()
+            .export_pinned(state, Some(self.global_index))
     }
 
     pub fn set_stack_mode(&mut self, mode: StackMode) {
@@ -360,15 +398,20 @@ impl<C: Client<Attributes>> Workspace<C> {
 
     pub fn swap_clients(&mut self, client_a: Rc<RefCell<C>>, client_b: Rc<RefCell<C>>) {
         if let Some(pos_a) = self.clients.iter().position(|c| c == &client_a)
-            && let Some(pos_b) = self.clients.iter().position(|c| c == &client_b) {
-                self.clients.swap(pos_a, pos_b);
-                self.apply_layout();
-                client_a.borrow().warp_pointer_to_center();
-            }
+            && let Some(pos_b) = self.clients.iter().position(|c| c == &client_b)
+        {
+            self.clients.swap(pos_a, pos_b);
+            self.apply_layout();
+            client_a.borrow().warp_pointer_to_center();
+        }
     }
 
     pub fn tiled_clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_> {
-        Box::new(self.clients.iter().filter(|c| !c.borrow().attributes().is_floating))
+        Box::new(
+            self.clients
+                .iter()
+                .filter(|c| !c.borrow().attributes().is_floating),
+        )
     }
 
     pub fn update_window_area(&mut self, win_area: Dimensions) {
@@ -380,7 +423,10 @@ impl<C: Client<Attributes>> Workspace<C> {
 impl<C: Client<Attributes>> ClientList<C> for Workspace<C> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>) {
         client_rc.borrow_mut().export_workspace(self.global_index);
-        let stack_top = cmp::min(self.clients.len(), self.layout_config.nmain.try_into().unwrap());
+        let stack_top = cmp::min(
+            self.clients.len(),
+            self.layout_config.nmain.try_into().unwrap(),
+        );
         match self.layout_config.attach_position {
             AttachPosition::Main => self.clients.push_front(client_rc.clone()),
             AttachPosition::StackTop => self.clients.insert(stack_top, client_rc.clone()),

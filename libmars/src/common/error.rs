@@ -5,13 +5,13 @@ use crate::platforms::x11::misc::atoms::X11Atom;
 
 pub type Result<T> = CoreResult<T, MarsError>;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct MarsError {
     kind: MarsErrorKind,
     info: Option<String>,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum MarsErrorKind {
     ConnectionFailed,
     FailedRequest,
@@ -21,7 +21,6 @@ pub enum MarsErrorKind {
     Unknown,
     UnsupportedProtocol,
 }
-
 
 impl MarsError {
     pub fn failed_request(call: &str) -> MarsError {
@@ -34,7 +33,10 @@ impl MarsError {
     pub fn failed_conversion(value: impl std::fmt::Debug, from: &str, to: &str) -> MarsError {
         MarsError {
             kind: MarsErrorKind::IllegalValue,
-            info: Some(format!("unable to convert {:?} from {} to {}", value, from, to)),
+            info: Some(format!(
+                "unable to convert {:?} from {} to {}",
+                value, from, to
+            )),
         }
     }
 
@@ -81,7 +83,6 @@ impl MarsError {
     }
 }
 
-
 impl Display for MarsError {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         self.kind.fmt(f)?;
@@ -112,5 +113,3 @@ impl Display for MarsErrorKind {
         write!(f, "{}", name)
     }
 }
-
-

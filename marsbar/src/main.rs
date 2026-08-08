@@ -1,15 +1,14 @@
 #![doc = include_str!("../README.md")]
 
-
 extern crate x11;
 
 use clap::Parser;
 use libmars::common::*;
+use libmars::interfaces::draw::*;
+use libmars::platforms::x11::draw::canvas::*;
+use libmars::platforms::x11::draw::widget::*;
 use libmars::platforms::x11::misc::atoms::X11Atom::{self, *};
 use libmars::platforms::x11::misc::window::X11Window;
-use libmars::interfaces::draw::*;
-use libmars::platforms::x11::draw::widget::*;
-use libmars::platforms::x11::draw::canvas::*;
 use libmars::utils::configuration::print_config;
 use std::ffi::*;
 use std::iter;
@@ -23,16 +22,13 @@ use crate::config::*;
 use crate::handlers::*;
 use crate::tray::*;
 
-
 mod config;
 mod handlers;
 mod status;
 mod tray;
 
-
 const CLASSNAME: &str = "bar";
 const WINDOWNAME: &str = "Bar Window";
-
 
 /// A simple status bar for marswm
 #[derive(Parser)]
@@ -66,13 +62,23 @@ struct Bar {
     default_client_event_mask: i64,
 }
 
-
 impl Bar {
-    fn create(display: *mut xlib::Display, dimensions: Dimensions, config: Configuration,
-              default_client_event_mask: i64, create_tray: bool) -> Result<Bar, String> {
+    fn create(
+        display: *mut xlib::Display,
+        dimensions: Dimensions,
+        config: Configuration,
+        default_client_event_mask: i64,
+        create_tray: bool,
+    ) -> Result<Bar, String> {
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window_type = Some(NetWMWindowTypeDock);
-        let window = libmars::platforms::x11::misc::create_window(display, dimensions, CLASSNAME, WINDOWNAME, window_type)?;
+        let window = libmars::platforms::x11::misc::create_window(
+            display,
+            dimensions,
+            CLASSNAME,
+            WINDOWNAME,
+            window_type,
+        )?;
         let mut dimensions = dimensions;
         dimensions.set_h(config.style.height);
 
@@ -82,28 +88,51 @@ impl Bar {
         }
 
         // TODO destroy window on failure
-        let mut canvas = X11Canvas::new_for_window(display, window)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
-        canvas.set_foreground(config.style.background)
+        let mut canvas = X11Canvas::new_for_window(display, window).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
+        canvas
+            .set_foreground(config.style.background)
             .and(canvas.set_background(config.style.background))
             .and(canvas.set_font(&config.style.font))
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+            .inspect_err(|_| unsafe {
+                xlib::XDestroyWindow(display, window);
+            })?;
 
-        let workspace_widget = config.style.workspaces.create_flow_layout_widget(display, window)?;
-        let title_widget = config.style.title.create_text_widget(display, window, &config.style.font)?;
-        let status_widget = config.style.status.create_flow_layout_widget(display, window)?;
+        let workspace_widget = config
+            .style
+            .workspaces
+            .create_flow_layout_widget(display, window)?;
+        let title_widget =
+            config
+                .style
+                .title
+                .create_text_widget(display, window, &config.style.font)?;
+        let status_widget = config
+            .style
+            .status
+            .create_flow_layout_widget(display, window)?;
         let systray = if create_tray {
-            config.style.status.create_systray_widget(display, window, dimensions.h()).ok()
+            config
+                .style
+                .status
+                .create_systray_widget(display, window, dimensions.h())
+                .ok()
         } else {
             None
         };
 
-
         let mut bar = Bar {
-            display, root, window,
-            canvas, dimensions,
+            display,
+            root,
+            window,
+            canvas,
+            dimensions,
             config,
-            workspace_widget, status_widget, systray, title_widget,
+            workspace_widget,
+            status_widget,
+            systray,
+            title_widget,
             active_window: None,
             default_client_event_mask,
         };
@@ -120,13 +149,15 @@ impl Bar {
         self.arrange_title(self.get_active_window_title());
 
         // arrange desktop segment
-        let result = self.root.x11_get_text_list_property(self.display, NetDesktopNames);
+        let result = self
+            .root
+            .x11_get_text_list_property(self.display, NetDesktopNames);
         let desktop_names = match result {
             Ok(names) => names,
             Err(e) => {
                 eprintln!("WARNING: Desktop names not available ({})", e);
                 Vec::new()
-            },
+            }
         };
         self.arrange_workspaces(desktop_names);
         if let Ok(idx) = self.get_active_workspace() {
@@ -154,8 +185,15 @@ impl Bar {
             if let Some(widget) = self.status_widget.child_mut(i) {
                 widget.set_label(block.to_owned());
             } else {
-                let mut widget = self.config.style.status
-                    .create_text_widget(self.display, self.status_widget.wid(), &self.config.style.font)
+                let mut widget = self
+                    .config
+                    .style
+                    .status
+                    .create_text_widget(
+                        self.display,
+                        self.status_widget.wid(),
+                        &self.config.style.font,
+                    )
                     .unwrap();
                 widget.set_label(block.to_owned());
                 if let Some(callback) = &self.config.action_cmd {
@@ -189,7 +227,10 @@ impl Bar {
         };
 
         let height_diff = (self.dimensions.h() as i32 - self.status_widget.size().1 as i32) / 2;
-        let x = self.dimensions.w() as i32 - tray_width as i32 - self.status_widget.size().0 as i32 - height_diff;
+        let x = self.dimensions.w() as i32
+            - tray_width as i32
+            - self.status_widget.size().0 as i32
+            - height_diff;
         let y = height_diff;
         self.status_widget.move_to(x, y);
     }
@@ -223,8 +264,15 @@ impl Bar {
                     max_width = widget.content_size().0
                 }
             } else {
-                let mut widget = self.config.style.workspaces
-                    .create_text_widget(self.display, self.workspace_widget.wid(), &self.config.style.font)
+                let mut widget = self
+                    .config
+                    .style
+                    .workspaces
+                    .create_text_widget(
+                        self.display,
+                        self.workspace_widget.wid(),
+                        &self.config.style.font,
+                    )
                     .unwrap();
                 let event_handler = WorkspaceEventHandler::new(i as u32).unwrap();
 
@@ -258,12 +306,22 @@ impl Bar {
         self.workspace_widget.rearrange();
     }
 
-    fn create_for_monitor(display: *mut xlib::Display, monitor_conf: &MonitorConfig, config: Configuration,
-                          has_tray: bool) -> Result<Bar, String> {
+    fn create_for_monitor(
+        display: *mut xlib::Display,
+        monitor_conf: &MonitorConfig,
+        config: Configuration,
+        has_tray: bool,
+    ) -> Result<Bar, String> {
         let mdims = monitor_conf.dimensions();
         let mut dimensions = mdims;
         dimensions.set_h(config.style.height);
-        Self::create(display, dimensions, config.clone(), xlib::NoEventMask, has_tray)
+        Self::create(
+            display,
+            dimensions,
+            config.clone(),
+            xlib::NoEventMask,
+            has_tray,
+        )
     }
 
     fn draw(&mut self) {
@@ -277,20 +335,29 @@ impl Bar {
             let height = self.dimensions.h();
             let x = (self.dimensions.x() + self.dimensions.w() as i32) - width as i32;
             let y = self.dimensions.y();
-            self.canvas.fill_rectangle_with(x, y, width, height, self.config.style.status.outer_background);
+            self.canvas.fill_rectangle_with(
+                x,
+                y,
+                width,
+                height,
+                self.config.style.status.outer_background,
+            );
         }
 
         self.canvas.flush();
     }
 
     fn get_status(&self) -> Result<String, String> {
-        self.root.x11_read_property_string(self.display, MarsStatus)
+        self.root
+            .x11_read_property_string(self.display, MarsStatus)
             .or_else(|_| self.root.x11_wm_name(self.display))
             .map_err(|e| e.to_string())
     }
 
     fn get_active_workspace(&self) -> Result<u32, String> {
-        let data = self.root.x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
+        let data = self
+            .root
+            .x11_read_property_long(self.display, NetCurrentDesktop, xlib::XA_CARDINAL)
             .map_err(|e| e.to_string())?;
         match data.first() {
             Some(idx) => Ok(*idx as u32),
@@ -299,7 +366,9 @@ impl Bar {
     }
 
     fn get_active_window(&self) -> Option<xlib::Window> {
-        let result = self.root.x11_read_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW);
+        let result =
+            self.root
+                .x11_read_property_long(self.display, NetActiveWindow, xlib::XA_WINDOW);
         let data = match result {
             Ok(data) => data,
             Err(_) => return None,
@@ -329,26 +398,31 @@ impl Bar {
             } else if event.any.window == self.window {
                 self.handle_bar_event(event);
             } else if Some(event.any.window) == self.active_window
-                    && event.get_type() == xlib::PropertyNotify
-                    && event.property.atom == WMName.to_xlib_atom(self.display) {
+                && event.get_type() == xlib::PropertyNotify
+                && event.property.atom == WMName.to_xlib_atom(self.display)
+            {
                 let title = self.get_active_window_title();
                 self.arrange_title(title);
             } else if event.get_type() == xlib::ClientMessage
-                    && Some(event.any.window) == self.systray.as_ref().map(|w| w.wid())
-                    && event.client_message.message_type == NetSystemTrayOpcode.to_xlib_atom(self.display) {
+                && Some(event.any.window) == self.systray.as_ref().map(|w| w.wid())
+                && event.client_message.message_type
+                    == NetSystemTrayOpcode.to_xlib_atom(self.display)
+            {
                 if let Some(systray) = &mut self.systray {
                     systray.handle_systray_event(event.client_message);
                     self.arrange();
                 }
             } else if event.get_type() == xlib::DestroyNotify
-                    && Some(event.destroy_window.event) == self.systray.as_ref().map(|w| w.wid()) {
+                && Some(event.destroy_window.event) == self.systray.as_ref().map(|w| w.wid())
+            {
                 if let Some(systray) = &mut self.systray {
                     systray.handle_icon_destroyed(event.destroy_window);
                     self.arrange();
                 }
             } else {
                 let systray_iter = if let Some(systray) = &mut self.systray {
-                    Box::new(iter::once(systray as &mut dyn Widget)) as Box<dyn Iterator<Item = &mut dyn Widget>>
+                    Box::new(iter::once(systray as &mut dyn Widget))
+                        as Box<dyn Iterator<Item = &mut dyn Widget>>
                 } else {
                     Box::new(iter::empty())
                 };
@@ -365,7 +439,9 @@ impl Bar {
     }
 
     fn handle_bar_event(&mut self, event: xlib::XEvent) {
-        if event.get_type() == xlib::Expose { self.draw() }
+        if event.get_type() == xlib::Expose {
+            self.draw()
+        }
     }
 
     fn handle_root_event(&mut self, event: xlib::XEvent) {
@@ -379,32 +455,42 @@ impl Bar {
                             if let Some(window) = self.active_window {
                                 // TODO this does NOT work when called from a window manager
                                 // directly
-                                xlib::XSelectInput(self.display, window, self.default_client_event_mask);
+                                xlib::XSelectInput(
+                                    self.display,
+                                    window,
+                                    self.default_client_event_mask,
+                                );
                             }
                             self.active_window = self.get_active_window();
                             if let Some(window) = self.active_window {
-                                xlib::XSelectInput(self.display, window, self.default_client_event_mask | xlib::PropertyChangeMask);
+                                xlib::XSelectInput(
+                                    self.display,
+                                    window,
+                                    self.default_client_event_mask | xlib::PropertyChangeMask,
+                                );
                             }
                         }
 
                         let title = self.get_active_window_title();
                         self.arrange_title(title);
-                    },
+                    }
                     NetCurrentDesktop => {
                         let new_idx = match self.get_active_workspace() {
                             Ok(idx) => idx,
                             Err(_) => return,
                         };
                         self.set_active_workspace(new_idx);
-                    },
+                    }
                     NetDesktopNames => {
-                        let result = self.root.x11_get_text_list_property(self.display, NetDesktopNames);
+                        let result = self
+                            .root
+                            .x11_get_text_list_property(self.display, NetDesktopNames);
                         let workspace_names = match result {
                             Ok(names) => names,
                             Err(e) => {
                                 eprintln!("WARNING: Desktop names not available ({})", e);
                                 Vec::new()
-                            },
+                            }
                         };
                         self.arrange_workspaces(workspace_names);
                     }
@@ -412,7 +498,7 @@ impl Bar {
                         if let Ok(status) = self.get_status() {
                             self.arrange_status(status)
                         }
-                    },
+                    }
                     _ => (),
                 }
             };
@@ -423,7 +509,14 @@ impl Bar {
         self.dimensions.set_pos(monitor_config.dimensions().pos());
         self.dimensions.set_w(monitor_config.dimensions().w());
         unsafe {
-            xlib::XMoveResizeWindow(self.display, self.window, self.dimensions.x(), self.dimensions.y(), self.dimensions.w(), self.dimensions.h());
+            xlib::XMoveResizeWindow(
+                self.display,
+                self.window,
+                self.dimensions.x(),
+                self.dimensions.y(),
+                self.dimensions.w(),
+                self.dimensions.h(),
+            );
         }
         self.arrange();
     }
@@ -449,11 +542,19 @@ impl Bar {
     fn set_active_workspace(&mut self, new_idx: u32) {
         for (i, widget) in &mut self.workspace_widget.children_mut().enumerate() {
             if i as u32 == new_idx {
-                widget.set_foreground(self.config.style.workspaces.inner_background).unwrap();
-                widget.set_background(self.config.style.workspaces.foreground).unwrap();
+                widget
+                    .set_foreground(self.config.style.workspaces.inner_background)
+                    .unwrap();
+                widget
+                    .set_background(self.config.style.workspaces.foreground)
+                    .unwrap();
             } else {
-                widget.set_foreground(self.config.style.workspaces.foreground).unwrap();
-                widget.set_background(self.config.style.workspaces.inner_background).unwrap();
+                widget
+                    .set_foreground(self.config.style.workspaces.foreground)
+                    .unwrap();
+                widget
+                    .set_background(self.config.style.workspaces.inner_background)
+                    .unwrap();
             }
         }
     }
@@ -461,13 +562,21 @@ impl Bar {
     fn await_map_notify(&mut self) {
         libmars::platforms::x11::misc::await_map_notify(self.display, self.window);
         self.draw();
-        println!("Window mapped: 0x{:x}, {:?}", self.window, self.window.x11_dimensions(self.display));
+        println!(
+            "Window mapped: 0x{:x}, {:?}",
+            self.window,
+            self.window.x11_dimensions(self.display)
+        );
     }
-
 }
 
-fn eventloop(display: *mut xlib::Display, mut bar: Bar, have_xrandr: bool,
-                xrr_event_base: i32, status_process: &mut Option<process::Child>) {
+fn eventloop(
+    display: *mut xlib::Display,
+    mut bar: Bar,
+    have_xrandr: bool,
+    xrr_event_base: i32,
+    status_process: &mut Option<process::Child>,
+) {
     loop {
         let mut event: MaybeUninit<xlib::XEvent> = MaybeUninit::uninit();
         unsafe {
@@ -516,10 +625,15 @@ fn main() {
     let (have_xrandr, xrr_event_base, _xrr_error_base) = unsafe {
         let mut xrr_event_base = 0;
         let mut xrr_error_base = 0;
-        let have_xrandr = xrandr::XRRQueryExtension(display, &mut xrr_event_base, &mut xrr_error_base) != 0;
+        let have_xrandr =
+            xrandr::XRRQueryExtension(display, &mut xrr_event_base, &mut xrr_error_base) != 0;
 
         if have_xrandr {
-            xrandr::XRRSelectInput(display, xlib::XDefaultRootWindow(display), xrandr::RRCrtcChangeNotifyMask);
+            xrandr::XRRSelectInput(
+                display,
+                xlib::XDefaultRootWindow(display),
+                xrandr::RRCrtcChangeNotifyMask,
+            );
         }
 
         (have_xrandr, xrr_event_base, xrr_error_base)
@@ -527,21 +641,35 @@ fn main() {
 
     let status_cmd = config.status_cmd.clone();
     let monitors = libmars::platforms::x11::misc::query_monitor_config(display, true);
-    let mut bar = Bar::create_for_monitor(display, monitors.first().unwrap(), config, true).unwrap();
+    let mut bar =
+        Bar::create_for_monitor(display, monitors.first().unwrap(), config, true).unwrap();
     bar.await_map_notify();
 
     // spawn status command
     let mut status_cmd_proc = match &status_cmd {
         Some(status_cmd) => {
-            match process::Command::new("sh").arg("-c").arg(status_cmd).spawn() {
+            match process::Command::new("sh")
+                .arg("-c")
+                .arg(status_cmd)
+                .spawn()
+            {
                 Ok(proc) => Some(proc),
-                Err(e) => { eprintln!("WARNING: unable to create child process ({})", e); None },
+                Err(e) => {
+                    eprintln!("WARNING: unable to create child process ({})", e);
+                    None
+                }
             }
-        },
+        }
         None => None,
     };
 
-    eventloop(display, bar, have_xrandr, xrr_event_base, &mut status_cmd_proc);
+    eventloop(
+        display,
+        bar,
+        have_xrandr,
+        xrr_event_base,
+        &mut status_cmd_proc,
+    );
 
     // clean up
     if let Some(mut proc) = status_cmd_proc {
@@ -554,8 +682,12 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
     let msg = unsafe {
         let bufsize = 1024;
         let mut buf = vec![0; bufsize];
-        xlib::XGetErrorText(display, (*error).error_code.into(), buf.as_mut_ptr(),
-                            (bufsize - 1) as c_int);
+        xlib::XGetErrorText(
+            display,
+            (*error).error_code.into(),
+            buf.as_mut_ptr(),
+            (bufsize - 1) as c_int,
+        );
         let msg_cstring = CStr::from_ptr(buf.as_mut_ptr());
         msg_cstring.to_str().unwrap().to_owned()
         // println!("{}", msg);
@@ -563,9 +695,21 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
 
     unsafe {
         match (*error).error_code {
-            xlib::BadWindow => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
-            xlib::BadMatch => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
-            _ => panic!("Fatal X11 error: {} (request code: {})", msg, (*error).request_code),
+            xlib::BadWindow => println!(
+                "X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
+            xlib::BadMatch => println!(
+                "X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
+            _ => panic!(
+                "Fatal X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
         }
     }
     0

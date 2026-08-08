@@ -1,7 +1,6 @@
 use libmars::common::Dimensions;
 
-#[derive(PartialEq)]
-#[derive(Default)]
+#[derive(PartialEq, Default)]
 pub struct Attributes {
     pub is_floating: bool,
     pub is_moving: bool,
@@ -9,5 +8,3 @@ pub struct Attributes {
 
     pub floating_dimensions: Option<Dimensions>,
 }
-
-

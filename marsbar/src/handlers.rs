@@ -15,7 +15,6 @@ pub struct WorkspaceEventHandler {
     workspace_idx: u32,
 }
 
-
 impl StatusEventHandler {
     pub fn new(block: usize, command: String) -> StatusEventHandler {
         StatusEventHandler { block, command }
@@ -25,7 +24,10 @@ impl StatusEventHandler {
 impl WorkspaceEventHandler {
     pub fn new(workspace_idx: u32) -> Result<WorkspaceEventHandler> {
         let controller = X11Controller::new()?;
-        Ok(WorkspaceEventHandler { controller, workspace_idx })
+        Ok(WorkspaceEventHandler {
+            controller,
+            workspace_idx,
+        })
     }
 
     fn cycle_workspace(&self, inc: i32) -> Result<()> {
@@ -37,19 +39,26 @@ impl WorkspaceEventHandler {
 
     fn move_client(&self) -> Result<()> {
         let active = self.controller.get_active_window()?;
-        self.controller.send_window_to_workspace(active, self.workspace_idx)
+        self.controller
+            .send_window_to_workspace(active, self.workspace_idx)
     }
 }
 
-
 impl WidgetEventHandler for StatusEventHandler {
     fn handle_action_event(&self, event: WidgetEvent, already_handled: bool) -> bool {
-        if already_handled { return true; }
+        if already_handled {
+            return true;
+        }
         if let WidgetEvent::ButtonPressed(button) = event {
             let block_var = format!("{}", self.block);
             let button_var = format!("{}", button);
-            if let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(&self.command)
-                    .env("BLOCK", block_var).env("BUTTON", button_var).spawn() {
+            if let Ok(mut handle) = std::process::Command::new("sh")
+                .arg("-c")
+                .arg(&self.command)
+                .env("BLOCK", block_var)
+                .env("BUTTON", button_var)
+                .spawn()
+            {
                 std::thread::spawn(move || {
                     let _ignored = handle.wait();
                 });
@@ -63,7 +72,9 @@ impl WidgetEventHandler for StatusEventHandler {
 
 impl WidgetEventHandler for WorkspaceEventHandler {
     fn handle_action_event(&self, event: WidgetEvent, already_handled: bool) -> bool {
-        if already_handled { return true; }
+        if already_handled {
+            return true;
+        }
         if let WidgetEvent::ButtonPressed(button) = event {
             let result = match button {
                 1 => self.controller.switch_workspace(self.workspace_idx),
@@ -74,7 +85,7 @@ impl WidgetEventHandler for WorkspaceEventHandler {
                 _ => return false,
             };
 
-            return result.is_ok()
+            return result.is_ok();
         }
         false
     }

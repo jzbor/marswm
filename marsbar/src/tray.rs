@@ -1,11 +1,11 @@
 extern crate x11;
 
 use libmars::common::*;
-use libmars::platforms::x11::misc::atoms::X11Atom::*;
-use libmars::platforms::x11::misc::window::X11Window;
 use libmars::interfaces::draw::*;
 use libmars::platforms::x11::draw::canvas::*;
 use libmars::platforms::x11::draw::widget::*;
+use libmars::platforms::x11::misc::atoms::X11Atom::*;
+use libmars::platforms::x11::misc::window::X11Window;
 use std::cmp;
 use std::mem::MaybeUninit;
 use x11::xlib;
@@ -29,7 +29,6 @@ const VERSION_MAJOR: u64 = 0;
 const VERSION_MINOR: u64 = 0;
 const XEMBED_EMBEDDED_VERSION: u64 = (VERSION_MAJOR << 16) | VERSION_MINOR;
 
-
 pub struct SystemTrayWidget {
     display: *mut xlib::Display,
     tray_icons: Vec<xlib::Window>,
@@ -48,36 +47,60 @@ pub struct SystemTrayWidget {
     bg_color: u64,
 }
 
-
 impl SystemTrayWidget {
-    pub fn new(display: *mut xlib::Display, parent: xlib::Window, params: X11WidgetParams, height: u32,
-               ipad: u32, bg_color: u64) -> Result<SystemTrayWidget, String> {
-        if height < 2*params.vpad() {
-            return Err(format!("Padding bigger than height (h: {}, vpad: {})", height, params.vpad()));
+    pub fn new(
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        params: X11WidgetParams,
+        height: u32,
+        ipad: u32,
+        bg_color: u64,
+    ) -> Result<SystemTrayWidget, String> {
+        if height < 2 * params.vpad() {
+            return Err(format!(
+                "Padding bigger than height (h: {}, vpad: {})",
+                height,
+                params.vpad()
+            ));
         }
 
         let outer_dimensions = Dimensions::new(params.x(), params.y(), MIN_SIZE.0, MIN_SIZE.1);
         let root = unsafe { xlib::XDefaultRootWindow(display) };
         let window = create_widget_window(display, parent, outer_dimensions)?;
-        let mut canvas = X11Canvas::new_for_window(display, window)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+        let mut canvas = X11Canvas::new_for_window(display, window).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
 
-        canvas.set_foreground(bg_color)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
-        canvas.set_background(bg_color)
-            .inspect_err(|_| unsafe { xlib::XDestroyWindow(display, window); })?;
+        canvas.set_foreground(bg_color).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
+        canvas.set_background(bg_color).inspect_err(|_| unsafe {
+            xlib::XDestroyWindow(display, window);
+        })?;
 
         // get required input selections (the default doesn't fit very well)
         let mask = xlib::StructureNotifyMask | xlib::SubstructureNotifyMask | xlib::ExposureMask;
-        unsafe { xlib::XSelectInput(display, window, mask); }
+        unsafe {
+            xlib::XSelectInput(display, window, mask);
+        }
 
         // configure tray window
         let data = [_NET_SYSTEM_TRAY_ORIENTATION_HORZ];
-        window.x11_replace_property_long(display, NetSystemTrayOrientation, xlib::XA_CARDINAL, &data);
+        window.x11_replace_property_long(
+            display,
+            NetSystemTrayOrientation,
+            xlib::XA_CARDINAL,
+            &data,
+        );
 
         // get tray selection
         unsafe {
-            xlib::XSetSelectionOwner(display, NetSystemTray.to_xlib_atom(display), window, xlib::CurrentTime);
+            xlib::XSetSelectionOwner(
+                display,
+                NetSystemTray.to_xlib_atom(display),
+                window,
+                xlib::CurrentTime,
+            );
 
             // check if we got the selection
             if xlib::XGetSelectionOwner(display, NetSystemTray.to_xlib_atom(display)) != window {
@@ -85,19 +108,28 @@ impl SystemTrayWidget {
                 return Err("unable to get system tray selection".to_owned());
             }
 
-            send_manager_message(display, root, NetSystemTray.to_xlib_atom(display), window, 0, 0);
+            send_manager_message(
+                display,
+                root,
+                NetSystemTray.to_xlib_atom(display),
+                window,
+                0,
+                0,
+            );
         }
 
         let widget = SystemTrayWidget {
             display,
             tray_icons: Vec::new(),
-            window, canvas,
+            window,
+            canvas,
             event_handlers: Vec::new(),
             is_visible: true,
-            width: height, height,
+            width: height,
+            height,
             min_size: MIN_SIZE,
             max_size: MAX_SIZE,
-            icon_width: height - 2*params.vpad(),
+            icon_width: height - 2 * params.vpad(),
             ipad,
             hpad: params.hpad(),
             vpad: params.vpad(),
@@ -124,15 +156,26 @@ impl SystemTrayWidget {
             let mut swa: xlib::XSetWindowAttributes = MaybeUninit::zeroed().assume_init();
             swa.background_pixel = self.bg_color;
             swa.backing_store = xlib::ParentRelative;
-			xlib::XChangeWindowAttributes(self.display, tray_icon, xlib::CWBackPixel | xlib::CWBackPixmap, &mut swa);
+            xlib::XChangeWindowAttributes(
+                self.display,
+                tray_icon,
+                xlib::CWBackPixel | xlib::CWBackPixmap,
+                &mut swa,
+            );
 
             // notify window
-            send_xembed_message(self.display, tray_icon, XEMBED_EMBEDDED_NOTIFY, 0, self.window, XEMBED_EMBEDDED_VERSION);
+            send_xembed_message(
+                self.display,
+                tray_icon,
+                XEMBED_EMBEDDED_NOTIFY,
+                0,
+                self.window,
+                XEMBED_EMBEDDED_VERSION,
+            );
 
             // map window
             xlib::XMapRaised(self.display, tray_icon);
         }
-
 
         tray_icon.x11_set_state(self.display, libmars::platforms::x11::misc::NORMAL_STATE);
         self.tray_icons.push(tray_icon);
@@ -145,7 +188,9 @@ impl SystemTrayWidget {
             return;
         }
 
-        if event.data.get_long(1) == SYSTEM_TRAY_REQUEST_DOCK { self.dock(event.data.get_long(2) as u64) }
+        if event.data.get_long(1) == SYSTEM_TRAY_REQUEST_DOCK {
+            self.dock(event.data.get_long(2) as u64)
+        }
     }
 
     pub fn handle_icon_destroyed(&mut self, event: xlib::XDestroyWindowEvent) {
@@ -158,9 +203,12 @@ impl SystemTrayWidget {
 
         for (i, icon) in self.tray_icons.iter().enumerate() {
             unsafe {
-                xlib::XMoveWindow(self.display, *icon,
-                                  self.hpad as i32 + i as i32 * (self.icon_width + self.ipad) as i32,
-                                  self.vpad as i32);
+                xlib::XMoveWindow(
+                    self.display,
+                    *icon,
+                    self.hpad as i32 + i as i32 * (self.icon_width + self.ipad) as i32,
+                    self.vpad as i32,
+                );
             }
         }
 
@@ -183,7 +231,7 @@ impl SystemTrayWidget {
     fn resize_to_content(&mut self) {
         let nicons = self.tray_icons.len();
         self.width = if nicons > 0 {
-            nicons as u32 * (self.icon_width + self.ipad) - self.ipad + 2*self.hpad
+            nicons as u32 * (self.icon_width + self.ipad) - self.ipad + 2 * self.hpad
         } else {
             self.min_size.0
         };
@@ -206,7 +254,6 @@ impl SystemTrayWidget {
         }
     }
 }
-
 
 impl Widget for SystemTrayWidget {
     fn move_to(&mut self, x: i32, y: i32) {
@@ -232,7 +279,7 @@ impl Widget for SystemTrayWidget {
                     xlib::ButtonPress => {
                         let button = event.button.button;
                         Some(WidgetEvent::ButtonPressed(button))
-                    },
+                    }
                     xlib::Expose => {
                         self.redraw();
                         None
@@ -241,10 +288,11 @@ impl Widget for SystemTrayWidget {
                 };
 
                 if let Some(widget_event) = widget_event {
-                    let _handled = self.event_handlers.iter()
-                        .fold(false, {
-                            |already_handled, handler| handler.handle_action_event(widget_event, already_handled)
-                        });
+                    let _handled = self.event_handlers.iter().fold(false, {
+                        |already_handled, handler| {
+                            handler.handle_action_event(widget_event, already_handled)
+                        }
+                    });
                 }
                 true
             } else {
@@ -271,8 +319,14 @@ impl Widget for SystemTrayWidget {
     }
 }
 
-
-fn send_manager_message(display: *mut xlib::Display, root: xlib::Window, selection: u64, window: u64, data0: u64, data1: u64) {
+fn send_manager_message(
+    display: *mut xlib::Display,
+    root: xlib::Window,
+    selection: u64,
+    window: u64,
+    data0: u64,
+    data1: u64,
+) {
     let mut data = xlib::ClientMessageData::new();
     data.set_long(0, xlib::CurrentTime as i64);
     data.set_long(1, selection as i64);
@@ -284,7 +338,8 @@ fn send_manager_message(display: *mut xlib::Display, root: xlib::Window, selecti
         type_: xlib::ClientMessage,
         serial: 0,
         send_event: xlib::True,
-        display, window,
+        display,
+        window,
         message_type: Manager.to_xlib_atom(display),
         format: 32,
         data,
@@ -293,11 +348,24 @@ fn send_manager_message(display: *mut xlib::Display, root: xlib::Window, selecti
     let mut event = xlib::XEvent::from(ce);
 
     unsafe {
-        xlib::XSendEvent(display, root, xlib::False, xlib::StructureNotifyMask, &mut event);
+        xlib::XSendEvent(
+            display,
+            root,
+            xlib::False,
+            xlib::StructureNotifyMask,
+            &mut event,
+        );
         xlib::XSync(display, xlib::False);
     }
 }
-fn send_xembed_message(display: *mut xlib::Display, window: xlib::Window, message: u64, detail: u64, data0: u64, data1: u64) {
+fn send_xembed_message(
+    display: *mut xlib::Display,
+    window: xlib::Window,
+    message: u64,
+    detail: u64,
+    data0: u64,
+    data1: u64,
+) {
     let mut data = xlib::ClientMessageData::new();
     data.set_long(0, xlib::CurrentTime as i64);
     data.set_long(1, message as i64);
@@ -309,7 +377,8 @@ fn send_xembed_message(display: *mut xlib::Display, window: xlib::Window, messag
         type_: xlib::ClientMessage,
         serial: 0,
         send_event: xlib::True,
-        display, window,
+        display,
+        window,
         message_type: Xembed.to_xlib_atom(display),
         format: 32,
         data,

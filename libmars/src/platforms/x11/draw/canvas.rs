@@ -8,8 +8,8 @@ use x11::xft;
 use x11::xlib;
 use x11::xrender;
 
-use crate::common::*;
 use crate::common::error::*;
+use crate::common::*;
 use crate::interfaces::draw::*;
 use crate::platforms::x11::misc::window::*;
 
@@ -33,21 +33,30 @@ pub struct X11Canvas {
     style: CanvasStyle,
 }
 
-
 impl X11Canvas {
     pub fn new_for_window(display: *mut xlib::Display, window: xlib::Window) -> Result<X11Canvas> {
         let screen = unsafe { xlib::XDefaultScreen(display) };
         let style = CanvasStyle::default();
         let pixbuffer = Self::create_pixmap(display, screen, window)?;
-        let gc = Self::create_default_gc(display, window, false)
-            .inspect_err(|_| unsafe { xlib::XFreePixmap(display, pixbuffer); })?;
+        let gc = Self::create_default_gc(display, window, false).inspect_err(|_| unsafe {
+            xlib::XFreePixmap(display, pixbuffer);
+        })?;
 
-        Ok( X11Canvas {
-            display, screen, window, pixbuffer, gc, style,
-        } )
+        Ok(X11Canvas {
+            display,
+            screen,
+            window,
+            pixbuffer,
+            gc,
+            style,
+        })
     }
 
-    fn create_default_gc(display: *mut xlib::Display, window: xlib::Window, reverse_video: bool) -> Result<xlib::GC> {
+    fn create_default_gc(
+        display: *mut xlib::Display,
+        window: xlib::Window,
+        reverse_video: bool,
+    ) -> Result<xlib::GC> {
         let style = CanvasStyle::default();
         unsafe {
             let screen = xlib::XDefaultScreen(display);
@@ -69,19 +78,36 @@ impl X11Canvas {
             }
 
             // set drawing style
-            xlib::XSetLineAttributes(display, gc, style.line_width, style.line_style, style.cap_style, style.join_style);
+            xlib::XSetLineAttributes(
+                display,
+                gc,
+                style.line_width,
+                style.line_style,
+                style.cap_style,
+                style.join_style,
+            );
             xlib::XSetFillStyle(display, gc, style.fill_style);
 
             Ok(gc)
         }
     }
 
-    fn create_pixmap(display: *mut xlib::Display, screen: i32, window: xlib::Window) -> Result<xlib::Drawable> {
+    fn create_pixmap(
+        display: *mut xlib::Display,
+        screen: i32,
+        window: xlib::Window,
+    ) -> Result<xlib::Drawable> {
         unsafe {
             let window_dims = window.x11_dimensions(display)?;
             let depth = xlib::XDefaultDepth(display, screen);
             let root = xlib::XDefaultRootWindow(display);
-            Ok(xlib::XCreatePixmap(display, root, window_dims.w(), window_dims.h(), depth as u32))
+            Ok(xlib::XCreatePixmap(
+                display,
+                root,
+                window_dims.w(),
+                window_dims.h(),
+                depth as u32,
+            ))
         }
     }
 
@@ -91,8 +117,7 @@ impl X11Canvas {
             unsafe {
                 xlib::XNextEvent(display, event.as_mut_ptr());
                 let event = event.assume_init();
-                if event.get_type() == xlib::Expose
-                        && event.expose.window == self.window() {
+                if event.get_type() == xlib::Expose && event.expose.window == self.window() {
                     draw(self);
                     self.flush();
                 }
@@ -108,8 +133,14 @@ impl X11Canvas {
 
     fn gc_apply_line_attrib(&self) {
         unsafe {
-            xlib::XSetLineAttributes(self.display, self.gc, self.style.line_width,
-                                     self.style.line_style, self.style.cap_style, self.style.join_style);
+            xlib::XSetLineAttributes(
+                self.display,
+                self.gc,
+                self.style.line_width,
+                self.style.line_style,
+                self.style.cap_style,
+                self.style.join_style,
+            );
         }
     }
 
@@ -128,8 +159,17 @@ impl X11Canvas {
         unsafe {
             let visual = xlib::XDefaultVisual(self.display, self.screen);
             let colormap = xlib::XDefaultColormap(self.display, self.screen);
-            if xft::XftColorAllocValue(self.display, visual, colormap, &xr_color, xft_color.as_mut_ptr()) == 0 {
-                Err(MarsError::failed_request(stringify!(xft::XftColorAllocValue)))
+            if xft::XftColorAllocValue(
+                self.display,
+                visual,
+                colormap,
+                &xr_color,
+                xft_color.as_mut_ptr(),
+            ) == 0
+            {
+                Err(MarsError::failed_request(stringify!(
+                    xft::XftColorAllocValue
+                )))
             } else {
                 Ok(xft_color.assume_init())
             }
@@ -148,8 +188,15 @@ impl Canvas for X11Canvas {
 
     fn draw_line(&mut self, pt1: (i32, i32), pt2: (i32, i32)) {
         unsafe {
-            xlib::XDrawLine(self.display, self.pixbuffer, self.gc,
-                            pt1.0, pt1.1, pt2.0, pt2.1);
+            xlib::XDrawLine(
+                self.display,
+                self.pixbuffer,
+                self.gc,
+                pt1.0,
+                pt1.1,
+                pt2.0,
+                pt2.1,
+            );
         }
     }
 
@@ -178,12 +225,19 @@ impl Canvas for X11Canvas {
 
     fn draw_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32) {
         unsafe {
-            xlib::XDrawRectangle(self.display, self.pixbuffer, self.gc,
-                            x, y, width, height);
+            xlib::XDrawRectangle(self.display, self.pixbuffer, self.gc, x, y, width, height);
         }
     }
 
-    fn draw_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: u64, line_width: u32) {
+    fn draw_rectangle_with(
+        &mut self,
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+        color: u64,
+        line_width: u32,
+    ) {
         if let Ok(xft_color) = self.alloc_color(color) {
             let saved_color = self.style.xft_color;
             let saved_line_width = self.style.line_width;
@@ -210,19 +264,33 @@ impl Canvas for X11Canvas {
         if let Some(xfont) = self.style.xfont {
             let strlen = match text.len().try_into() {
                 Ok(i) => i,
-                Err(_) => return Err(MarsError::failed_conversion(text.len(), stringify!(usize), stringify!(i32))),
+                Err(_) => {
+                    return Err(MarsError::failed_conversion(
+                        text.len(),
+                        stringify!(usize),
+                        stringify!(i32),
+                    ));
+                }
             };
 
             unsafe {
                 let mut extents: MaybeUninit<xrender::XGlyphInfo> = MaybeUninit::uninit();
-                xft::XftTextExtentsUtf8(self.display, xfont, text.as_ptr(), strlen, extents.as_mut_ptr());
+                xft::XftTextExtentsUtf8(
+                    self.display,
+                    xfont,
+                    text.as_ptr(),
+                    strlen,
+                    extents.as_mut_ptr(),
+                );
                 let extents = extents.assume_init();
                 let height = (*xfont).ascent + (*xfont).descent;
 
                 Ok((extents.width.into(), height as u32))
             }
         } else {
-            Err(MarsError::invalid_input("unable to get text size - no font specified"))
+            Err(MarsError::invalid_input(
+                "unable to get text size - no font specified",
+            ))
         }
     }
 
@@ -234,7 +302,13 @@ impl Canvas for X11Canvas {
         // make string length c compatible
         let strlen = match text.len().try_into() {
             Ok(i) => i,
-            Err(_) => return Err(MarsError::failed_conversion(text.len(), stringify!(usize), stringify!(i32))),
+            Err(_) => {
+                return Err(MarsError::failed_conversion(
+                    text.len(),
+                    stringify!(usize),
+                    stringify!(i32),
+                ));
+            }
         };
 
         // get font dimensions
@@ -249,8 +323,15 @@ impl Canvas for X11Canvas {
             let colormap = xlib::XDefaultColormap(self.display, self.screen);
             let xft_draw = xft::XftDrawCreate(self.display, self.pixbuffer, visual, colormap);
 
-            xft::XftDrawStringUtf8(xft_draw, (&self.style.xft_color) as *const xft::XftColor,
-                                   font, x, y, text.as_ptr(), strlen);
+            xft::XftDrawStringUtf8(
+                xft_draw,
+                (&self.style.xft_color) as *const xft::XftColor,
+                font,
+                x,
+                y,
+                text.as_ptr(),
+                strlen,
+            );
 
             xft::XftDrawDestroy(xft_draw);
         }
@@ -260,8 +341,7 @@ impl Canvas for X11Canvas {
 
     fn fill_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32) {
         unsafe {
-            xlib::XFillRectangle(self.display, self.pixbuffer, self.gc,
-                            x, y, width, height);
+            xlib::XFillRectangle(self.display, self.pixbuffer, self.gc, x, y, width, height);
         }
     }
 
@@ -286,7 +366,18 @@ impl Canvas for X11Canvas {
     fn flush(&self) {
         unsafe {
             if let Ok(d) = self.window.x11_dimensions(self.display) {
-                xlib::XCopyArea(self.display, self.pixbuffer, self.window, self.gc, 0, 0, d.w(), d.h(), 0, 0);
+                xlib::XCopyArea(
+                    self.display,
+                    self.pixbuffer,
+                    self.window,
+                    self.gc,
+                    0,
+                    0,
+                    d.w(),
+                    d.h(),
+                    0,
+                    0,
+                );
             }
             xlib::XFlush(self.display);
         }
@@ -307,7 +398,7 @@ impl Canvas for X11Canvas {
             // set background for associated window
             let mut swa: xlib::XSetWindowAttributes = MaybeUninit::zeroed().assume_init();
             swa.background_pixel = color;
-			xlib::XChangeWindowAttributes(self.display, self.window,  xlib::CWBackPixel, &mut swa);
+            xlib::XChangeWindowAttributes(self.display, self.window, xlib::CWBackPixel, &mut swa);
 
             // set background for gc
             xlib::XSetBackground(self.display, self.gc, xft_color.pixel);
@@ -323,8 +414,9 @@ impl Canvas for X11Canvas {
             }
 
             // allocate font
-            let c_font_name = CString::new(font_name)
-                .map_err(|_| MarsError::failed_conversion(font_name, stringify!(&str), stringify!(CString)))?;
+            let c_font_name = CString::new(font_name).map_err(|_| {
+                MarsError::failed_conversion(font_name, stringify!(&str), stringify!(CString))
+            })?;
             let xfont = xft::XftFontOpenName(self.display, self.screen, c_font_name.as_ptr());
             if xfont.is_null() {
                 return Err(MarsError::failed_request(stringify!(xft::XftFontOpenName)));

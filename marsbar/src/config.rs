@@ -1,12 +1,11 @@
 use libmars::platforms::x11::draw::widget::*;
 use libmars::utils::configuration::read_config_file;
 use libmars::utils::configuration::read_file;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::path;
 use x11::xlib;
 
 use crate::tray::*;
-
 
 const CONFIG_NAME: &str = "marswm";
 const CONFIG_FILE: &str = "marsbar.yaml";
@@ -15,8 +14,7 @@ const DEFAULT_FONT: &str = "serif";
 const DEFAULT_TEXT_PADDING_HORZ: u32 = 5;
 const DEFAULT_TEXT_PADDING_VERT: u32 = 0;
 
-
-#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct BarStyle {
     pub background: u64,
@@ -28,7 +26,7 @@ pub struct BarStyle {
     pub status: ContainerWidgetStyle,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct TextWidgetStyle {
     pub foreground: u64,
@@ -37,7 +35,7 @@ pub struct TextWidgetStyle {
     pub padding_vert: u32,
 }
 
-#[derive(Serialize,Deserialize,PartialEq,Debug,Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ContainerWidgetStyle {
     pub foreground: u64,
     pub inner_background: u64,
@@ -49,14 +47,13 @@ pub struct ContainerWidgetStyle {
     pub spacing: u32,
 }
 
-#[derive(Default,Serialize,Deserialize,PartialEq,Debug,Clone)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct Configuration {
     pub status_cmd: Option<String>,
     pub action_cmd: Option<String>,
     pub style: BarStyle,
 }
-
 
 impl Default for BarStyle {
     fn default() -> Self {
@@ -78,31 +75,64 @@ impl Default for TextWidgetStyle {
             foreground: 0xbcbcbc,
             background: 0x262626,
             padding_horz: DEFAULT_TEXT_PADDING_HORZ,
-            padding_vert: DEFAULT_TEXT_PADDING_VERT
+            padding_vert: DEFAULT_TEXT_PADDING_VERT,
         }
     }
 }
 
 impl ContainerWidgetStyle {
-    pub fn create_flow_layout_widget<W: Widget>(&self, display: *mut xlib::Display, parent: xlib::Window)
-            -> Result<X11FlowLayoutWidget<W>, String> {
+    pub fn create_flow_layout_widget<W: Widget>(
+        &self,
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+    ) -> Result<X11FlowLayoutWidget<W>, String> {
         let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_vert);
-        X11FlowLayoutWidget::new(display, parent, params, self.spacing, Vec::new(), self.outer_background)
-            .map_err(|e| e.to_string())
+        X11FlowLayoutWidget::new(
+            display,
+            parent,
+            params,
+            self.spacing,
+            Vec::new(),
+            self.outer_background,
+        )
+        .map_err(|e| e.to_string())
     }
 
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
-            -> Result<X11TextWidget, String> {
+    pub fn create_text_widget(
+        &self,
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        font: &str,
+    ) -> Result<X11TextWidget, String> {
         let params = X11WidgetParams::new(0, 0, self.text_padding_horz, self.text_padding_vert);
-        X11TextWidget::new(display, parent, params, "".to_string(), font, self.foreground, self.inner_background)
-            .map_err(|e| e.to_string())
+        X11TextWidget::new(
+            display,
+            parent,
+            params,
+            "".to_string(),
+            font,
+            self.foreground,
+            self.inner_background,
+        )
+        .map_err(|e| e.to_string())
     }
 
-    pub fn create_systray_widget(&self, display: *mut xlib::Display, parent: xlib::Window, parent_height: u32)
-            -> Result<SystemTrayWidget, String> {
+    pub fn create_systray_widget(
+        &self,
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        parent_height: u32,
+    ) -> Result<SystemTrayWidget, String> {
         let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_vert);
-        SystemTrayWidget::new(display, parent, params, parent_height - 2 * self.spacing, self.padding_horz, self.inner_background)
-            .map_err(|e| e.to_string())
+        SystemTrayWidget::new(
+            display,
+            parent,
+            params,
+            parent_height - 2 * self.spacing,
+            self.padding_horz,
+            self.inner_background,
+        )
+        .map_err(|e| e.to_string())
     }
 
     fn default_status() -> Self {
@@ -133,14 +163,25 @@ impl ContainerWidgetStyle {
 }
 
 impl TextWidgetStyle {
-    pub fn create_text_widget(&self, display: *mut xlib::Display, parent: xlib::Window, font: &str)
-            -> Result<X11TextWidget, String> {
+    pub fn create_text_widget(
+        &self,
+        display: *mut xlib::Display,
+        parent: xlib::Window,
+        font: &str,
+    ) -> Result<X11TextWidget, String> {
         let params = X11WidgetParams::new(0, 0, self.padding_horz, self.padding_horz);
-        X11TextWidget::new(display, parent, params, "".to_string(), font, self.foreground, self.background)
-            .map_err(|e| e.to_string())
+        X11TextWidget::new(
+            display,
+            parent,
+            params,
+            "".to_string(),
+            font,
+            self.foreground,
+            self.background,
+        )
+        .map_err(|e| e.to_string())
     }
 }
-
 
 pub fn read_config(overwrite_path: Option<path::PathBuf>) -> Configuration {
     let result = if let Some(path) = overwrite_path {
@@ -154,7 +195,6 @@ pub fn read_config(overwrite_path: Option<path::PathBuf>) -> Configuration {
         Err(msg) => {
             println!("Unable to read configuration: {}", msg);
             Configuration::default()
-        },
+        }
     }
 }
-
