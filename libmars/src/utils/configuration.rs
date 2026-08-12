@@ -1,4 +1,4 @@
-//! Loading configuration files using [serde_norway].
+//! Loading configuration files using [yaml_serde].
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -11,7 +11,7 @@ fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, 
         Err(e) => return Err((true, e.to_string())),
     };
 
-    match serde_norway::from_slice(&raw) {
+    match yaml_serde::from_slice(&raw) {
         Ok(config) => Ok(config),
         Err(e) => Err((true, e.to_string())),
     }
@@ -19,7 +19,7 @@ fn deserialize_file<T: for<'a> Deserialize<'a>>(path: &path::Path) -> Result<T, 
 
 /// Print config files to stdout
 pub fn print_config(config: &impl Serialize) {
-    let ser = serde_norway::to_string(config);
+    let ser = yaml_serde::to_string(config);
     match ser {
         Ok(ser) => println!("{}", ser),
         Err(e) => eprintln!("Error: {}", e),
