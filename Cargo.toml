@@ -19,7 +19,7 @@ readme = "README.md"
 clap = { version = "4.6.6", features = ["derive"] }
 libmars = { path = "./libmars", version = "0.6.1" }
 serde = { version = "1.0.229", features = ["derive"] }
-yaml_serde = { version = "0.10.6" }
+yaml_serde = { version = "0.10.7" }
 x11 = { version = "2.21.0", features = ["xlib"] }
 
 
