@@ -514,7 +514,8 @@ impl X11Window for xlib::Window {
     }
 
     fn x11_wm_name(&self, display: *mut xlib::Display) -> Result<String> {
-        self.x11_read_property_string(display, WMName)
+        self.x11_read_property_string(display, NetWMName)
+            .or_else(|_| self.x11_read_property_string(display, WMName))
     }
 
     fn x11_wm_normal_hints(

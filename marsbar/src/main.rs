@@ -399,7 +399,8 @@ impl Bar {
                 self.handle_bar_event(event);
             } else if Some(event.any.window) == self.active_window
                 && event.get_type() == xlib::PropertyNotify
-                && event.property.atom == WMName.to_xlib_atom(self.display)
+                && (event.property.atom == WMName.to_xlib_atom(self.display)
+                    || event.property.atom == NetWMName.to_xlib_atom(self.display))
             {
                 let title = self.get_active_window_title();
                 self.arrange_title(title);
