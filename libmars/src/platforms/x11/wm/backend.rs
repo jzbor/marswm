@@ -810,7 +810,7 @@ impl<A: PartialEq + Default> X11Backend<A> {
     ) {
         if let Some(client_rc) = Self::client_by_window(wm, event.window)
             && let Some(atom) = X11Atom::from_xlib_atom(self.display, event.atom)
-            && atom == WMName
+            && matches!(atom, WMName | NetWMName)
         {
             client_rc.borrow_mut().update_title()
         }
