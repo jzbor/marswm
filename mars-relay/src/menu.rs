@@ -34,11 +34,8 @@ pub fn display_menu() -> Result<Command, String> {
         stdin.write_all(string.as_bytes()).unwrap();
     });
 
-
-    let output = child.wait_with_output()
-        .map_err(|e| e.to_string())?;
-    let output = String::from_utf8_lossy(&output.stdout)
-        .to_string();
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
+    let output = String::from_utf8_lossy(&output.stdout).to_string();
 
     match output.trim() {
         "close" => Ok(Command::Close),

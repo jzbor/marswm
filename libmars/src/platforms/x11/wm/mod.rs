@@ -1,5 +1,5 @@
-use x11::xlib;
 use std::ffi::*;
+use x11::xlib;
 
 pub mod backend;
 mod client;
@@ -13,8 +13,12 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
     let msg = unsafe {
         let bufsize = 1024;
         let mut buf: Vec<c_char> = vec![0; bufsize];
-        xlib::XGetErrorText(display, (*error).error_code.into(), buf.as_mut_ptr(),
-                            (bufsize - 1) as c_int);
+        xlib::XGetErrorText(
+            display,
+            (*error).error_code.into(),
+            buf.as_mut_ptr(),
+            (bufsize - 1) as c_int,
+        );
         let msg_cstring = CStr::from_ptr(buf.as_mut_ptr());
         msg_cstring.to_str().unwrap().to_owned()
         // println!("{}", msg);
@@ -22,10 +26,26 @@ extern "C" fn on_error(display: *mut xlib::Display, error: *mut xlib::XErrorEven
 
     unsafe {
         match (*error).error_code {
-            xlib::Success => println!("X11 non-error: {} (request code: {})", msg, (*error).request_code),
-            xlib::BadMatch => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
-            xlib::BadWindow => println!("X11 error: {} (request code: {})", msg, (*error).request_code),
-            _ => panic!("Fatal X11 error: {} (request code: {})", msg, (*error).request_code),
+            xlib::Success => println!(
+                "X11 non-error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
+            xlib::BadMatch => println!(
+                "X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
+            xlib::BadWindow => println!(
+                "X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
+            _ => panic!(
+                "Fatal X11 error: {} (request code: {})",
+                msg,
+                (*error).request_code
+            ),
         }
     }
 

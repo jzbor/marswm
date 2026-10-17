@@ -11,15 +11,10 @@ use x11::xrandr;
 
 use crate::common::error::*;
 use crate::common::*;
-use crate::platforms::x11::misc::{
-    atoms::*,
-    atoms::X11Atom::*,
-    window::*,
-};
+use crate::platforms::x11::misc::{atoms::X11Atom::*, atoms::*, window::*};
 
 pub mod atoms;
 pub mod window;
-
 
 pub const XLIB_NONE: u64 = 0;
 pub const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
@@ -41,12 +36,15 @@ pub const MWM_DECOR_ALL: u64 = 1 << 0;
 pub const MWM_DECOR_BORDER: u64 = 1 << 1;
 pub const MWM_DECOR_TITLE: u64 = 1 << 3;
 
-
 impl From<xinerama::XineramaScreenInfo> for MonitorConfig {
     fn from(info: xinerama::XineramaScreenInfo) -> MonitorConfig {
-        let area = Dimensions::new(info.x_org.into(), info.y_org.into(),
-            info.width.try_into().unwrap(), info.height.try_into().unwrap());
-        MonitorConfig::new( format!("output{}", info.screen_number), area, area)
+        let area = Dimensions::new(
+            info.x_org.into(),
+            info.y_org.into(),
+            info.width.try_into().unwrap(),
+            info.height.try_into().unwrap(),
+        );
+        MonitorConfig::new(format!("output{}", info.screen_number), area, area)
     }
 }
 
@@ -56,8 +54,12 @@ impl From<(*mut xlib::Display, &xrandr::XRRMonitorInfo)> for MonitorConfig {
             Some(name) => name,
             None => format!("monitor{}", monitor_info.noutput),
         };
-        let area = Dimensions::new(monitor_info.x, monitor_info.y,
-            monitor_info.width as u32, monitor_info.height as u32);
+        let area = Dimensions::new(
+            monitor_info.x,
+            monitor_info.y,
+            monitor_info.width as u32,
+            monitor_info.height as u32,
+        );
 
         MonitorConfig::new(name, area, area)
     }
@@ -73,13 +75,9 @@ impl From<*mut xlib::Screen> for MonitorConfig {
     }
 }
 
-
 /// Returs all permutiations of your modifiers with NumLock and Level3
 pub fn alternative_modifiers(modifiers: u32) -> Vec<u32> {
-    vec![
-        modifiers,
-        modifiers | xlib::Mod2Mask,
-    ]
+    vec![modifiers, modifiers | xlib::Mod2Mask]
 }
 
 /// Waits for MapNotify on the specified window.
@@ -90,8 +88,7 @@ pub fn await_map_notify(display: *mut xlib::Display, window: xlib::Window) {
         unsafe {
             xlib::XNextEvent(display, event.as_mut_ptr());
             let event = event.assume_init();
-            if event.get_type() == xlib::MapNotify
-                    && event.map.window == window {
+            if event.get_type() == xlib::MapNotify && event.map.window == window {
                 break;
             }
         }
@@ -108,17 +105,29 @@ pub fn close_display(display: *mut xlib::Display) {
 }
 
 /// Creates and maps a top-level window to be used by an application
-pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class: &str, name: &str,
-                     win_type: Option<X11Atom>) -> Result<xlib::Window> {
+pub fn create_window(
+    display: *mut xlib::Display,
+    dimensions: Dimensions,
+    class: &str,
+    name: &str,
+    win_type: Option<X11Atom>,
+) -> Result<xlib::Window> {
     let (x, y, width, height) = dimensions.as_tuple();
     unsafe {
         let screen = xlib::XDefaultScreen(display);
         let border_width = 0;
 
-        let win = xlib::XCreateSimpleWindow(display, xlib::XDefaultRootWindow(display),
-                                       x, y, width, height, border_width,
-                                       xlib::XBlackPixel(display, screen),
-                                       xlib::XWhitePixel(display, screen));
+        let win = xlib::XCreateSimpleWindow(
+            display,
+            xlib::XDefaultRootWindow(display),
+            x,
+            y,
+            width,
+            height,
+            border_width,
+            xlib::XBlackPixel(display, screen),
+            xlib::XWhitePixel(display, screen),
+        );
 
         // subscribe to StructureNotifyMask for MapNotify events
         // subscribe to ExposureMask for Expose events
@@ -127,7 +136,13 @@ pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class:
         // set class hint
         let class_cstring = match CString::new(class) {
             Ok(cstring) => cstring,
-            Err(_) => return Err(MarsError::failed_conversion(class, stringify!(&str), stringify!(CString))),
+            Err(_) => {
+                return Err(MarsError::failed_conversion(
+                    class,
+                    stringify!(&str),
+                    stringify!(CString),
+                ));
+            }
         };
         let mut class_bytes = class_cstring.into_bytes_with_nul();
         let mut class_hint = xlib::XClassHint {
@@ -139,13 +154,22 @@ pub fn create_window(display: *mut xlib::Display, dimensions: Dimensions, class:
         // set window title
         let name_cstring = match CString::new(name) {
             Ok(cstring) => cstring,
-            Err(_) => return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(CString))),
+            Err(_) => {
+                return Err(MarsError::failed_conversion(
+                    name,
+                    stringify!(&str),
+                    stringify!(CString),
+                ));
+            }
         };
         let mut name_property: MaybeUninit<xlib::XTextProperty> = MaybeUninit::uninit();
         let mut data = [name_cstring.as_ptr() as *mut c_char];
-        if xlib::XStringListToTextProperty(data.as_mut_ptr(),
-        1, name_property.as_mut_ptr()) == 0 {
-            return Err(MarsError::failed_conversion(name, stringify!(&str), stringify!(xlib::XTextProperty)));
+        if xlib::XStringListToTextProperty(data.as_mut_ptr(), 1, name_property.as_mut_ptr()) == 0 {
+            return Err(MarsError::failed_conversion(
+                name,
+                stringify!(&str),
+                stringify!(xlib::XTextProperty),
+            ));
         };
         xlib::XSetWMName(display, win, name_property.assume_init_mut());
 
@@ -187,14 +211,20 @@ pub fn get_keysym(name: &str) -> xlib::KeySym {
     }
 }
 
-pub extern "C" fn on_error_dummy(_display: *mut xlib::Display, _error: *mut xlib::XErrorEvent) -> c_int {
+pub extern "C" fn on_error_dummy(
+    _display: *mut xlib::Display,
+    _error: *mut xlib::XErrorEvent,
+) -> c_int {
     0
 }
 
 /// Get the current monitor configuration
 ///
 /// * `ignore_overlapping` - Ignore monitors that overlap with other monitors
-pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: bool) -> Vec<MonitorConfig> {
+pub fn query_monitor_config(
+    display: *mut xlib::Display,
+    ignore_overlapping: bool,
+) -> Vec<MonitorConfig> {
     unsafe {
         let mut monitors = VecDeque::new();
 
@@ -218,14 +248,15 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
         if monitors.is_empty() && xinerama::XineramaIsActive(display) != 0 {
             let mut screen_count = 0;
             let screens_raw = xinerama::XineramaQueryScreens(display, &mut screen_count);
-            let screens_slice = slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
+            let screens_slice =
+                slice::from_raw_parts_mut(screens_raw, screen_count.try_into().unwrap());
             monitors.extend(screens_slice.iter().map(|x| MonitorConfig::from(*x)));
             xlib::XFree(screens_slice.as_mut_ptr() as *mut c_void);
         }
 
         // use whole screen as fallback
         if monitors.is_empty() {
-            return vec!(MonitorConfig::from(xlib::XDefaultScreenOfDisplay(display)));
+            return vec![MonitorConfig::from(xlib::XDefaultScreenOfDisplay(display))];
         }
 
         if ignore_overlapping {
@@ -233,7 +264,7 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
                 m1.dimensions().right() <= m2.dimensions().x()  // m1 is left of m2
                     || m1.dimensions().x() >= m2.dimensions().right()  // m1 is right of m2
                     || m1.dimensions().bottom() <= m2.dimensions().y()  // m1 is on top of m2
-                    || m1.dimensions().y() >= m2.dimensions().bottom()  // m1 is below m2
+                    || m1.dimensions().y() >= m2.dimensions().bottom() // m1 is below m2
             };
             let mut non_overlapping = Vec::new();
             for mon in monitors.drain(..) {
@@ -250,11 +281,17 @@ pub fn query_monitor_config(display: *mut xlib::Display, ignore_overlapping: boo
 
 /// Remove unrelated mask bits on button or key events
 pub fn sanitize_modifiers(modifiers: u32) -> u32 {
-    modifiers & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod3Mask | xlib::Mod4Mask)
+    modifiers
+        & (xlib::ShiftMask | xlib::ControlMask | xlib::Mod1Mask | xlib::Mod3Mask | xlib::Mod4Mask)
 }
 
 /// Send a ClientMessage to the default root window
-pub fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: xlib::Window, data: xlib::ClientMessageData) {
+pub fn send_client_message(
+    display: *mut xlib::Display,
+    atom: X11Atom,
+    window: xlib::Window,
+    data: xlib::ClientMessageData,
+) {
     let mut event = xlib::XEvent {
         client_message: xlib::XClientMessageEvent {
             type_: xlib::ClientMessage,
@@ -265,9 +302,8 @@ pub fn send_client_message(display: *mut xlib::Display, atom: X11Atom, window: x
             message_type: atom.to_xlib_atom(display),
             format: 32,
             data,
-        }
+        },
     };
-
 
     unsafe {
         let root = xlib::XDefaultRootWindow(display);

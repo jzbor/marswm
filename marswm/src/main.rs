@@ -2,9 +2,9 @@
 #![allow(clippy::comparison_chain)]
 
 use clap::Parser;
-use libmars::utils::configuration::*;
 use libmars::interfaces::wm::*;
 use libmars::platforms::x11::wm::backend::X11Backend;
+use libmars::utils::configuration::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -12,7 +12,6 @@ use crate::attributes::*;
 use crate::bindings::*;
 use crate::config::*;
 use crate::marswm::*;
-
 
 mod attributes;
 mod bindings;
@@ -24,9 +23,7 @@ mod monitor;
 mod rules;
 mod workspace;
 
-
 const DOCS_URL: &str = "https://jzbor.de/marswm";
-
 
 /// A dynamic window manager
 #[derive(Parser)]
@@ -65,7 +62,6 @@ pub struct Args {
     print_rules: bool,
 }
 
-
 trait ClientList<C: Client<Attributes>> {
     fn attach_client(&mut self, client_rc: Rc<RefCell<C>>);
     fn clients(&self) -> Box<dyn Iterator<Item = &Rc<RefCell<C>>> + '_>;
@@ -103,12 +99,13 @@ fn main() {
     let args = Args::parse();
 
     if args.docs {
-        let result = std::process::Command::new("xdg-open")
-            .arg(DOCS_URL)
-            .spawn();
+        let result = std::process::Command::new("xdg-open").arg(DOCS_URL).spawn();
         match result {
             Ok(_) => (),
-            Err(e) => { eprintln!("Error: {}", e); std::process::exit(1); }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            }
         }
     } else if args.print_default_config {
         print_config(&Configuration::default());
@@ -133,11 +130,15 @@ fn main() {
 
         // run startup script
         if let Some(startup_cmd) = &config.on_startup
-            && let Ok(mut handle) = std::process::Command::new("sh").arg("-c").arg(startup_cmd).spawn() {
-                std::thread::spawn(move || {
-                    let _ignored = handle.wait();
-                });
-            }
+            && let Ok(mut handle) = std::process::Command::new("sh")
+                .arg("-c")
+                .arg(startup_cmd)
+                .spawn()
+        {
+            std::thread::spawn(move || {
+                let _ignored = handle.wait();
+            });
+        }
 
         let mut backend = X11Backend::init("marswm").unwrap();
         let mut wm = MarsWM::new(&mut backend, config, key_bindings, button_bindings, rules);

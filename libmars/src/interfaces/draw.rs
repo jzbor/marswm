@@ -1,15 +1,23 @@
 //! A very basic toolkit for creating simple applications and drawing on windows.
 //!
 //! Currently only X11 is supported.
-use crate::common::*;
 use crate::common::error::*;
+use crate::common::*;
 
 pub trait Canvas {
     fn dimensions(&self) -> Dimensions;
     fn draw_line(&mut self, pt1: (i32, i32), pt2: (i32, i32));
     fn draw_line_with(&mut self, pt1: (i32, i32), pt2: (i32, i32), color: u64, line_width: u32);
     fn draw_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32);
-    fn draw_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: u64, line_width: u32);
+    fn draw_rectangle_with(
+        &mut self,
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+        color: u64,
+        line_width: u32,
+    );
     fn draw_text(&mut self, x: i32, y: i32, height: u32, text: &str) -> Result<(u32, u32)>;
     fn fill_rectangle(&mut self, x: i32, y: i32, width: u32, height: u32);
     fn fill_rectangle_with(&mut self, x: i32, y: i32, width: u32, height: u32, color: u64);
@@ -21,4 +29,3 @@ pub trait Canvas {
     fn set_line_width(&mut self, line_width: u32);
     fn text_size(&self, text: &str) -> Result<(u32, u32)>;
 }
-
