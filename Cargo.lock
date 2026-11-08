@@ -146,7 +146,7 @@ checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "libmars"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "serde",
  "x11",
@@ -162,7 +162,7 @@ checksum = "2e126dda6f34391ab7b444f9922055facc83c07a910da3eb16f1e4d9c45dc777"
 
 [[package]]
 name = "mars-relay"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "clap",
  "libmars",
@@ -171,7 +171,7 @@ dependencies = [
 
 [[package]]
 name = "marsbar"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "clap",
  "libmars",
@@ -181,7 +181,7 @@ dependencies = [
 
 [[package]]
 name = "marswm"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "clap",
  "libmars",
