@@ -49,7 +49,7 @@ jobs:
           cp -r target/doc output/crate
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v7
         with:
           path: './output'
       - name: Setup Pages
