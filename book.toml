@@ -1,7 +1,6 @@
 [book]
 authors = ["jzbor"]
 language = "en"
-multilingual = false
 src = "docs"
 title = "MARSWM Documentation"
 
